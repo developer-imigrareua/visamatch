@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visa Match · Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0b1929;--navy2:#122238;--navy3:#1a3050;--navy4:#1f3d65;
+  --gold:#c9a84c;--gold2:#dfc06e;--gold3:#f5e6c0;--gold4:#fdf8ec;
+  --cream:#faf8f3;--smoke:#f2ede4;--mist:#e8e2d8;
+  --txt:#18202e;--txt2:#4a5568;--txt3:#94a3b8;
+  --green:#1d9e70;--amber:#d97706;--red:#dc2626;--blue:#2563eb;
+  --sidebar:260px
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--txt);overflow:hidden}
+.app{display:grid;grid-template-columns:var(--sidebar) 1fr;height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--navy);display:flex;flex-direction:column;padding:28px 20px;position:relative;overflow:hidden}
+.sb-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 15% 10%,rgba(201,168,76,.12) 0%,transparent 55%);pointer-events:none}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:36px;position:relative}
+.brand-ico{width:40px;height:40px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--navy);font-weight:600;flex-shrink:0}
+.brand-name{font-family:'Cormorant Garamond',serif;font-size:16px;color:#fff;line-height:1.2}
+.brand-sub{font-size:10px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase}
+.nav{display:flex;flex-direction:column;gap:3px;flex:1;position:relative}
+.nav-sec{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.22);font-weight:600;margin:16px 0 8px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-item.active{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.2);color:#fff}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.sb-footer{position:relative;border-top:1px solid rgba(255,255,255,.07);padding-top:16px;margin-top:16px}
+.logout-btn{display:flex;align-items:center;gap:8px;font-size:12.5px;color:rgba(255,255,255,.35);cursor:pointer;background:none;border:none;padding:6px 8px;border-radius:7px;transition:all .2s;width:100%}
+.logout-btn:hover{color:var(--red);background:rgba(220,38,38,.07)}
+
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:16px 28px;background:#fff;border-bottom:1px solid rgba(11,25,41,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy)}
+.topbar-sub{font-size:11.5px;color:var(--txt3);margin-top:1px}
+.refresh-btn{display:flex;align-items:center;gap:6px;background:var(--smoke);border:1.5px solid rgba(11,25,41,.08);border-radius:9px;padding:7px 14px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--txt2);cursor:pointer;transition:all .2s}
+.refresh-btn:hover{border-color:var(--gold);color:var(--navy)}
+.refresh-btn svg{width:13px;height:13px}
+.content{flex:1;overflow-y:auto;padding:24px 28px}
+.content::-webkit-scrollbar{width:3px}
+.content::-webkit-scrollbar-thumb{background:rgba(11,25,41,.1);border-radius:3px}
+
+/* ── PANELS ── */
+.panel{display:none}
+.panel.active{display:block}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:14px;padding:18px 20px}
+.kpi-label{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:32px;color:var(--navy);line-height:1}
+.kpi-sub{font-size:11.5px;color:var(--txt3);margin-top:5px}
+.kpi-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;margin-top:6px}
+.badge-green{background:rgba(29,158,112,.09);color:var(--green)}
+.badge-amber{background:rgba(217,119,6,.09);color:var(--amber)}
+.badge-red{background:rgba(220,38,38,.07);color:var(--red)}
+
+/* ── GRID 2 COLS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px}
+.card{background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:16px}
+
+/* ── BAR CHART ── */
+.bar-list{display:flex;flex-direction:column;gap:10px}
+.bar-item{display:flex;align-items:center;gap:10px}
+.bar-label{font-size:12.5px;color:var(--txt2);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:rgba(11,25,41,.05);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .6s ease}
+.bar-num{font-size:12px;font-weight:600;color:var(--navy);min-width:28px;text-align:right}
+
+/* ── DONUT ── */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt2)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── TIMELINE ── */
+.timeline-bars{display:flex;align-items:flex-end;gap:3px;height:80px}
+.tl-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.tl-bar{width:100%;background:linear-gradient(180deg,var(--gold2),var(--gold));border-radius:3px 3px 0 0;min-height:3px;transition:height .4s ease}
+.tl-label{font-size:8.5px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-align:center;width:100%}
+
+/* ── TABLE ── */
+.table-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.search-in{flex:1;border:1.5px solid rgba(11,25,41,.1);border-radius:9px;padding:8px 13px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);outline:none;background:var(--smoke)}
+.search-in:focus{border-color:rgba(201,168,76,.4);background:#fff}
+.filter-sel{border:1.5px solid rgba(11,25,41,.1);border-radius:9px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--txt2);background:var(--smoke);outline:none;cursor:pointer}
+.filter-sel:focus{border-color:rgba(201,168,76,.4)}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);padding:8px 12px;text-align:left;border-bottom:1px solid rgba(11,25,41,.06)}
+tbody tr{border-bottom:1px solid rgba(11,25,41,.04);transition:background .15s}
+tbody tr:hover{background:var(--gold4)}
+td{padding:11px 12px;font-size:13px;color:var(--txt2)}
+td.nome{color:var(--navy);font-weight:500}
+.score-pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:10px;font-size:11.5px;font-weight:600}
+.sc-alta{background:rgba(29,158,112,.09);color:var(--green)}
+.sc-mod{background:rgba(217,119,6,.09);color:var(--amber)}
+.sc-dev{background:rgba(11,25,41,.06);color:var(--txt2)}
+.sc-inc{background:rgba(220,38,38,.07);color:var(--red)}
+.hs-badge{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:500}
+.hs-ok{background:rgba(29,158,112,.09);color:var(--green)}
+.hs-no{background:rgba(11,25,41,.05);color:var(--txt3)}
+.view-btn{background:none;border:1px solid rgba(11,25,41,.12);border-radius:7px;padding:4px 10px;font-size:11.5px;font-family:'DM Sans',sans-serif;color:var(--txt2);cursor:pointer;transition:all .15s}
+.view-btn:hover{border-color:var(--gold);color:var(--navy)}
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
+.pag-info{font-size:12.5px;color:var(--txt3)}
+.pag-btns{display:flex;gap:6px}
+.pag-btn{border:1.5px solid rgba(11,25,41,.1);background:#fff;border-radius:8px;padding:6px 13px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--txt2);cursor:pointer;transition:all .15s}
+.pag-btn:hover:not(:disabled){border-color:var(--gold);color:var(--navy)}
+.pag-btn:disabled{opacity:.4;cursor:default}
+.pag-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── LEAD DETAIL ── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.detail-field{background:var(--smoke);border-radius:9px;padding:12px 14px}
+.detail-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:4px}
+.detail-val{font-size:13.5px;color:var(--navy);font-weight:500}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;font-size:13px;color:var(--txt2);cursor:pointer;margin-bottom:20px;padding:0;font-family:'DM Sans',sans-serif}
+.back-btn:hover{color:var(--navy)}
+.json-block{background:var(--navy);color:var(--gold3);border-radius:12px;padding:16px;font-size:11.5px;font-family:monospace;line-height:1.7;overflow-x:auto;white-space:pre-wrap;max-height:300px;overflow-y:auto}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--txt3);font-size:13px;gap:10px}
+.spin{width:18px;height:18px;border:2px solid rgba(11,25,41,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:48px;color:var(--txt3);font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-glow"></div>
+  <div class="brand">
+    <div class="brand-ico">V</div>
+    <div>
+      <div class="brand-name">Visa Match</div>
+      <div class="brand-sub">Admin</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-sec">Visão Geral</div>
+    <button class="nav-item active" onclick="showPanel('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <div class="nav-sec">Dados</div>
+    <button class="nav-item" onclick="showPanel('leads')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Leads
+    </button>
+  </nav>
+  <div class="sb-footer">
+    <button class="logout-btn" onclick="logout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sair
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="panel-title">Dashboard</div>
+      <div class="topbar-sub" id="panel-sub">Visão geral da ferramenta Visa Match</div>
+    </div>
+    <button class="refresh-btn" onclick="loadAll()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      Atualizar
+    </button>
+  </div>
+  <div class="content">
+
+    <!-- OVERVIEW PANEL -->
+    <div class="panel active" id="panel-overview">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="loading"><div class="spin"></div>Carregando...</div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Leads por Visto</div>
+          <div class="bar-list" id="visto-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Classificação de Score</div>
+          <div class="donut-wrap" id="score-donut"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-title">Evolução de Leads — Últimos 30 dias</div>
+        <div class="timeline-bars" id="timeline"></div>
+      </div>
+    </div>
+
+    <!-- LEADS PANEL -->
+    <div class="panel" id="panel-leads">
+      <div id="leads-list-view">
+        <div class="table-toolbar">
+          <input class="search-in" id="search-in" placeholder="Buscar por nome ou e-mail..." oninput="debounceSearch()"/>
+          <select class="filter-sel" id="filter-visto" onchange="loadLeads(1)">
+            <option value="">Todos os vistos</option>
+            <option>EB-2 NIW</option>
+            <option>EB-1A</option>
+            <option>O-1</option>
+            <option>L-1</option>
+            <option>E-2</option>
+            <option>Family Based</option>
+            <option>H-1B</option>
+          </select>
+          <select class="filter-sel" id="filter-score" onchange="loadLeads(1)">
+            <option value="">Todos os scores</option>
+            <option value="70,100">Alta (70+)</option>
+            <option value="40,69">Moderada (40–69)</option>
+            <option value="0,39">Em Desenvolvimento (0–39)</option>
+            <option value="-100,-1">Incompatível</option>
+          </select>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="leads-table-wrap"></div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+      <div id="leads-detail-view" style="display:none"></div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<script>
+const API = '/api/admin';
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = '/admin/';
+
+let searchTimer = null;
+let currentPage = 1;
+
+// ── AUTH ──
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  });
+  if (res.status === 401) { localStorage.removeItem('admin_token'); window.location.href = '/admin/'; }
+  return res.json();
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  window.location.href = '/admin/';
+}
+
+// ── NAVIGATION ──
+const panels = { overview: { title: 'Dashboard', sub: 'Visão geral da ferramenta Visa Match' }, leads: { title: 'Leads', sub: 'Todos os leads coletados pela ferramenta' } };
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.querySelector(`[onclick="showPanel('${id}')"]`).classList.add('active');
+  document.getElementById('panel-title').textContent = panels[id].title;
+  document.getElementById('panel-sub').textContent = panels[id].sub;
+  if (id === 'leads') { document.getElementById('leads-detail-view').style.display = 'none'; document.getElementById('leads-list-view').style.display = ''; loadLeads(1); }
+}
+
+// ── LOAD ALL ──
+function loadAll() { loadStats(); }
+
+// ── STATS ──
+async function loadStats() {
+  document.getElementById('kpi-grid').innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
+  const data = await apiFetch('/stats');
+  renderKPIs(data);
+  renderVistoBars(data.porVisto);
+  renderScoreDonut(data.porScore);
+  renderTimeline(data.timeline);
+}
+
+function renderKPIs(d) {
+  const kpis = [
+    { label: 'Total de Leads', val: d.total || 0, sub: 'Todos os tempos', badge: null },
+    { label: 'Últimos 7 Dias', val: d.ultimos7dias || 0, sub: 'Leads recentes', badge: null },
+    { label: 'Score Alta', val: d.porScore?.alta || 0, sub: 'Pré-elegibilidade alta (70+)', badge: { cls: 'badge-green', txt: '≥70 pts' } },
+    { label: 'Pendentes HubSpot', val: d.pendentesHubspot || 0, sub: 'Aguardando sincronização', badge: d.pendentesHubspot > 0 ? { cls: 'badge-amber', txt: 'Pendente' } : { cls: 'badge-green', txt: 'Tudo ok' } },
+  ];
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+    <div class="kpi">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+      ${k.badge ? `<div class="kpi-badge ${k.badge.cls}">${k.badge.txt}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderVistoBars(porVisto) {
+  const el = document.getElementById('visto-bars');
+  if (!porVisto || !Object.keys(porVisto).length) { el.innerHTML = '<div class="empty">Nenhum dado ainda</div>'; return; }
+  const max = Math.max(...Object.values(porVisto));
+  el.innerHTML = Object.entries(porVisto)
+    .sort((a, b) => b[1] - a[1])
+    .map(([v, n]) => `
+      <div class="bar-item">
+        <span class="bar-label" title="${v}">${v}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(n/max*100).toFixed(1)}%"></div></div>
+        <span class="bar-num">${n}</span>
+      </div>
+    `).join('');
+}
+
+function renderScoreDonut(s) {
+  if (!s) return;
+  const total = Object.values(s).reduce((a, b) => a + b, 0);
+  const cats = [
+    { label: 'Alta (70+)', val: s.alta, color: '#1d9e70' },
+    { label: 'Moderada (40–69)', val: s.moderada, color: '#d97706' },
+    { label: 'Desenvolvimento', val: s.desenvolvimento, color: '#94a3b8' },
+    { label: 'Incompatível', val: s.incompativel, color: '#dc2626' },
+  ].filter(c => c.val > 0);
+
+  if (!total) { document.getElementById('score-donut').innerHTML = '<div class="empty">Nenhum dado ainda</div>'; return; }
+
+  // Simple SVG donut
+  let offset = 0;
+  const r = 36, cx = 44, cy = 44, circ = 2 * Math.PI * r;
+  const segs = cats.map(c => {
+    const pct = c.val / total;
+    const dash = pct * circ;
+    const seg = { ...c, pct, dash, offset };
+    offset += dash;
+    return seg;
+  });
+
+  const svg = `<svg class="donut-svg" width="88" height="88" viewBox="0 0 88 88">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f2ede4" stroke-width="10"/>
+    ${segs.map(s => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="10"
+      stroke-dasharray="${s.dash} ${circ - s.dash}"
+      stroke-dashoffset="${-(s.offset - circ / 4)}"
+      transform="rotate(-90 ${cx} ${cy})"/>`).join('')}
+    <text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="16" font-family="Cormorant Garamond" fill="#0b1929" font-weight="600">${total}</text>
+  </svg>`;
+
+  const legend = `<div class="donut-legend">${cats.map(c => `
+    <div class="leg-item">
+      <div class="leg-dot" style="background:${c.color}"></div>
+      <span>${c.label}: <b>${c.val}</b></span>
+    </div>
+  `).join('')}</div>`;
+
+  document.getElementById('score-donut').innerHTML = svg + legend;
+}
+
+function renderTimeline(timeline) {
+  const el = document.getElementById('timeline');
+  if (!timeline || !Object.keys(timeline).length) { el.innerHTML = '<div class="empty" style="flex:1">Nenhum dado ainda</div>'; return; }
+  const entries = Object.entries(timeline).slice(-30);
+  const max = Math.max(...entries.map(e => e[1]));
+  el.innerHTML = entries.map(([dia, n]) => {
+    const h = Math.max(4, Math.round((n / max) * 72));
+    const label = dia.slice(5); // MM-DD
+    return `<div class="tl-col">
+      <div class="tl-bar" style="height:${h}px" title="${dia}: ${n} lead(s)"></div>
+      <span class="tl-label">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── LEADS ──
+async function loadLeads(page = 1) {
+  currentPage = page;
+  const search = document.getElementById('search-in')?.value || '';
+  const visto = document.getElementById('filter-visto')?.value || '';
+  const scoreRange = document.getElementById('filter-score')?.value || '';
+  let qs = `?page=${page}&limit=15`;
+  if (search) qs += `&search=${encodeURIComponent(search)}`;
+  if (visto) qs += `&visto=${encodeURIComponent(visto)}`;
+  if (scoreRange) { const [mn, mx] = scoreRange.split(','); qs += `&score_min=${mn}&score_max=${mx}`; }
+
+  document.getElementById('leads-table-wrap').innerHTML = '<div class="loading"><div class="spin"></div>Carregando leads...</div>';
+  const data = await apiFetch('/leads' + qs);
+  renderLeadsTable(data);
+}
+
+function renderLeadsTable({ leads, total, page, pages }) {
+  if (!leads?.length) {
+    document.getElementById('leads-table-wrap').innerHTML = '<div class="empty">Nenhum lead encontrado.</div>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  const rows = leads.map(l => {
+    const sc = scoreClass(l.score);
+    const dt = new Date(l.created_at).toLocaleDateString('pt-BR');
+    return `<tr>
+      <td class="nome">${l.nome || '—'}</td>
+      <td>${l.email}</td>
+      <td>${l.visto_recomendado || '—'}</td>
+      <td><span class="score-pill ${sc.cls}">${l.score ?? '—'} pts</span></td>
+      <td>${dt}</td>
+      <td><span class="hs-badge ${l.hubspot_synced ? 'hs-ok' : 'hs-no'}">${l.hubspot_synced ? 'Sincronizado' : 'Pendente'}</span></td>
+      <td><button class="view-btn" onclick="viewLead('${l.id}')">Ver</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('leads-table-wrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th>Data</th><th>HubSpot</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  // Pagination
+  const prevDis = page <= 1 ? 'disabled' : '';
+  const nextDis = page >= pages ? 'disabled' : '';
+  document.getElementById('pagination').innerHTML = `
+    <span class="pag-info">${total} lead(s) · Página ${page} de ${pages || 1}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" ${prevDis} onclick="loadLeads(${page - 1})">← Anterior</button>
+      <button class="pag-btn" ${nextDis} onclick="loadLeads(${page + 1})">Próxima →</button>
+    </div>`;
+}
+
+async function viewLead(id) {
+  document.getElementById('leads-list-view').style.display = 'none';
+  const dv = document.getElementById('leads-detail-view');
+  dv.style.display = '';
+  dv.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
+  const l = await apiFetch('/leads/' + id);
+  const sc = scoreClass(l.score);
+  const dt = new Date(l.created_at).toLocaleString('pt-BR');
+  const fields = [
+    ['Nome', l.nome], ['E-mail', l.email], ['WhatsApp', l.phone],
+    ['Visto Recomendado', l.visto_recomendado], ['Score', `${l.score} pts`],
+    ['Data', dt], ['HubSpot', l.hubspot_synced ? '✓ Sincronizado' : 'Pendente'],
+    ['HubSpot ID', l.hubspot_contact_id || '—'],
+  ];
+  dv.innerHTML = `
+    <button class="back-btn" onclick="backToList()">← Voltar para lista</button>
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy)">${l.nome || 'Lead'}</div>
+        <span class="score-pill ${sc.cls}" style="font-size:13px">${l.score ?? '—'} pts · ${sc.label}</span>
+      </div>
+      <div class="detail-grid">
+        ${fields.map(([lb, v]) => `<div class="detail-field"><div class="detail-label">${lb}</div><div class="detail-val">${v || '—'}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Perfil Completo (JSON)</div>
+      <div class="json-block">${JSON.stringify(l.profile || {}, null, 2)}</div>
+    </div>`;
+}
+
+function backToList() {
+  document.getElementById('leads-detail-view').style.display = 'none';
+  document.getElementById('leads-list-view').style.display = '';
+}
+
+function scoreClass(score) {
+  if (score >= 70) return { cls: 'sc-alta', label: 'Alta' };
+  if (score >= 40) return { cls: 'sc-mod', label: 'Moderada' };
+  if (score >= 0)  return { cls: 'sc-dev', label: 'Desenvolvimento' };
+  return { cls: 'sc-inc', label: 'Incompatível' };
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadLeads(1), 400);
+}
+
+// ── INIT ──
+loadStats();
+</script>
+</body>
+</html>

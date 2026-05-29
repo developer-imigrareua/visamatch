@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visa Match · Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0b1929;--navy2:#122238;--navy3:#1a3050;
+  --gold:#c9a84c;--gold2:#dfc06e;--gold4:#fdf8ec;
+  --cream:#faf8f3;--txt:#18202e;--txt2:#4a5568;--txt3:#94a3b8;
+  --green:#1d9e70;--red:#dc2626;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--navy);display:flex;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:20px;padding:40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.logo{text-align:center;margin-bottom:32px}
+.logo-ico{width:52px;height:52px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--navy);font-weight:600;margin:0 auto 12px}
+.logo-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy)}
+.logo-sub{font-size:11px;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:6px;letter-spacing:.04em}
+.field input{width:100%;border:1.5px solid rgba(11,25,41,.12);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--txt);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--gold)}
+.btn{width:100%;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:4px}
+.btn:hover{background:var(--navy3)}
+.btn:disabled{opacity:.5;cursor:default}
+.err{background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:9px;padding:10px 13px;font-size:12.5px;color:var(--red);margin-bottom:16px;display:none}
+.err.show{display:block}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-ico">V</div>
+    <div class="logo-title">Visa Match</div>
+    <div class="logo-sub">Painel Administrativo</div>
+  </div>
+  <div class="err" id="err">Senha incorreta. Tente novamente.</div>
+  <div class="field">
+    <label>SENHA DE ACESSO</label>
+    <input type="password" id="pwd" placeholder="••••••••" autocomplete="current-password"/>
+  </div>
+  <button class="btn" id="btn" onclick="login()">Entrar</button>
+</div>
+<script>
+const API = '/api/admin';
+
+document.getElementById('pwd').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+// Redireciona se já tem token válido
+if (localStorage.getItem('admin_token')) {
+  window.location.href = '/admin/dashboard.html';
+}
+
+async function login() {
+  const pwd = document.getElementById('pwd').value.trim();
+  if (!pwd) return;
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  err.classList.remove('show');
+  try {
+    const res = await fetch(`${API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    if (!res.ok) throw new Error();
+    const { token } = await res.json();
+    localStorage.setItem('admin_token', token);
+    window.location.href = '/admin/dashboard.html';
+  } catch {
+    err.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+</script>
+</body>
+</html>
