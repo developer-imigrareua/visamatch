@@ -741,6 +741,251 @@ function buildResult(visto, score, p) {
   </div>`;
 }
 
+// ─── FULL AI CARD (estilo relatório inline) ───
+function buildFullAICard(analysis) {
+  const isDual = analysis.isDual && analysis.resultados?.length > 1;
+  if (isDual) {
+    const [r1, r2] = analysis.resultados;
+    return `<div>
+      <div class="dual-tab-row" style="margin-bottom:8px">
+        <button class="dual-tab active" id="tab-full-1" onclick="switchFullTab(1)">${r1?.visto} · ${r1?.aprovacao_pct ?? r1?.score ?? 0}%</button>
+        <button class="dual-tab" id="tab-full-2" onclick="switchFullTab(2)">${r2?.visto} · ${r2?.aprovacao_pct ?? r2?.score ?? 0}%</button>
+      </div>
+      <div id="full-panel-1">${singleFullCard(r1)}</div>
+      <div id="full-panel-2" style="display:none">${singleFullCard(r2)}</div>
+    </div>`;
+  }
+  return singleFullCard(analysis.melhor || analysis.resultados?.[0] || analysis);
+}
+
+function switchFullTab(n) {
+  document.getElementById('full-panel-1').style.display = n===1?'':'none';
+  document.getElementById('full-panel-2').style.display = n===2?'':'none';
+  document.getElementById('tab-full-1').className='dual-tab'+(n===1?' active':'');
+  document.getElementById('tab-full-2').className='dual-tab'+(n===2?' active':'');
+}
+
+function singleFullCard(a) {
+  if (!a) return '';
+  const pct  = a.aprovacao_pct ?? a.score ?? 0;
+  const nome = S.profile.nomeCompleto || S.nome || '';
+  const prof = S.profile.profissao || '';
+  const gen  = S.profile.genero || '';
+
+  // Avatar por gênero
+  const avatar = gen === 'Mulher'
+    ? `<svg viewBox="0 0 64 64" width="54" height="54" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="32" fill="#1a3050"/>
+        <circle cx="32" cy="24" r="10" fill="#dfc06e"/>
+        <ellipse cx="32" cy="52" rx="16" ry="12" fill="#dfc06e"/>
+        <path d="M22 36 Q32 44 42 36" fill="#1a3050"/>
+      </svg>`
+    : gen === 'Homem'
+    ? `<svg viewBox="0 0 64 64" width="54" height="54" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="32" fill="#1a3050"/>
+        <circle cx="32" cy="24" r="10" fill="#dfc06e"/>
+        <ellipse cx="32" cy="52" rx="16" ry="12" fill="#dfc06e"/>
+        <rect x="20" y="14" width="24" height="6" rx="3" fill="#c9a84c"/>
+      </svg>`
+    : `<div style="width:54px;height:54px;background:linear-gradient(135deg,var(--navy3),var(--navy4));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold2);font-weight:700">${nome.charAt(0).toUpperCase()}</div>`;
+
+  // Classificação
+  const clsMap = {
+    'Alta':               { bg:'rgba(29,158,112,.1)',  cor:'#065f46', brd:'rgba(29,158,112,.25)', ico:'✓',  pctColor:'#1d9e70' },
+    'Moderada':           { bg:'rgba(217,119,6,.09)',  cor:'#78350f', brd:'rgba(217,119,6,.22)',  ico:'◑',  pctColor:'#d97706' },
+    'Em Desenvolvimento': { bg:'rgba(11,25,41,.05)',   cor:'#4a5568', brd:'rgba(11,25,41,.12)',   ico:'○',  pctColor:'#94a3b8' },
+    'Incompatível':       { bg:'rgba(220,38,38,.07)',  cor:'#7f1d1d', brd:'rgba(220,38,38,.18)',  ico:'✕',  pctColor:'#dc2626' },
+  };
+  const cls = clsMap[a.classificacao] || clsMap['Em Desenvolvimento'];
+
+  // Destaques badges
+  const icons = ['🏆','🥇','🌟','🎯','💡','⚡'];
+  const destaques = (a.destaques||[]).map((d,i)=>
+    `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);border-radius:20px;padding:5px 12px;font-size:11.5px;font-weight:600;color:var(--gold3);margin:3px">
+      ${icons[i%icons.length]} ${d}
+    </span>`
+  ).join('');
+
+  // Critérios
+  const crits = (a.criterios||[]).map(c => {
+    const stMap = { atendido:['✓','#065f46','rgba(29,158,112,.08)','rgba(29,158,112,.2)'], fortalecer:['⚡','#78350f','rgba(217,119,6,.08)','rgba(217,119,6,.2)'], construir:['◯','#7f1d1d','rgba(220,38,38,.06)','rgba(220,38,38,.18)'] };
+    const [ico,cor,bg,brd] = stMap[c.status]||stMap.construir;
+    const stars = Array.from({length:5},(_,i)=>`<span style="color:${i<(c.estrelas||0)?'var(--gold)':'rgba(11,25,41,.12)'}">★</span>`).join('');
+    const evids = (c.evidencias||[]).map(e=>`<div style="font-size:11.5px;color:var(--txt2);padding-left:10px;position:relative">· ${e}</div>`).join('');
+    return `<tr style="border-bottom:1px solid rgba(11,25,41,.05)">
+      <td style="padding:10px 8px;width:28px;vertical-align:top">
+        <div style="width:26px;height:26px;border-radius:50%;background:${bg};border:1px solid ${brd};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${cor}">${c.numero||''}</div>
+      </td>
+      <td style="padding:10px 8px;vertical-align:top">
+        <div style="font-size:12.5px;font-weight:600;color:var(--navy);margin-bottom:3px">${c.nome}</div>
+        ${evids}
+      </td>
+      <td style="padding:10px 8px;vertical-align:top;text-align:center;white-space:nowrap">
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700;background:${bg};color:${cor};border:1px solid ${brd}">${ico} ${{atendido:'Atendido',fortalecer:'Fortalecer',construir:'Construir'}[c.status]||c.status}</span>
+      </td>
+      <td style="padding:10px 8px;vertical-align:top;text-align:center;font-size:13px">${stars}</td>
+    </tr>`;
+  }).join('');
+
+  // Documentação
+  const docs = (a.documentacao_principal||[]).map((d,i)=>
+    `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--smoke);border-radius:7px;font-size:12px;color:var(--txt2)">
+      <div style="width:18px;height:18px;background:var(--navy);color:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px">${String.fromCharCode(65+i)}</div>
+      ${d}
+    </div>`
+  ).join('');
+
+  // Plano de ação
+  const acoes = (a.plano_acao||a.proximos_passos||[]).map((ac,i)=>
+    `<div style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;background:var(--gold4);border:1px solid rgba(201,168,76,.18);border-radius:8px">
+      <div style="width:20px;height:20px;background:var(--navy);color:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${i+1}</div>
+      <div style="font-size:12.5px;color:var(--txt);line-height:1.5">${ac}</div>
+    </div>`
+  ).join('');
+
+  // Custo
+  const custoItens = (a.custo_estimado?.itens||[]).map(it=>
+    `<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--txt2);padding:4px 0;border-bottom:1px solid rgba(11,25,41,.05)">
+      <span>${it.nome}</span><span style="font-weight:600;color:var(--navy)">${it.valor}</span>
+    </div>`
+  ).join('');
+
+  return `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(11,25,41,.1)">
+
+    <!-- HEADER -->
+    <div style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);padding:22px 24px;display:flex;align-items:center;gap:16px;position:relative">
+      <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(201,168,76,.1) 0%,transparent 70%);border-radius:50%"></div>
+      <div style="flex-shrink:0;border-radius:50%;overflow:hidden;border:2px solid rgba(201,168,76,.3)">${avatar}</div>
+      <div style="flex:1">
+        <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold2);margin-bottom:7px">✦ Análise de Elegibilidade</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#fff;line-height:1;font-weight:700">${a.visto}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin:3px 0 6px">${getSubtituloVisto(a.visto)}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--gold2)">${nome}</div>
+        <div style="font-size:11.5px;color:rgba(255,255,255,.4)">${prof}</div>
+      </div>
+      <div style="text-align:center;flex-shrink:0">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">Análise de Aprovação</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:48px;color:#fff;line-height:1;font-weight:700">${pct}%</div>
+        <div style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);margin-top:5px">${cls.ico} ${a.classificacao}</div>
+      </div>
+    </div>
+
+    <!-- DESTAQUES -->
+    ${destaques ? `<div style="background:var(--navy2);padding:12px 22px;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid rgba(255,255,255,.06)">${destaques}</div>` : ''}
+
+    <!-- BODY: 2 COLUNAS -->
+    <div style="display:grid;grid-template-columns:1fr 250px">
+
+      <!-- COLUNA PRINCIPAL -->
+      <div style="padding:22px 24px;border-right:1px solid rgba(11,25,41,.07)">
+
+        <!-- Critérios -->
+        ${crits ? `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(11,25,41,.07)">Os ${a.criterios.length} Critérios USCIS — Análise do Perfil</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:22px">
+          <thead><tr>
+            <th style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding:6px 8px;text-align:left;border-bottom:2px solid rgba(11,25,41,.07)">#</th>
+            <th style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding:6px 8px;text-align:left;border-bottom:2px solid rgba(11,25,41,.07)">Critério · Evidências</th>
+            <th style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding:6px 8px;text-align:center;border-bottom:2px solid rgba(11,25,41,.07)">Status</th>
+            <th style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding:6px 8px;text-align:center;border-bottom:2px solid rgba(11,25,41,.07)">Força</th>
+          </tr></thead>
+          <tbody>${crits}</tbody>
+        </table>` : ''}
+
+        <!-- Documentação -->
+        ${docs ? `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(11,25,41,.07)">Documentação Principal</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:22px">${docs}</div>` : ''}
+
+        <!-- Plano de ação -->
+        ${acoes ? `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(11,25,41,.07)">Plano de Ação — Próximas 2–4 Semanas</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:22px">${acoes}</div>` : ''}
+
+        <!-- Disclaimer -->
+        <div style="background:rgba(11,25,41,.03);border:1px solid rgba(11,25,41,.08);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--txt3);line-height:1.65">
+          ⚖️ <b style="color:var(--txt2)">DISCLAIMER:</b> O conteúdo desta análise tem caráter estritamente informativo e não constitui aconselhamento jurídico. Receber este relatório não cria relação advogado-cliente. Para orientação jurídica específica, agende uma consulta com nossos especialistas.
+        </div>
+      </div>
+
+      <!-- COLUNA LATERAL -->
+      <div style="padding:20px 18px;background:var(--cream);display:flex;flex-direction:column;gap:14px">
+
+        <!-- Fundamento Legal -->
+        ${a.fundamento_legal ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">⚖️ Fundamento Legal</div>
+          ${[['Base',a.fundamento_legal.base],['Regulamento',a.fundamento_legal.regulamento],['Formulário',a.fundamento_legal.formulario]].map(([l,v])=>v?`<div style="margin-bottom:7px"><div style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)">${l}</div><div style="font-size:12px;font-weight:600;color:var(--navy)">${v}</div></div>`:''). join('')}
+        </div>` : ''}
+
+        <!-- Scorecard -->
+        ${a.scorecard ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">✦ Scorecard Final</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid rgba(201,168,76,.3);flex-shrink:0">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--gold2);line-height:1">${a.scorecard.atendidos}/${a.scorecard.total}</div>
+              <div style="font-size:7.5px;color:rgba(255,255,255,.35);letter-spacing:.05em">CRITÉRIOS</div>
+            </div>
+            <div>
+              <div style="font-size:12.5px;font-weight:600;color:var(--navy)">${a.scorecard.atendidos} de ${a.scorecard.total} atendidos</div>
+              <div style="font-size:11px;color:var(--txt3);margin-top:2px">Mínimo: ${a.scorecard.minimo_exigido||3}</div>
+              <div style="display:inline-block;margin-top:5px;background:rgba(29,158,112,.09);border:1px solid rgba(29,158,112,.2);border-radius:7px;padding:2px 8px;font-size:10.5px;font-weight:600;color:var(--green)">✦ Exige-se apenas ${a.scorecard.minimo_exigido||3}</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- Veredicto -->
+        ${a.veredicto ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">📋 Veredicto</div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.65;font-style:italic">${a.veredicto}</div>
+          ${a.estrategia_adicional ? `<div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(11,25,41,.07);font-size:11.5px;color:var(--txt2);line-height:1.6">${a.estrategia_adicional}</div>` : ''}
+        </div>` : ''}
+
+        <!-- Custo -->
+        ${a.custo_estimado?.itens?.length ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">💰 Custo Total Estimado</div>
+          ${custoItens}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--navy);border-radius:7px;margin-top:8px">
+            <span style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.05em">Total</span>
+            <span style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--gold2);font-weight:700">${a.custo_estimado.total}</span>
+          </div>
+        </div>` : ''}
+
+        <!-- Processo -->
+        ${a.processo ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">⏱ Estrutura do Processo</div>
+          ${[['Prazo Regular',a.processo.prazo_regular],['Premium Processing',a.processo.prazo_premium],['Validade',a.processo.validade],['Quem peticiona',a.processo.quem_peticiona]].filter(r=>r[1]).map(r=>`
+            <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:6px">
+              <span style="color:var(--txt3)">${r[0]}</span>
+              <span style="font-weight:600;color:var(--navy);text-align:right;max-width:130px">${r[1]}</span>
+            </div>`).join('')}
+        </div>` : ''}
+
+        <!-- Parceiro -->
+        <div style="border-radius:10px;padding:14px;${a.recomendacao_parceiro==='liv'?'background:linear-gradient(135deg,var(--navy2),var(--navy3));border:1px solid rgba(201,168,76,.2)':'background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)'}">
+          <div style="font-size:20px;margin-bottom:6px">${a.recomendacao_parceiro==='liv'?'⚖️':'🎓'}</div>
+          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Law — Parceiro Oficial':'Phoenix — Fortalecimento de Perfil'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Escritório licenciado nos EUA, especializado em ${a.visto}.`:'Especialista em melhoria de perfil para imigração.'}</div>
+          <button onclick="alert('Em produção: redirecionaria para o parceiro.')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'var(--gold)':'rgba(255,255,255,.15)'};color:${a.recomendacao_parceiro==='liv'?'var(--navy)':'#fff'};border:none;border-radius:7px;padding:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+            ${a.recomendacao_parceiro==='liv'?'Agendar avaliação →':'Conhecer a Phoenix →'}
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FOOTER CTAs -->
+    <div style="padding:16px 24px;background:#fff;border-top:1px solid rgba(11,25,41,.06);display:flex;gap:10px">
+      <button class="cta1" onclick="window.open('report.html','_blank')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px">
+        📄 Ver Relatório Completo (PDF)
+      </button>
+      <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')" style="white-space:nowrap">
+        📧 Receber por e-mail
+      </button>
+    </div>
+  </div>`;
+}
+
+function getSubtituloVisto(v) {
+  return {'EB-2 NIW':'Green Card por Interesse Nacional','EB-1A':'Habilidade Extraordinária — Green Card','O-1':'Habilidade Extraordinária — Trabalho','L-1':'Transferência Intraempresarial','E-2':'Investidor por Tratado','Family Based':'Baseado em Família','H-1B':'Trabalhador Especializado'}[v]||'Análise de Pré-Elegibilidade';
+}
+
 // ─── AI SUMMARY CARD ───
 function buildAISummaryCard(analysis) {
   const resultados = analysis.resultados || [analysis.melhor];
@@ -927,7 +1172,15 @@ const flows = {
   async contact_name() {
     await think(500);
     await botMsg('Ótimo! E qual é o seu <strong>nome completo</strong>?');
-    waitInput(val => { S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_phone'); });
+    waitInput(val => { S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_gender'); });
+  },
+
+  async contact_gender() {
+    await think(300);
+    await botMsg(`Prazer, <strong>${S.nome}</strong>! Como você se identifica?`);
+    showOpts(['Homem','Mulher','Prefiro não informar'], val => {
+      userMsg(val); S.profile.genero = val; go('contact_phone');
+    });
   },
 
   async contact_phone() {
@@ -2024,68 +2277,75 @@ const flows = {
     ti.disabled = true; sbBtn.disabled = true;
     clearInputHandlers();
 
-    await think(800);
-    const isDual = S.vistos && S.vistos.length === 2;
-    await botMsg(`Perfeito, <strong>${S.nome}</strong>! Estou processando sua análise com IA — isso leva alguns segundos.`);
+    await think(600);
 
-    const typRow = showTyping();
+    // ── Loading animado com expectativa ──
+    const loadingSteps = [
+      { ico: '🔍', txt: `Analisando o perfil de <strong>${S.nome}</strong>...` },
+      { ico: '⚖️', txt: 'Verificando critérios oficiais do USCIS...' },
+      { ico: '📊', txt: `Calculando score de elegibilidade para <strong>${visto}</strong>...` },
+      { ico: '✍️', txt: 'Gerando análise personalizada com IA...' },
+      { ico: '📄', txt: 'Preparando seu relatório completo...' },
+    ];
+
+    // Mostra primeiro passo
+    await botMsg(`${loadingSteps[0].ico} ${loadingSteps[0].txt}`);
+
+    // Inicia fetch em paralelo com os loadings
+    const analyzePromise = fetch(`${API_BASE}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, visto: S.visto, vistos: S.vistos, profile: S.profile })
+    });
+
+    // Mostra os demais passos enquanto aguarda
+    for (let i = 1; i < loadingSteps.length; i++) {
+      await pause(1800);
+      const s = loadingSteps[i];
+      const typRow = showTyping();
+      await pause(700);
+      rmTyping();
+      await botMsg(`${s.ico} ${s.txt}`);
+    }
 
     try {
-      const res = await fetch(`${API_BASE}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome: S.nome,
-          email: S.email,
-          phone: S.phone,
-          visto: S.visto,
-          vistos: S.vistos,
-          profile: S.profile
-        })
-      });
-
-      rmTyping();
-
+      const res = await analyzePromise;
       if (!res.ok) throw new Error('API error ' + res.status);
       const analysis = await res.json();
 
-      // Armazena para o relatório
+      // Armazena para relatório PDF
       localStorage.setItem('visamatch_report', JSON.stringify({
         ...analysis,
-        candidato: { nome: S.nome, email: S.email, profissao: S.profile.profissao }
+        candidato: { nome: S.profile.nomeCompleto || S.nome, email: S.email, profissao: S.profile.profissao, genero: S.profile.genero }
       }));
 
-      // Score para a sidebar
       const bestScore = analysis.melhor?.score ?? 0;
       setSideBar(bestScore);
       if (analysis.melhor?.visto) setSideVisto(analysis.melhor.visto);
 
-      await botMsg(`Sua análise de pré-elegibilidade está pronta! ${isDual ? 'Avaliamos os dois caminhos mais indicados para o seu perfil.' : `Analisei seu perfil para o <strong>${visto}</strong>.`}`);
-      await pause(400);
+      await pause(600);
+      const typRow2 = showTyping(); await pause(900); rmTyping();
+      await botMsg(`✅ Análise concluída! Aqui está o relatório completo de pré-elegibilidade de <strong>${S.nome}</strong>:`);
+      await pause(500);
 
-      // Card resumo no chat
       const row = document.createElement('div');
       row.className = 'row';
       row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
-        <div class="msg-wrap" style="max-width:92%">${buildAISummaryCard(analysis)}</div>`;
+        <div class="msg-wrap" style="max-width:96%">${buildFullAICard(analysis)}</div>`;
       chat.appendChild(row);
       chat.scrollTop = 9999;
 
     } catch (err) {
-      rmTyping();
       console.warn('Análise IA indisponível, usando scoring local:', err);
-
-      // ── Fallback: scoring local ──
       const score = calcScore(visto, S.profile);
       setSideBar(score);
-
-      await botMsg(`<strong>${S.nome}</strong>, sua análise de pré-elegibilidade está pronta! ${isDual ? 'Avaliamos os dois caminhos mais adequados para o seu perfil:' : `Com base em todas as respostas, preparei sua análise para o <strong>${visto}</strong>:`}`);
+      const typRow2 = showTyping(); await pause(900); rmTyping();
+      await botMsg(`Análise concluída! Aqui está o resultado para <strong>${S.nome}</strong>:`);
       await pause(400);
-
       const row = document.createElement('div');
       row.className = 'row';
       row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
-        <div class="msg-wrap" style="max-width:90%">${buildResult(visto, score, S.profile)}</div>`;
+        <div class="msg-wrap" style="max-width:92%">${buildResult(visto, score, S.profile)}</div>`;
       chat.appendChild(row);
       chat.scrollTop = 9999;
     }
