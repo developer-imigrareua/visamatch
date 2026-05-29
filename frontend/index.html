@@ -1166,13 +1166,36 @@ const flows = {
     setSideStep(0); setProgress(5);
     await think(500);
     await botMsg('Para enviar sua análise completa, preciso do seu <strong>e-mail</strong>. Qual é?');
-    waitInput(val => { S.email = val; go('contact_name'); });
+    waitInput(val => {
+      // Validação de e-mail
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+      if (!emailRegex.test(val)) {
+        userMsg(val);
+        botMsg('⚠️ Esse e-mail não parece válido. Por favor, digite um e-mail com o formato <strong>nome@dominio.com</strong>.');
+        waitInput(v2 => {
+          if (!emailRegex.test(v2)) { userMsg(v2); botMsg('⚠️ E-mail inválido. Tente novamente.'); waitInput(v3 => { S.email = v3; go('contact_name'); }); }
+          else { S.email = v2; go('contact_name'); }
+        });
+        return;
+      }
+      S.email = val; go('contact_name');
+    });
   },
 
   async contact_name() {
     await think(500);
-    await botMsg('Ótimo! E qual é o seu <strong>nome completo</strong>?');
-    waitInput(val => { S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_gender'); });
+    await botMsg('Ótimo! E qual é o seu <strong>nome completo</strong>? (nome e sobrenome)');
+    waitInput(val => {
+      // Validação: pelo menos 2 palavras com 2+ caracteres cada
+      const partes = val.trim().split(/\s+/).filter(p => p.length >= 2);
+      if (partes.length < 2) {
+        userMsg(val);
+        botMsg('⚠️ Por favor, informe seu <strong>nome e sobrenome</strong> completos.');
+        waitInput(v2 => { S.nome = fml(v2); S.profile.nomeCompleto = v2; go('contact_gender'); });
+        return;
+      }
+      S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_gender');
+    });
   },
 
   async contact_gender() {
@@ -1187,8 +1210,10 @@ const flows = {
     await think(500);
     await botMsg(`Prazer, <strong>${S.nome}</strong>! Qual é o seu <strong>WhatsApp</strong>? Selecione o país e digite o número:`);
     await pause(200);
-    // Campo especial de telefone com seletor de país
+    // Campo especial de telefone — esconde input principal
     clearInputHandlers();
+    ti.disabled = true;
+    document.querySelector('.input-zone').style.display = 'none';
     const phoneRow = document.createElement('div');
     phoneRow.id = 'phone-widget';
     phoneRow.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
@@ -1242,6 +1267,8 @@ const flows = {
       if (!num) return;
       const full = `${ddi} ${num}`;
       phoneRow.remove();
+      document.querySelector('.input-zone').style.display = '';
+      ti.disabled = false;
       S.phone = full;
       userMsg(full);
       // Salva lead parcial após ter email + nome + telefone
@@ -1682,6 +1709,8 @@ const flows = {
     await botMsg(`Ótimo, ${S.nome}! Agora vou coletar algumas informações pessoais. Qual é a sua <strong>data de nascimento</strong>?`);
     await pause(200);
     clearInputHandlers();
+    ti.disabled = true;
+    document.querySelector('.input-zone').style.display = 'none';
     const dateRow = document.createElement('div');
     dateRow.id = 'date-widget';
     dateRow.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
@@ -1713,6 +1742,8 @@ const flows = {
       const val = document.getElementById('date-in').value.trim();
       if (val.length < 8) return;
       dateRow.remove();
+      document.querySelector('.input-zone').style.display = '';
+      ti.disabled = false;
       S.profile.dataNasc = val;
       userMsg(val);
       go('pi_local');
