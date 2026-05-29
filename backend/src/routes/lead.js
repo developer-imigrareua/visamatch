@@ -33,49 +33,48 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: 'Erro ao salvar lead.' });
   }
 
-  // 2. Tentar enviar ao HubSpot
+  // 2. Envio ao HubSpot (desativado — ativar quando campos customizados estiverem criados)
   let hubspotId = null;
-  try {
-    const hsRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        properties: {
-          email,
-          firstname: nome?.split(' ')[0] || '',
-          lastname: nome?.split(' ').slice(1).join(' ') || '',
-          phone,
-          // Campos customizados (criar no HubSpot antes)
-          visamatch_visto_recomendado: visto,
-          visamatch_score: String(score),
-          visamatch_grau_formacao: profile?.grauFormacao || '',
-          visamatch_profissao: profile?.profissao || '',
-          visamatch_caminho: profile?.caminhoPrincipal || '',
-          visamatch_fundos: profile?.fundos || '',
-          visamatch_planos_eua: profile?.planosEUA || '',
-        }
-      })
-    });
+  const HUBSPOT_ENABLED = false;
 
-    if (hsRes.ok) {
-      const hsData = await hsRes.json();
-      hubspotId = hsData.id;
+  if (HUBSPOT_ENABLED) {
+    try {
+      const hsRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          properties: {
+            email,
+            firstname: nome?.split(' ')[0] || '',
+            lastname: nome?.split(' ').slice(1).join(' ') || '',
+            phone,
+            visamatch_visto_recomendado: visto,
+            visamatch_score: String(score),
+            visamatch_grau_formacao: profile?.grauFormacao || '',
+            visamatch_profissao: profile?.profissao || '',
+            visamatch_caminho: profile?.caminhoPrincipal || '',
+            visamatch_fundos: profile?.fundos || '',
+            visamatch_planos_eua: profile?.planosEUA || '',
+          }
+        })
+      });
 
-      // Atualizar Supabase com status de sincronização
-      await supabase
-        .from('leads')
-        .update({ hubspot_synced: true, hubspot_contact_id: hubspotId })
-        .eq('id', savedLead.id);
-    } else {
-      const hsErr = await hsRes.text();
-      console.error('HubSpot error:', hsErr);
+      if (hsRes.ok) {
+        const hsData = await hsRes.json();
+        hubspotId = hsData.id;
+        await supabase
+          .from('leads')
+          .update({ hubspot_synced: true, hubspot_contact_id: hubspotId })
+          .eq('id', savedLead.id);
+      } else {
+        console.error('HubSpot error:', await hsRes.text());
+      }
+    } catch (err) {
+      console.error('HubSpot request failed:', err);
     }
-  } catch (err) {
-    console.error('HubSpot request failed:', err);
-    // Não retorna erro — o lead já foi salvo no Supabase
   }
 
   res.json({
