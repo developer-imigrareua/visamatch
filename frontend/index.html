@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visa Match — ImigrarEUA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0b1929;--navy2:#122238;--navy3:#1a3050;--navy4:#1f3d65;
+  --gold:#c9a84c;--gold2:#dfc06e;--gold3:#f5e6c0;--gold4:#fdf8ec;
+  --cream:#faf8f3;--smoke:#f2ede4;--mist:#e8e2d8;
+  --txt:#18202e;--txt2:#4a5568;--txt3:#94a3b8;
+  --green:#1d9e70;--amber:#d97706;--red:#dc2626;--blue:#2563eb;
+  --r:18px;--sh:0 4px 24px rgba(11,25,41,.1);--sh2:0 12px 48px rgba(11,25,41,.18)
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--txt);overflow:hidden}
+
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:290px 1fr;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--navy);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sb-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 15% 10%,rgba(201,168,76,.14) 0%,transparent 55%),radial-gradient(ellipse at 85% 90%,rgba(26,48,80,.7) 0%,transparent 55%);pointer-events:none}
+.sb-inner{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;padding:28px 24px}
+
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:36px}
+.brand-ico{width:42px;height:42px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy);font-weight:600;flex-shrink:0}
+.brand-name{font-family:'Cormorant Garamond',serif;font-size:17px;color:#fff;line-height:1.2}
+.brand-by{font-size:10px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+
+.sb-section{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);font-weight:600;margin-bottom:12px}
+
+.steps{display:flex;flex-direction:column;gap:3px;flex:1}
+.step{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;transition:all .3s}
+.step.active{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.22)}
+.step.done{opacity:.45}
+.step.idle{opacity:.22}
+.step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;transition:all .3s}
+.step.active .step-num{background:var(--gold);color:var(--navy)}
+.step.done .step-num{background:rgba(201,168,76,.18);color:var(--gold);font-size:13px}
+.step.idle .step-num{background:rgba(255,255,255,.04);color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.08)}
+.step-label{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.8);line-height:1.2}
+.step.active .step-label{color:#fff}
+.step-desc{font-size:10px;color:rgba(255,255,255,.3);margin-top:1px}
+
+.sb-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:15px;margin-top:24px}
+.sb-card-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:7px}
+.sb-visto{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--gold2);min-height:22px;transition:all .4s}
+.sb-bar-bg{height:3px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:9px}
+.sb-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1);width:0%}
+
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:var(--cream)}
+.main-head{padding:18px 28px;background:#fff;border-bottom:1px solid rgba(11,25,41,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.head-title{font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--navy)}
+.head-sub{font-size:11.5px;color:var(--txt3);margin-top:2px}
+.online-badge{display:flex;align-items:center;gap:6px;background:rgba(29,158,112,.07);border:1px solid rgba(29,158,112,.18);border-radius:20px;padding:5px 13px;font-size:11.5px;color:var(--green);font-weight:500}
+.green-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── CHAT ── */
+.chat{flex:1;overflow-y:auto;padding:28px 28px 12px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth}
+.chat::-webkit-scrollbar{width:3px}
+.chat::-webkit-scrollbar-thumb{background:rgba(11,25,41,.1);border-radius:3px}
+
+/* ── MESSAGES ── */
+.row{display:flex;gap:12px;align-items:flex-end;animation:msgIn .35s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.row.user{flex-direction:row-reverse}
+.ava{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.ava-bot{background:linear-gradient(135deg,var(--navy2),var(--navy3));border:2px solid rgba(201,168,76,.28)}
+.ava-bot-t{font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px}
+.ava-user{background:var(--navy);color:rgba(255,255,255,.6);font-size:10px}
+.msg-wrap{max-width:70%}
+.bubble{padding:12px 16px;border-radius:17px;font-size:13.5px;line-height:1.65}
+.bot-b{background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:4px 17px 17px 17px;color:var(--txt);box-shadow:0 2px 10px rgba(11,25,41,.06)}
+.user-b{background:var(--navy);border-radius:17px 17px 4px 17px;color:rgba(255,255,255,.9)}
+.bubble b,.bubble strong{font-weight:600;color:var(--navy)}
+.user-b b,.user-b strong{color:var(--gold2)}
+.ts{font-size:10px;color:var(--txt3);margin-top:4px;padding:0 3px}
+.row.user .ts{text-align:right}
+
+/* ── TYPING ── */
+.typing-bub{background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:4px 17px 17px 17px;padding:13px 17px;display:inline-flex;gap:5px;align-items:center;box-shadow:0 2px 10px rgba(11,25,41,.05)}
+.typing-bub span{width:6px;height:6px;background:var(--txt3);border-radius:50%;animation:tb 1.2s infinite}
+.typing-bub span:nth-child(2){animation-delay:.15s}
+.typing-bub span:nth-child(3){animation-delay:.3s}
+@keyframes tb{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+/* ── FACT CARD ── */
+.fact-card{background:linear-gradient(135deg,var(--navy2),var(--navy3));border:1px solid rgba(201,168,76,.2);border-radius:14px;padding:14px 17px;margin:4px 0;font-size:13px;color:rgba(255,255,255,.82);line-height:1.6}
+.fact-card .fact-ico{font-size:16px;margin-bottom:6px;display:block}
+.fact-card b{color:var(--gold2)}
+
+/* ── ALERT ── */
+.alert{background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.18);border-radius:12px;padding:13px 16px;font-size:13px;color:#7c4d09;line-height:1.6;margin:2px 0}
+.alert b{color:#a05d08}
+
+/* ── OPTIONS ── */
+.opts-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;padding-left:44px;animation:optIn .3s ease .08s both}
+@keyframes optIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.opt{background:#fff;border:1.5px solid rgba(11,25,41,.11);border-radius:22px;padding:8px 17px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--navy2);font-weight:500;transition:all .17s ease;white-space:nowrap}
+.opt:hover{border-color:var(--gold);background:var(--gold4);color:var(--navy);transform:translateY(-2px);box-shadow:0 4px 12px rgba(201,168,76,.18)}
+.opt:active{transform:scale(.97)}
+.opt.sel{background:var(--gold4);border-color:var(--gold);color:var(--navy);opacity:.55;pointer-events:none}
+
+/* ── INPUT ── */
+.input-zone{padding:13px 28px 18px;background:#fff;border-top:1px solid rgba(11,25,41,.05);flex-shrink:0}
+.input-row{display:flex;gap:9px;align-items:center;background:var(--smoke);border:1.5px solid rgba(11,25,41,.07);border-radius:13px;padding:5px 5px 5px 16px;transition:border-color .2s,background .2s}
+.input-row:focus-within{border-color:rgba(201,168,76,.45);background:#fff}
+.txt-in{flex:1;background:none;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--txt);padding:6px 0}
+.txt-in::placeholder{color:var(--txt3)}
+.in-btn{width:38px;height:38px;border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .17s;flex-shrink:0}
+.send-b{background:var(--navy)}
+.send-b:hover{background:var(--navy3);transform:scale(1.05)}
+.send-b:active{transform:scale(.95)}
+.send-b svg{width:15px;height:15px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mic-b{background:var(--smoke);border:1.5px solid rgba(11,25,41,.1)}
+.mic-b:hover{background:var(--mist);border-color:rgba(201,168,76,.4)}
+.mic-b svg{width:14px;height:14px;fill:none;stroke:var(--txt2);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mic-b.recording{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3);animation:recPulse 1s infinite}
+.mic-b.recording svg{stroke:var(--red)}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
+.in-hint{font-size:10.5px;color:var(--txt3);margin-top:7px;text-align:center}
+
+/* ── PROGRESS BAR ── */
+.prog-strip{height:2px;background:rgba(11,25,41,.05);flex-shrink:0}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .6s ease;width:0%}
+
+/* ── POPUP TOOLTIP ── */
+.popup-overlay{position:fixed;inset:0;background:rgba(11,25,41,.45);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeO .2s ease}
+@keyframes fadeO{from{opacity:0}to{opacity:1}}
+.popup{background:#fff;border-radius:20px;padding:28px 30px;max-width:480px;width:90%;box-shadow:var(--sh2);animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.popup-ico{font-size:32px;margin-bottom:12px}
+.popup-title{font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--navy);margin-bottom:8px}
+.popup-body{font-size:13.5px;color:var(--txt2);line-height:1.7;margin-bottom:20px}
+.popup-body b{color:var(--navy);font-weight:600}
+.popup-close{width:100%;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .2s}
+.popup-close:hover{background:var(--navy3)}
+
+/* ── RESULT ── */
+.res-card{background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:20px;overflow:hidden;box-shadow:var(--sh2);animation:msgIn .4s ease both}
+.res-head{background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);padding:24px 26px;position:relative;overflow:hidden}
+.res-head::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:radial-gradient(circle,rgba(201,168,76,.13) 0%,transparent 70%);border-radius:50%}
+.res-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,.13);border:1px solid rgba(201,168,76,.28);border-radius:20px;padding:4px 12px;font-size:10.5px;color:var(--gold2);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:11px}
+.res-visto{font-family:'Cormorant Garamond',serif;font-size:27px;color:#fff;margin-bottom:5px;line-height:1.15}
+.res-nome{font-size:12.5px;color:rgba(255,255,255,.45)}
+.res-circle{position:absolute;top:20px;right:26px;width:78px;height:78px;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(201,168,76,.28);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.res-pts{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--gold2);line-height:1}
+.res-pts-lbl{font-size:9.5px;color:rgba(255,255,255,.38);letter-spacing:.05em}
+.res-body{padding:22px 26px}
+.res-cls{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border-radius:9px;font-size:13px;font-weight:600;margin-bottom:18px}
+.cls-forte{background:rgba(29,158,112,.09);color:#0f6b49;border:1px solid rgba(29,158,112,.18)}
+.cls-mod{background:rgba(217,119,6,.09);color:#8a4e04;border:1px solid rgba(217,119,6,.18)}
+.cls-dev{background:rgba(11,25,41,.05);color:var(--txt2);border:1px solid rgba(11,25,41,.09)}
+.cls-inc{background:rgba(220,38,38,.07);color:#8b1a1a;border:1px solid rgba(220,38,38,.13)}
+.sec-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px}
+.crit-list{display:flex;flex-direction:column;gap:7px;margin-bottom:20px}
+.crit-item{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:9px;background:var(--smoke);font-size:13px}
+.crit-ico{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.ic-ok{background:rgba(29,158,112,.12);color:var(--green)}
+.ic-warn{background:rgba(217,119,6,.1);color:var(--amber)}
+.ic-no{background:rgba(220,38,38,.08);color:var(--red)}
+.crit-n{flex:1;color:var(--txt)}
+.crit-s{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:11px}
+.s-ok{background:rgba(29,158,112,.09);color:var(--green)}
+.s-warn{background:rgba(217,119,6,.09);color:var(--amber)}
+.s-no{background:rgba(220,38,38,.07);color:var(--red)}
+.verdict{background:linear-gradient(135deg,rgba(11,25,41,.025),rgba(201,168,76,.035));border:1px solid rgba(201,168,76,.13);border-radius:13px;padding:17px;margin-bottom:18px}
+.verdict p{font-size:13.5px;line-height:1.75;color:var(--txt2)}
+.actions{display:flex;flex-direction:column;gap:7px;margin-bottom:20px}
+.action{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border-radius:9px;background:var(--cream);border:1px solid rgba(11,25,41,.05)}
+.act-n{width:20px;height:20px;background:var(--navy);color:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+.act-t{font-size:13px;color:var(--txt2);line-height:1.55}
+.ctas{display:flex;gap:10px;margin-bottom:14px}
+.cta1{flex:1;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:13px 18px;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center}
+.cta1:hover{background:var(--navy3);transform:translateY(-1px)}
+.cta2{background:#fff;color:var(--txt2);border:1.5px solid rgba(11,25,41,.11);border-radius:11px;padding:13px 18px;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.cta2:hover{border-color:var(--gold);color:var(--navy)}
+.disclaimer{font-size:11px;color:var(--txt3);text-align:center;line-height:1.65}
+
+/* ── UNDO BUTTON ── */
+.undo-row{display:flex;justify-content:flex-end;padding:0 2px;animation:optIn .25s ease both}
+.undo-btn{background:none;border:1px solid rgba(11,25,41,.12);border-radius:18px;padding:5px 13px;font-size:11.5px;font-family:'DM Sans',sans-serif;color:var(--txt3);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .17s}
+.undo-btn:hover{border-color:var(--amber);color:var(--amber);background:rgba(217,119,6,.05)}
+.undo-btn svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* ── DUAL RESULT ── */
+.dual-results{display:flex;flex-direction:column;gap:16px}
+.dual-tab-row{display:flex;gap:8px;margin-bottom:4px}
+.dual-tab{flex:1;padding:9px 14px;border-radius:10px;font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:1.5px solid rgba(11,25,41,.1);background:#fff;color:var(--txt2);transition:all .2s;text-align:center}
+.dual-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* ── LEGAL DISCLAIMER ── */
+.legal-disc{background:rgba(11,25,41,.03);border:1px solid rgba(11,25,41,.08);border-radius:12px;padding:14px 16px;font-size:11.5px;color:var(--txt3);line-height:1.7;margin-bottom:16px}
+.legal-disc b{color:var(--txt2)}
+/* ── PARTNER CTA ── */
+.partner-cta{border-radius:12px;padding:15px 17px;margin-bottom:10px;display:flex;align-items:flex-start;gap:13px}
+.partner-cta.liv{background:linear-gradient(135deg,rgba(11,25,41,.04),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.2)}
+.partner-cta.phoenix{background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15)}
+.partner-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.partner-ico.liv{background:linear-gradient(135deg,var(--navy),var(--navy3))}
+.partner-ico.phoenix{background:linear-gradient(135deg,#1e3a8a,#2563eb)}
+.partner-info{flex:1}
+.partner-name{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:2px}
+.partner-desc{font-size:12px;color:var(--txt2);line-height:1.55}
+.partner-btn{margin-top:9px;display:inline-block;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 15px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.partner-btn:hover{opacity:.85}
+.partner-btn.phoenix-btn{background:#1d4ed8}
+@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{display:none}.chat{padding:18px 14px 10px}.input-zone{padding:10px 14px 14px}.main-head{padding:14px 18px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-glow"></div>
+  <div class="sb-inner">
+    <div class="brand">
+      <div class="brand-ico">V</div>
+      <div>
+        <div class="brand-name">Visa Match</div>
+        <div class="brand-by">por ImigrarEUA</div>
+      </div>
+    </div>
+    <div class="sb-section">Etapas</div>
+    <div class="steps" id="sb-steps">
+      <div class="step active" data-s="0"><div class="step-num">1</div><div><div class="step-label">Contato</div><div class="step-desc">Identificação inicial</div></div></div>
+      <div class="step idle"  data-s="1"><div class="step-num">2</div><div><div class="step-label">Triagem</div><div class="step-desc">Caminho de visto</div></div></div>
+      <div class="step idle"  data-s="2"><div class="step-num">3</div><div><div class="step-label">Perfil Pessoal</div><div class="step-desc">Dados e histórico</div></div></div>
+      <div class="step idle"  data-s="3"><div class="step-num">4</div><div><div class="step-label">Formação</div><div class="step-desc">Acadêmico</div></div></div>
+      <div class="step idle"  data-s="4"><div class="step-num">5</div><div><div class="step-label">Experiência</div><div class="step-desc">Profissional</div></div></div>
+      <div class="step idle"  data-s="5"><div class="step-num">6</div><div><div class="step-label">Scoring</div><div class="step-desc">Critérios específicos</div></div></div>
+      <div class="step idle"  data-s="6"><div class="step-num">7</div><div><div class="step-label">Resultado</div><div class="step-desc">Análise completa</div></div></div>
+    </div>
+    <div class="sb-card">
+      <div class="sb-card-lbl">Avaliando seu perfil para o Visto</div>
+      <div class="sb-visto" id="sb-visto">—</div>
+      <div class="sb-bar-bg"><div class="sb-bar" id="sb-bar"></div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="main-head">
+    <div>
+      <div class="head-title">Análise de Pré-Elegibilidade</div>
+      <div class="head-sub">Triagem inteligente de visto americano</div>
+    </div>
+    <div class="online-badge"><div class="green-dot"></div>Assistente online</div>
+  </div>
+  <div class="prog-strip"><div class="prog-fill" id="prog"></div></div>
+  <div class="chat" id="chat"></div>
+  <div class="input-zone">
+    <div class="input-row">
+      <input class="txt-in" id="ti" type="text" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off"/>
+      <button class="in-btn mic-b" id="mic-btn" title="Gravar áudio">
+        <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      </button>
+      <button class="in-btn send-b" id="sb-btn">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="in-hint">Responda com os botões de seleção rápida ou digitando livremente · 🎙 áudio disponível</div>
+  </div>
+</main>
+</div>
+
+<!-- POPUP -->
+<div class="popup-overlay" id="pop-ov" style="display:none">
+  <div class="popup" id="pop-box">
+    <div class="popup-ico" id="pop-ico"></div>
+    <div class="popup-title" id="pop-title"></div>
+    <div class="popup-body" id="pop-body"></div>
+    <button class="popup-close" id="pop-close">Entendido, continuar</button>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+const S = {
+  step: 'welcome', sStep: 0, prog: 0,
+  nome: '', email: '', phone: '',
+  profile: {}, visto: null, vistos: [],
+  inputHandler: null, inputKeyHandler: null,
+  history: [] // [{step, sStep, prog, profileSnap, visto, vistos}]
+};
+
+// ─── HELPERS ───
+const chat = document.getElementById('chat');
+const ti = document.getElementById('ti');
+const sbBtn = document.getElementById('sb-btn');
+
+function ts() { return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function fml(n) { return n ? n.split(' ')[0] : ''; }
+
+function setProgress(pct) {
+  S.prog = pct;
+  document.getElementById('prog').style.width = pct + '%';
+}
+
+function setSideStep(n) {
+  S.sStep = n;
+  document.querySelectorAll('.step').forEach(el => {
+    const s = +el.dataset.s;
+    el.className = 'step ' + (s < n ? 'done' : s === n ? 'active' : 'idle');
+    el.querySelector('.step-num').textContent = s < n ? '✓' : s + 1;
+  });
+}
+
+function setSideVisto(v) {
+  if (v) {
+    document.getElementById('sb-visto').textContent = v;
+    S.visto = v;
+  }
+}
+
+function setSideBar(score) {
+  const pct = Math.max(0, Math.min(100, ((score + 100) / 200) * 100));
+  document.getElementById('sb-bar').style.width = pct + '%';
+}
+
+// ─── HISTORY / UNDO ───
+function saveHistory(stepId) {
+  S.history.push({
+    step: stepId, sStep: S.sStep, prog: S.prog,
+    profileSnap: JSON.stringify(S.profile),
+    visto: S.visto, vistos: [...S.vistos],
+    chatLen: chat.children.length
+  });
+  if (S.history.length > 40) S.history.shift();
+}
+
+function addUndoBtn() {
+  // Only remove a previous undo row, never the options
+  const prevUr = document.getElementById('undo-row'); if (prevUr) prevUr.remove();
+  const ur = document.createElement('div');
+  ur.className = 'undo-row'; ur.id = 'undo-row';
+  ur.innerHTML = `<button class="undo-btn" id="undo-btn">
+    <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+    Corrigir resposta anterior
+  </button>`;
+  chat.appendChild(ur);
+  chat.scrollTop = 9999;
+  document.getElementById('undo-btn').onclick = () => {
+    if (S.history.length < 2) return;
+    S.history.pop(); // remove current
+    const prev = S.history.pop(); // get previous
+    // restore chat to that length
+    while (chat.children.length > prev.chatLen) chat.removeChild(chat.lastChild);
+    // restore state
+    S.profile = JSON.parse(prev.profileSnap);
+    S.visto = prev.visto; S.vistos = prev.vistos;
+    setSideStep(prev.sStep); setProgress(prev.prog);
+    clearInputHandlers(); rmOpts();
+    go(prev.step);
+  };
+}
+
+// ─── POPUP ───
+function showPopup(ico, title, body, onClose) {
+  document.getElementById('pop-ico').textContent = ico;
+  document.getElementById('pop-title').textContent = title;
+  document.getElementById('pop-body').innerHTML = body;
+  document.getElementById('pop-ov').style.display = 'flex';
+  const btn = document.getElementById('pop-close');
+  btn.onclick = () => { document.getElementById('pop-ov').style.display = 'none'; if (onClose) onClose(); };
+}
+
+// ─── MIC ───
+let mediaRecorder, audioChunks = [], isRecording = false;
+document.getElementById('mic-btn').onclick = async () => {
+  const micBtn = document.getElementById('mic-btn');
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        addUserMsg('🎙 [Áudio enviado — em produção seria transcrito pela IA]');
+        const val = ti.dataset.lastAudio || '';
+        if (val && S.inputHandler) S.inputHandler('resposta via áudio');
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      micBtn.classList.add('recording');
+    } catch(e) {
+      showPopup('🎙', 'Acesso ao microfone', 'Permita o acesso ao microfone nas configurações do seu navegador para usar o recurso de áudio.', null);
+    }
+  } else {
+    mediaRecorder.stop();
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+  }
+};
+
+// ─── RENDER HELPERS ───
+async function botMsg(html, delay = 0) {
+  return new Promise(r => setTimeout(() => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+      <div class="msg-wrap"><div class="bubble bot-b">${html}</div><div class="ts">${ts()}</div></div>`;
+    chat.appendChild(row); chat.scrollTop = 9999; r();
+  }, delay));
+}
+
+function userMsg(txt) {
+  const ini = S.nome ? S.nome[0].toUpperCase() : 'EU';
+  const row = document.createElement('div');
+  row.className = 'row user';
+  row.innerHTML = `<div class="ava ava-user">${ini}</div>
+    <div class="msg-wrap"><div class="bubble user-b">${txt}</div><div class="ts">${ts()}</div></div>`;
+  chat.appendChild(row); chat.scrollTop = 9999;
+}
+
+function addUserMsg(txt) { userMsg(txt); }
+
+function showTyping() {
+  const row = document.createElement('div');
+  row.id = 'typ'; row.className = 'row';
+  row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+    <div class="msg-wrap"><div class="typing-bub"><span></span><span></span><span></span></div></div>`;
+  chat.appendChild(row); chat.scrollTop = 9999; return row;
+}
+function rmTyping() { const t = document.getElementById('typ'); if (t) t.remove(); }
+
+function showFact(ico, body, delay = 200) {
+  return new Promise(r => setTimeout(() => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+      <div class="msg-wrap"><div class="fact-card"><span class="fact-ico">${ico}</span>${body}</div></div>`;
+    chat.appendChild(row); chat.scrollTop = 9999; r();
+  }, delay));
+}
+
+function showAlert(body, delay = 100) {
+  return new Promise(r => setTimeout(() => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+      <div class="msg-wrap"><div class="alert">${body}</div></div>`;
+    chat.appendChild(row); chat.scrollTop = 9999; r();
+  }, delay));
+}
+
+function rmOpts() { const o = document.getElementById('opts'); if (o) o.remove(); }
+
+function showOpts(opts, handler) {
+  rmOpts();
+  const w = document.createElement('div');
+  w.className = 'opts-wrap'; w.id = 'opts';
+  opts.forEach(op => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.textContent = op;
+    b.onclick = () => {
+      document.querySelectorAll('.opt').forEach(x => { x.disabled = true; x.classList.add('sel'); });
+      const ur2 = document.getElementById('undo-row'); if (ur2) ur2.remove();
+      w.remove(); handler(op);
+    };
+    w.appendChild(b);
+  });
+  chat.appendChild(w); chat.scrollTop = 9999;
+  ti.disabled = false; ti.focus();
+  // show undo after first real question
+  if (S.history.length > 2) setTimeout(addUndoBtn, 150);
+}
+
+function clearInputHandlers() {
+  if (S.inputHandler) { sbBtn.removeEventListener('click', S.inputHandler); S.inputHandler = null; }
+  if (S.inputKeyHandler) { ti.removeEventListener('keydown', S.inputKeyHandler); S.inputKeyHandler = null; }
+}
+
+function waitInput(onVal) {
+  clearInputHandlers();
+  ti.disabled = false; ti.focus();
+  if (S.history.length > 2) setTimeout(addUndoBtn, 150);
+  const handler = () => {
+    const v = ti.value.trim(); if (!v) return;
+    ti.value = ''; clearInputHandlers(); ti.disabled = false;
+    const ur2 = document.getElementById('undo-row'); if (ur2) ur2.remove();
+    userMsg(v); onVal(v);
+  };
+  const keyH = e => { if (e.key === 'Enter') handler(); };
+  S.inputHandler = handler;
+  S.inputKeyHandler = keyH;
+  sbBtn.addEventListener('click', handler);
+  ti.addEventListener('keydown', keyH);
+}
+
+function pause(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function think(ms = 900) {
+  const t = showTyping(); await pause(ms); rmTyping(); return t;
+}
+
+// ─── SCORING ENGINE ───
+function calcScore(visto, p) {
+  let s = 0;
+  if (visto === 'EB-2 NIW') {
+    const fMap = {'Sim, tenho os fundos':40,'Sim, mas prefiro parcelar':30,'Talvez, preciso entender melhor':20,'Não tenho disponibilidade':(-50)};
+    s += fMap[p.fundos] || 0;
+    const dMap = {'Doutorado':40,'Mestrado':35,'Bacharelado/Licenciatura concluído há mais de 5 anos':20,'Bacharelado/Licenciatura concluído há menos de 5 anos':(-35),'Tecnólogo com mais de 10 anos de experiência':15,'Tecnólogo com menos de 10 anos de experiência':0,'Superior incompleto com mais de 10 anos':(-15),'Superior incompleto com menos de 10 anos':(-30),'Sem formação acadêmica, mas com 10 anos de experiência':(-30),'Sem formação acadêmica e sem 10 anos de experiência':(-50)};
+    s += dMap[p.grauFormacao] || 0;
+    ['niw_cartas','niw_palestras','niw_bancas','niw_reportagens','niw_artigos','niw_pesquisa','niw_premios','niw_cursos','niw_licencas'].forEach(k => { if (p[k] === 'Sim') s += 3; });
+    ['hab_diploma','hab_10anos','hab_licenca','hab_salario','hab_associacao','hab_reconhecimento'].forEach(k => { if (p[k]) s += 3; });
+    const profs = ['Engenheiro','Médico','Dentista','Veterinário','Advogado','Desenvolvedor','TI','Piloto','Analista'];
+    const profsN = ['Arquiteto','Enfermeiro'];
+    if (profs.some(x => (p.profissao||'').includes(x))) s += 5;
+    if (profsN.some(x => (p.profissao||'').includes(x))) s -= 5;
+  } else if (visto === 'EB-1A') {
+    const keys = ['eb1_premios','eb1_assoc','eb1_midia','eb1_avaliador','eb1_contrib','eb1_lideranca','eb1_salario','eb1_artes','eb1_exposicoes','eb1_artigos'];
+    keys.forEach(k => { if (p[k] === 'Sim') s += 15; else if (p[k] === 'Não') s -= 15; });
+    s = Math.round((s / 150) * 100);
+  } else if (visto === 'O-1') {
+    s += 10;
+    const keys = ['o1_premios','o1_assoc','o1_midia','o1_avaliador','o1_contrib','o1_lideranca','o1_salario','o1_artes','o1_exposicoes','o1_artigos'];
+    keys.forEach(k => { if (p[k] === 'Sim') s += 15; else if (p[k] === 'Não') s -= 10; });
+  } else if (visto === 'L-1') {
+    const posMap = {'Fundador / Empreendedor':25,'Sócio / Acionista':25,'Executivo / Gerente':25,'Funcionário com Conhecimento Especializado':15};
+    s += posMap[p.posicao] || 0;
+    const tamMap = {'Mais de 50 funcionários':25,'Entre 11 e 50 funcionários':10,'Entre 5 e 10 funcionários':(-25),'Menos de 5 funcionários':(-25)};
+    s += tamMap[p.numFunc] || 0;
+    const fatMap = {'Acima de R$ 5 milhões/ano':25,'Entre R$ 2 e 5 milhões/ano':20,'Entre R$ 1 e 2 milhões/ano':15,'Menos de R$ 1 milhão/ano':(-25)};
+    s += fatMap[p.faturamento] || 0;
+    s += 25;
+  } else if (visto === 'E-2') {
+    s += p.tratado === 'Sim' ? 50 : -50;
+    const invMap = {'Acima de US$ 100 mil':40,'Entre US$ 51k e US$ 100k':25,'Entre US$ 26k e US$ 50k':10,'Menos de US$ 25k':5,'Sem previsão de investimento':(-25)};
+    s += invMap[p.investimento] || 0;
+    if (p.tratado === 'Sim') s += 10;
+  } else if (visto === 'Family Based' || visto === 'H-1B') {
+    s = 80;
+  }
+  return Math.max(-100, Math.min(100, s));
+}
+
+function getClass(score) {
+  if (score >= 70) return { label: 'Pré-Elegibilidade Alta', cls: 'cls-forte', ico: '✓', partner: 'liv' };
+  if (score >= 40) return { label: 'Pré-Elegibilidade Moderada', cls: 'cls-mod', ico: '◑', partner: 'liv' };
+  if (score >= 0)  return { label: 'Perfil em Desenvolvimento', cls: 'cls-dev', ico: '○', partner: 'phoenix' };
+  return { label: 'Perfil Incompatível', cls: 'cls-inc', ico: '✕', partner: 'phoenix' };
+}
+
+// ─── RESULT CARD ───
+function partnerCtaHtml(partner, visto) {
+  if (partner === 'liv') {
+    return `<div class="partner-cta liv">
+      <div class="partner-ico liv">⚖️</div>
+      <div class="partner-info">
+        <div class="partner-name">LIV Law — Parceiro Oficial ImigrarEUA</div>
+        <div class="partner-desc">Escritório de advocacia <b>licenciado nos EUA</b>, especializado em vistos de trabalho e Green Card. Parceiro oficial da ImigrarEUA para casos de ${visto}.</div>
+        <button class="partner-btn" onclick="alert('Em produção: redirecionaria para o site da LIV Law ou formulário de contato.')">Agendar avaliação com a LIV Law →</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="partner-cta phoenix">
+    <div class="partner-ico phoenix">🎓</div>
+    <div class="partner-info">
+      <div class="partner-name">Phoenix — Parceiro de Fortalecimento de Perfil</div>
+      <div class="partner-desc">Especialista em <b>melhoria de perfil para imigração</b> e vistos de estudante. Ideal para construir as bases necessárias antes de um processo imigratório.</div>
+      <button class="partner-btn phoenix-btn" onclick="alert('Em produção: redirecionaria para o site da Phoenix.')">Conhecer a Phoenix →</button>
+    </div>
+  </div>`;
+}
+
+function buildSingleCard(visto, score, p, showHeader = true) {
+  const cl = getClass(score);
+  const pts = Math.max(0, score);
+
+  const critMap = {
+    'EB-2 NIW': [
+      {l:'Cartas de recomendação profissionais',ok: p.niw_cartas==='Sim'},
+      {l:'Artigos publicados (revistas/mídia)',ok: p.niw_artigos==='Sim'},
+      {l:'Prêmios e reconhecimentos',ok: p.niw_premios==='Sim'},
+      {l:'Participação em projetos de pesquisa',ok: p.niw_pesquisa==='Sim'},
+      {l:'Licenças / certificações reconhecidas',ok: p.niw_licencas==='Sim'},
+      {l:'Palestras ou eventos organizados',ok: p.niw_palestras==='Sim'},
+      {l:'Participação em bancas acadêmicas',ok: p.niw_bancas==='Sim'},
+      {l:'Presença na mídia como fonte',ok: p.niw_reportagens==='Sim'},
+    ],
+    'EB-1A': [
+      {l:'Prêmios internacionais de excelência',ok: p.eb1_premios==='Sim'},
+      {l:'Publicações em mídia de grande alcance',ok: p.eb1_midia==='Sim'},
+      {l:'Associações de acesso por mérito',ok: p.eb1_assoc==='Sim'},
+      {l:'Papel crítico em organizações de destaque',ok: p.eb1_lideranca==='Sim'},
+      {l:'Contribuições originais de grande impacto',ok: p.eb1_contrib==='Sim'},
+      {l:'Remuneração acima da média comprovada',ok: p.eb1_salario==='Sim'},
+      {l:'Avaliador do trabalho de outros profissionais',ok: p.eb1_avaliador==='Sim'},
+    ],
+    'O-1': [
+      {l:'Prêmios / reconhecimentos notáveis',ok: p.o1_premios==='Sim'},
+      {l:'Publicações em mídia relevante',ok: p.o1_midia==='Sim'},
+      {l:'Contribuições originais reconhecidas',ok: p.o1_contrib==='Sim'},
+      {l:'Papel de liderança em organizações',ok: p.o1_lideranca==='Sim'},
+      {l:'Salário/remuneração acima da média',ok: p.o1_salario==='Sim'},
+    ],
+    'L-1': [
+      {l:'Posição executiva ou de liderança',ok: ['Fundador / Empreendedor','Sócio / Acionista','Executivo / Gerente'].includes(p.posicao)},
+      {l:'Empresa com mais de 11 funcionários',ok: p.numFunc && !p.numFunc.includes('Menos') && !p.numFunc.includes('5 e 10')},
+      {l:'Faturamento acima de R$ 1 milhão/ano',ok: p.faturamento && !p.faturamento.includes('Menos')},
+      {l:'Empresa com atuação/expansão nos EUA',ok: true},
+    ],
+    'E-2': [
+      {l:'Cidadania de país com tratado com os EUA',ok: p.tratado==='Sim'},
+      {l:'Capital de investimento disponível',ok: p.investimento && p.investimento!=='Sem previsão de investimento'},
+      {l:'Investimento acima de US$ 50k',ok: p.investimento && (p.investimento.includes('100')||p.investimento.includes('51'))},
+    ],
+    'Family Based': [{l:'Vínculo familiar qualificado',ok:true},{l:'Documentação do parente americano',ok:true}],
+    'H-1B': [{l:'Formação acadêmica relevante',ok:true}]
+  };
+
+  const actionMap = {
+    'EB-2 NIW':['Reunir cartas de recomendação de líderes da área','Compilar publicações, prêmios e certificações','Documentar projetos com impacto mensurável'],
+    'EB-1A':['Compilar dossiê completo de conquistas extraordinárias','Obter 3+ cartas de especialistas internacionais reconhecidos','Documentar reconhecimentos, prêmios e publicações sobre você'],
+    'O-1':['Listar todos os prêmios e reconhecimentos da área','Obter cartas de especialistas e organizações setoriais','Fortalecer presença em mídia especializada'],
+    'L-1':['Verificar existência ou plano de filial nos EUA','Documentar papel executivo e tempo de trabalho (mín. 1 ano)','Mapear organograma entre as empresas (Brasil e EUA)'],
+    'E-2':['Definir modelo de negócio e plano de investimento nos EUA','Documentar origem e disponibilidade dos fundos','Identificar negócio ou franquia alvo nos EUA'],
+    'Family Based':['Reunir documentação do parente cidadão americano','Organizar certidões e comprovantes do vínculo familiar','Verificar status imigratório atual do beneficiário'],
+    'H-1B':['Preparar documentação profissional e acadêmica completa','Buscar empresa americana disposta a patrocinar']
+  };
+
+  const verMap = {
+    'EB-2 NIW':'Com base no seu perfil, o <b>EB-2 NIW</b> representa um caminho promissor para a residência permanente nos EUA sem depender de patrocinador. Esse visto valoriza profissionais cuja expertise beneficia o interesse nacional americano.',
+    'EB-1A':'Suas conquistas indicam potencial para o <b>EB-1A</b>, um dos caminhos mais prestigiosos de Green Card, reservado a profissionais no topo de suas áreas globalmente. Um dossiê robusto é essencial.',
+    'O-1':'O <b>visto O-1</b> é ideal para quem demonstra habilidades e conquistas excepcionais. É um visto de trabalho temporário com renovação possível, que permite atuar nos EUA e eventualmente transitar para a residência permanente.',
+    'L-1':'O <b>L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa. É um dos caminhos mais diretos e sem sorteio — e seu perfil dentro da empresa é um ativo central.',
+    'E-2':'Com cidadania de país com tratado e capacidade de investimento, o <b>E-2</b> oferece um caminho ágil para gerenciar seu próprio negócio nos EUA. É renovável e cria base para outros caminhos futuros.',
+    'Family Based':'O visto baseado em família oferece um caminho estruturado quando há vínculo direto com cidadão americano ou residente permanente.',
+    'H-1B':'O <b>H-1B</b> requer patrocínio de empresa americana e passa por sorteio anual — o que torna estratégia e timing decisivos.'
+  };
+
+  const crits = critMap[visto] || [];
+  const acts = actionMap[visto] || [];
+  const ver = verMap[visto] || '';
+
+  const critsHtml = crits.map(c =>
+    `<div class="crit-item"><div class="crit-ico ${c.ok?'ic-ok':'ic-warn'}">${c.ok?'✓':'!'}</div>
+    <span class="crit-n">${c.l}</span>
+    <span class="crit-s ${c.ok?'s-ok':'s-warn'}">${c.ok?'Atendido':'Fortalecer'}</span></div>`
+  ).join('');
+
+  const actsHtml = acts.map((a,i) =>
+    `<div class="action"><div class="act-n">${i+1}</div><div class="act-t">${a}</div></div>`
+  ).join('');
+
+  const header = showHeader ? `
+    <div class="res-head">
+      <div class="res-tag">✦ Visa Match · Pré-Elegibilidade</div>
+      <div class="res-visto">${visto}</div>
+      <div class="res-nome">Análise de pré-elegibilidade — ${p.nomeCompleto || S.nome}</div>
+      <div class="res-circle"><div class="res-pts">${pts}</div><div class="res-pts-lbl">pontos</div></div>
+    </div>` : `
+    <div style="background:linear-gradient(135deg,var(--navy),var(--navy3));padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:#fff">${visto}</div>
+      <div style="text-align:right">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold2)">${pts}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.4);letter-spacing:.05em">PONTOS</div>
+      </div>
+    </div>`;
+
+  return `<div class="res-card" style="${showHeader?'':'border-radius:14px;overflow:hidden'}">
+    ${header}
+    <div class="res-body">
+      <div class="res-cls ${cl.cls}">${cl.ico} ${cl.label}</div>
+      <div class="sec-lbl">Critérios Avaliados</div>
+      <div class="crit-list">${critsHtml}</div>
+      <div class="sec-lbl">Análise do Perfil</div>
+      <div class="verdict"><p>${ver}</p></div>
+      <div class="sec-lbl">Próximos Passos</div>
+      <div class="actions">${actsHtml}</div>
+    </div>
+  </div>`;
+}
+
+function buildResult(visto, score, p) {
+  const isDual = S.vistos && S.vistos.length === 2;
+  const cl = getClass(score);
+
+  // Legal disclaimer
+  const legalHtml = `<div class="legal-disc">
+    ⚖️ <b>Aviso:</b> Este resultado é uma <b>triagem de pré-elegibilidade</b> e não constitui avaliação jurídica oficial, nem configura relação advogado-cliente. Para confirmar elegibilidade e iniciar um processo formal, consulte um advogado licenciado nos EUA.
+  </div>`;
+
+  // Partner CTA
+  const partnerHtml = partnerCtaHtml(cl.partner, visto);
+
+  // PDF button
+  const pdfBtn = `<button class="cta2" style="width:100%;margin-top:8px" onclick="alert('Relatório PDF enviado para ${S.email}')">📄 Receber relatório completo por e-mail</button>`;
+
+  if (isDual) {
+    const score2 = calcScore('EB-2 NIW', p);
+    const score1 = calcScore('EB-1A', p);
+    const bestScore = Math.max(score2, score1);
+    const bestPartner = getClass(bestScore).partner;
+
+    return `<div style="display:flex;flex-direction:column;gap:12px">
+      <div class="res-card">
+        <div class="res-head" style="padding-bottom:16px">
+          <div class="res-tag">✦ Visa Match · Pré-Elegibilidade — Análise Dupla</div>
+          <div class="res-visto">EB-2 NIW + EB-1A</div>
+          <div class="res-nome">Análise de pré-elegibilidade — ${p.nomeCompleto || S.nome}</div>
+        </div>
+        <div class="res-body">
+          ${legalHtml}
+          <div class="dual-tab-row">
+            <button class="dual-tab active" id="tab-niw" onclick="showTab('niw')">EB-2 NIW · ${score2} pts</button>
+            <button class="dual-tab" id="tab-eb1" onclick="showTab('eb1')">EB-1A · ${Math.max(0,score1)} pts</button>
+          </div>
+          <div id="panel-niw">${buildSingleCard('EB-2 NIW', score2, p, false)}</div>
+          <div id="panel-eb1" style="display:none">${buildSingleCard('EB-1A', score1, p, false)}</div>
+          <div class="sec-lbl" style="margin-top:16px">Parceiro Recomendado</div>
+          ${partnerCtaHtml(bestPartner, 'EB-2 NIW / EB-1A')}
+          ${pdfBtn}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  return `<div style="display:flex;flex-direction:column;gap:12px">
+    ${buildSingleCard(visto, score, p, true).replace('</div>\n  </div>', `
+      <div class="res-body" style="padding-top:0">
+        ${legalHtml}
+        <div class="sec-lbl">Parceiro Recomendado</div>
+        ${partnerHtml}
+        ${pdfBtn}
+      </div>
+    </div>`)}
+  </div>`;
+}
+
+// ─── TAB SWITCHER for dual results ───
+function showTab(t) {
+  document.getElementById('panel-niw').style.display = t==='niw' ? '' : 'none';
+  document.getElementById('panel-eb1').style.display = t==='eb1' ? '' : 'none';
+  document.getElementById('tab-niw').className = 'dual-tab' + (t==='niw'?' active':'');
+  document.getElementById('tab-eb1').className = 'dual-tab' + (t==='eb1'?' active':'');
+}
+
+// ─── FLOW ENGINE ───
+async function go(id) {
+  saveHistory(id);
+  S.step = id;
+  // remove stale undo row
+  const ur = document.getElementById('undo-row'); if (ur) ur.remove();
+  await flows[id]();
+}
+
+const flows = {
+
+  // ──────── CONTATO ────────
+  async welcome() {
+    setSideStep(0); setProgress(3);
+    await think(600);
+    await botMsg('Olá! 👋 Bem-vindo ao <strong>Visa Match</strong> da ImigrarEUA.');
+    await pause(400);
+    await botMsg('Sou seu assistente de <strong>triagem de pré-elegibilidade</strong> para vistos americanos. Em poucos minutos, identificamos o caminho mais promissor para o seu perfil e geramos uma análise personalizada. Pronto para começar?');
+    showOpts(['Sim, vamos! 🚀','Quero entender como funciona primeiro'], val => {
+      userMsg(val);
+      if (val.includes('funciona')) go('explain');
+      else go('disclaimer_legal');
+    });
+  },
+
+  async explain() {
+    await think();
+    await showFact('🇺🇸', '<b>ImigrarEUA</b> nasceu em 2016 e já impactou mais de <b>1 milhão de pessoas por mês</b>. Somos um HUB completo de imigração legal para os EUA — reunindo especialistas, parceiros e soluções em um só lugar.');
+    await pause(300);
+    await botMsg('O Visa Match faz uma triagem inteligente do seu perfil, calcula um <strong>score de pré-elegibilidade</strong> com base nos critérios reais do USCIS e indica os parceiros certos para o seu caso.');
+    await pause(300);
+    await botMsg('Todas as informações são usadas exclusivamente para a sua análise. Vamos começar?');
+    showOpts(['Vamos começar!'], () => { userMsg('Vamos começar!'); go('disclaimer_legal'); });
+  },
+
+  async disclaimer_legal() {
+    setSideStep(0); setProgress(5);
+    await think(700);
+    await showPopup('⚖️', 'Aviso Jurídico Importante',
+      '<b>Antes de prosseguir, leia com atenção:</b><br><br>' +
+      '• Esta ferramenta realiza uma <b>triagem de pré-elegibilidade</b>, não uma avaliação jurídica oficial.<br><br>' +
+      '• O resultado <b>não configura relação advogado-cliente</b> e não substitui a análise de um profissional licenciado.<br><br>' +
+      '• Para confirmar sua pré-elegibilidade e iniciar um processo formal, consulte um <b>advogado licenciado nos EUA (licensed attorney)</b>.<br><br>' +
+      '• A ImigrarEUA é um HUB de imigração e encaminha os casos qualificados ao escritório parceiro <b>LIV Law</b>, licenciado nos EUA.',
+      () => go('contact_email')
+    );
+  },
+
+  async contact_email() {
+    setSideStep(0); setProgress(5);
+    await think(500);
+    await botMsg('Para enviar sua análise completa, preciso do seu <strong>e-mail</strong>. Qual é?');
+    waitInput(val => { S.email = val; go('contact_name'); });
+  },
+
+  async contact_name() {
+    await think(500);
+    await botMsg('Ótimo! E qual é o seu <strong>nome completo</strong>?');
+    waitInput(val => { S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_phone'); });
+  },
+
+  async contact_phone() {
+    await think(500);
+    await botMsg(`Prazer, <strong>${S.nome}</strong>! Qual é o seu <strong>WhatsApp</strong> com DDI? (ex: +55 11 99999-9999)`);
+    waitInput(val => { S.phone = val; go('path_select'); });
+  },
+
+  // ──────── TRIAGEM ────────
+  async path_select() {
+    setSideStep(1); setProgress(12);
+    await think(700);
+    await botMsg(`${S.nome}, através de qual caminho você acredita que pode chegar ao visto americano?`);
+    await pause(200);
+    showOpts([
+      'Através da minha profissão e formação acadêmica',
+      'Através de familiares que são cidadãos americanos ou têm Green Card',
+      'Através do meu trabalho em empresa que atua nos EUA',
+      'Através de investimento nos EUA',
+      'Não sei ao certo / não me encaixo nos perfis acima'
+    ], val => {
+      userMsg(val);
+      S.profile.caminhoPrincipal = val;
+      if (val.includes('profissão')) go('path_prof_formacao');
+      else if (val.includes('familiares')) go('path_family');
+      else if (val.includes('trabalho em empresa')) go('path_work');
+      else if (val.includes('investimento')) go('path_e2_check');
+      else go('path_diagnostico');
+    });
+  },
+
+  // ──────── PROFISSÃO → EB-2 NIW obrigatório primeiro ────────
+  async path_prof_formacao() {
+    setProgress(16);
+    await think(700);
+    await botMsg('Qual é o seu <strong>nível de formação mais alto</strong> já concluído?');
+    showOpts([
+      'Doutorado','Mestrado',
+      'Bacharelado/Licenciatura concluído há mais de 5 anos',
+      'Bacharelado/Licenciatura concluído há menos de 5 anos',
+      'Tecnólogo com mais de 10 anos de experiência',
+      'Tecnólogo com menos de 10 anos de experiência',
+      'Superior incompleto com mais de 10 anos',
+      'Ensino Médio / Sem Formação Superior'
+    ], val => {
+      userMsg(val);
+      S.profile.grauFormacao = val;
+      if (val.includes('Ensino Médio') || val.includes('Sem Formação')) go('path_sem_formacao');
+      else go('path_prof_experiencia');
+    });
+  },
+
+  async path_sem_formacao() {
+    await think(700);
+    await showFact('💡', 'Mesmo sem diploma superior, é possível qualificar para vistos como o <b>O-1</b> com base em conquistas extraordinárias na sua área.');
+    await botMsg('Você possui <strong>conquistas extraordinárias</strong> na sua área — como prêmios nacionais/internacionais, reconhecimento de destaque, publicações ou projetos de grande impacto?');
+    showOpts(['Sim, tenho realizações notáveis','Não tenho conquistas de destaque'], val => {
+      userMsg(val);
+      if (val.includes('Sim')) { setSideVisto('O-1'); go('path_work_o1'); }
+      else go('path_offramp_sem_perfil');
+    });
+  },
+
+  async path_prof_experiencia() {
+    setProgress(20);
+    await think(600);
+    await botMsg('Há quanto tempo você atua na sua <strong>área de formação</strong>?');
+    showOpts(['Menos de 5 anos','Entre 5 e 15 anos','Entre 15 e 25 anos','Mais de 25 anos'], val => {
+      userMsg(val);
+      S.profile.tempoExp = val;
+      go('path_prof_conquistas');
+    });
+  },
+
+  async path_prof_conquistas() {
+    setProgress(24);
+    await think(700);
+    await botMsg('Você possui <strong>conquistas, prêmios ou reconhecimento extraordinário</strong> na sua área — prêmios nacionais/internacionais, publicações acadêmicas de destaque, cargo de liderança em organização renomada?');
+    showOpts(['Sim, tenho conquistas notáveis acima da média','Tenho uma carreira sólida, mas sem destaque extraordinário'], val => {
+      userMsg(val);
+      S.profile.temConquistas = val;
+      go('path_prazo_gc');
+    });
+  },
+
+  async path_prazo_gc() {
+    setProgress(27);
+    await think(700);
+    await showFact('⏱', 'O processo de <b>Green Card</b> (EB-2 NIW ou EB-1A) leva <b>ao menos 2 anos</b> para ser concluído. Dependendo da categoria e do país de nascimento, pode levar mais tempo.');
+    await pause(300);
+    await botMsg('Qual é o <strong>tempo que você estaria disposto a aguardar</strong> pela residência permanente?');
+    showOpts([
+      'Estou disposto a aguardar o tempo necessário',
+      'Mais de 2 anos — mas quero planejar',
+      'Preciso estar nos EUA em menos de 2 anos'
+    ], val => {
+      userMsg(val);
+      S.profile.prazoGC = val;
+      if (val.includes('menos de 2 anos')) go('path_redireciona_temporario');
+      else go('path_fundos_gc');
+    });
+  },
+
+  async path_redireciona_temporario() {
+    await think(600);
+    await botMsg(`Entendido, ${S.nome}! Nesse caso, vamos explorar os <strong>vistos de trabalho temporário</strong>, que permitem atuar nos EUA enquanto um processo de Green Card pode correr em paralelo. Qual das situações abaixo melhor descreve você?`);
+    showOpts([
+      'Possuo conquistas e reconhecimento acima da média na minha área',
+      'Trabalho em empresa com filial ou operação nos EUA',
+      'Sou profissional graduado buscando emprego ou oferta nos EUA'
+    ], val => {
+      userMsg(val);
+      if (val.includes('conquistas')) { setSideVisto('O-1'); go('path_work_o1'); }
+      else if (val.includes('empresa')) go('path_l1_intro');
+      else go('path_offramp_hib_info');
+    });
+  },
+
+  async path_fundos_gc() {
+    setProgress(30);
+    await think(700);
+    const visoSugerido = S.profile.temConquistas && S.profile.temConquistas.includes('Sim') ? 'EB-2 NIW (com potencial para EB-1A)' : 'EB-2 NIW';
+    setSideVisto('EB-2 NIW');
+    await botMsg(`Com base no seu perfil, o caminho mais adequado começa pelo <strong>EB-2 NIW</strong> — Green Card por interesse nacional, sem precisar de empregador patrocinador. ${S.profile.temConquistas && S.profile.temConquistas.includes('Sim') ? 'Seu histórico de conquistas também pode abrir o caminho para o <strong>EB-1A</strong> em paralelo.' : ''}`);
+    await pause(300);
+    await botMsg(`Você está <strong>financeiramente preparado</strong> para investir no processo? O investimento total para o EB-2 NIW ou EB-1A (honorários + documentação) é de aproximadamente <strong>R$ 85.000</strong>.`);
+    showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
+      userMsg(val);
+      S.profile.fundos = val;
+      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
+      else go('path_cidadania');
+    });
+  },
+
+  async path_cidadania() {
+    setProgress(33);
+    await think(600);
+    await botMsg('Você possui cidadania, primária ou secundária, de algum <strong>país com tratado comercial com os EUA</strong>? (ex: Brasil, Portugal, Itália, Espanha, Canadá, Argentina)');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.tratadoCidadania = val;
+      go('personal_info');
+    });
+  },
+
+  // ──────── FAMILY ────────
+  async path_family() {
+    setSideVisto('Family Based'); setProgress(16);
+    await think(700);
+    await botMsg('Qual é o seu <strong>vínculo com a pessoa nos EUA</strong>?');
+    showOpts([
+      'Casamento com cidadão(ã) americano(a)',
+      'Filho(a) maior de 21 anos que é cidadão(ã) americano(a)',
+      'Meu pai ou mãe é cidadão(ã) americano(a) e sou menor de 21 anos solteiro(a)',
+      'Cônjuge ou filho menor de 21 anos de Residente Permanente (F2A)',
+      'Nenhum desses casos'
+    ], val => {
+      userMsg(val);
+      S.profile.familyTipo = val;
+      if (val === 'Nenhum desses casos') go('path_select');
+      else if (val.includes('F2A')) go('path_family_aviso');
+      else go('path_family_fundos');
+    });
+  },
+
+  async path_family_aviso() {
+    await think(500);
+    await showAlert('⚠️ <b>Atenção:</b> O visto F2A pode ter tempo de espera <b>superior a 15 anos</b> em algumas categorias. Certifique-se de que está ciente desse prazo antes de seguir.');
+    await botMsg('Você está ciente do prazo e deseja seguir com essa avaliação?');
+    showOpts(['Sim, estou ciente e quero continuar','Prefiro conhecer outras possibilidades'], val => {
+      userMsg(val);
+      if (val.includes('outras')) go('path_select');
+      else go('path_family_fundos');
+    });
+  },
+
+  async path_family_fundos() {
+    setProgress(25);
+    await think(600);
+    await botMsg(`Você está <strong>financeiramente preparado</strong> para investir no processo de visto Family Based? O investimento total (honorários + documentação) é de aproximadamente <strong>R$ 35.000</strong>.`);
+    showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
+      userMsg(val);
+      S.profile.fundos = val;
+      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
+      else go('path_family_beneficiario');
+    });
+  },
+
+  async path_family_beneficiario() {
+    await think(500);
+    await botMsg('Qual é o <strong>nome completo do beneficiário</strong> (a pessoa que vai receber o visto)?');
+    waitInput(val => { S.profile.nomeBeneficiario = val; go('path_family_aplicante'); });
+  },
+
+  async path_family_aplicante() {
+    await think(500);
+    await botMsg('Qual é o <strong>nome completo do Aplicante Principal</strong> (o cidadão americano ou residente permanente que vai patrocinar)?');
+    waitInput(val => { S.profile.nomeAplicante = val; go('path_family_status_ap'); });
+  },
+
+  async path_family_status_ap() {
+    await think(500);
+    await botMsg('Qual é o <strong>status do Aplicante Principal</strong>?');
+    showOpts(['Cidadão dos EUA','Green Card Holder (Residente Permanente)'], val => {
+      userMsg(val);
+      S.profile.statusAplicante = val;
+      go('path_family_status_ben');
+    });
+  },
+
+  async path_family_status_ben() {
+    await think(500);
+    await botMsg('Qual é o <strong>status imigratório atual do beneficiário</strong>?');
+    showOpts(['Não está presente nos EUA','Visto não-imigratório (turismo, estudante etc.)','Sem status definido'], val => {
+      userMsg(val);
+      S.profile.statusBeneficiario = val;
+      go('personal_info');
+    });
+  },
+
+  // ──────── WORK VISTOS ────────
+  async path_work() {
+    setProgress(16);
+    await think(700);
+    await botMsg(`${S.nome}, dentro dos vistos de trabalho, existem caminhos bem diferentes. Qual das opções abaixo <strong>melhor descreve sua situação</strong>?`);
+    showOpts([
+      'Serei transferido pela empresa onde já trabalho (que tem ou abrirá filial nos EUA)',
+      'Possuo conquistas extraordinárias, prêmios ou reconhecimento acima da média na minha área'
+    ], val => {
+      userMsg(val);
+      if (val.includes('transferido')) go('path_l1_intro');
+      else if (val.includes('conquistas')) go('path_work_o1');
+    });
+  },
+
+  async path_l1_intro() {
+    setSideVisto('L-1'); setProgress(20);
+    await think(700);
+    await showFact('🏢', 'O <b>visto L-1</b> é ideal para executivos, gerentes e especialistas que são transferidos entre filiais da mesma empresa. Não passa por sorteio e não exige patrocinador externo.');
+    await pause(300);
+    await botMsg('Qual é a sua <strong>posição na empresa</strong>?');
+    showOpts(['Fundador / Empreendedor','Sócio / Acionista','Executivo / Gerente','Funcionário com Conhecimento Especializado'], val => {
+      userMsg(val);
+      S.profile.posicao = val;
+      go('path_l1_empresa');
+    });
+  },
+
+  async path_l1_empresa() {
+    await think(500);
+    await botMsg('Qual é o <strong>nome da empresa</strong> onde você atua?');
+    waitInput(val => { S.profile.nomeEmpresa = val; go('path_l1_funcionarios'); });
+  },
+
+  async path_l1_funcionarios() {
+    await think(500);
+    await botMsg(`Quantos <strong>funcionários</strong> tem a ${S.profile.nomeEmpresa || 'empresa'}?`);
+    showOpts(['Menos de 5 funcionários','Entre 5 e 10 funcionários','Entre 11 e 50 funcionários','Mais de 50 funcionários'], val => {
+      userMsg(val);
+      S.profile.numFunc = val;
+      go('path_l1_faturamento');
+    });
+  },
+
+  async path_l1_faturamento() {
+    await think(500);
+    await botMsg('Qual é a <strong>faixa de faturamento anual</strong> da empresa?');
+    showOpts(['Menos de R$ 1 milhão/ano','Entre R$ 1 e 2 milhões/ano','Entre R$ 2 e 5 milhões/ano','Acima de R$ 5 milhões/ano'], val => {
+      userMsg(val);
+      S.profile.faturamento = val;
+      go('path_l1_fundos');
+    });
+  },
+
+  async path_l1_fundos() {
+    setProgress(28);
+    await think(600);
+    await botMsg(`Você está <strong>financeiramente preparado</strong> para investir no processo L-1? O investimento total (honorários + documentação) costuma ser de <strong>R$ 35.000 a R$ 55.000</strong>.`);
+    showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
+      userMsg(val);
+      S.profile.fundos = val;
+      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
+      else go('personal_info');
+    });
+  },
+
+  async path_work_o1() {
+    setSideVisto('O-1'); setProgress(20);
+    await think(700);
+    await showFact('🌟', 'O <b>visto O-1</b> é reservado a indivíduos com habilidades extraordinárias em ciências, artes, educação, negócios ou esportes. Exige evidências concretas de reconhecimento acima da média.');
+    await pause(300);
+    await botMsg(`Você está <strong>financeiramente preparado</strong> para investir no processo O-1? O investimento total (honorários + documentação) costuma ser de <strong>R$ 35.000 a R$ 55.000</strong>.`);
+    showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
+      userMsg(val);
+      S.profile.fundos = val;
+      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
+      else go('personal_info');
+    });
+  },
+
+  async path_offramp_hib_info() {
+    await think(700);
+    await showFact('ℹ️', 'O <b>H-1B</b> exige patrocínio de uma empresa americana e passa por sorteio anual em abril. Para profissionais sem oferta de emprego, exploramos outros caminhos como o <b>EB-2 NIW</b>, que é independente de empregador.');
+    await botMsg(`${S.nome}, para esse perfil, o caminho mais promissor seria o <strong>EB-2 NIW</strong> — que não exige oferta de emprego. Gostaria de avaliar essa opção?`);
+    showOpts(['Sim, quero avaliar o EB-2 NIW'], val => {
+      userMsg(val);
+      setSideVisto('EB-2 NIW');
+      go('path_fundos_gc');
+    });
+  },
+
+  // ──────── E-2 ────────
+  async path_e2_check() {
+    setProgress(16);
+    await think(700);
+    await showPopup('🤝', 'Visto de Investidor E-2', 'O E-2 permite que investidores de <b>países com tratado comercial com os EUA</b> obtenham visto para gerenciar seu próprio negócio no país. <br><br>É renovável e pode ser solicitado para cônjuge e filhos também.', null);
+    await think(400);
+    await botMsg('Para o E-2, é necessário ter cidadania de um país com tratado comercial com os EUA — como <strong>Brasil, Portugal, Itália, Espanha, Canadá ou Argentina</strong>. Você possui essa cidadania (primária ou secundária)?');
+    showOpts(['Sim, possuo','Não possuo'], val => {
+      userMsg(val);
+      S.profile.tratado = val === 'Sim, possuo' ? 'Sim' : 'Não';
+      if (val === 'Não possuo') go('path_e2_bloqueio');
+      else { setSideVisto('E-2'); go('path_e2_investimento'); }
+    });
+  },
+
+  async path_e2_bloqueio() {
+    await think(600);
+    await showAlert('⚠️ <b>Atenção:</b> Sem cidadania de país com tratado, o E-2 não está disponível formalmente. Se você tem <b>segunda cidadania</b> de um país elegível (ex: passaporte português ou italiano), isso muda o cenário.');
+    await botMsg('Você possui ou está em processo de obter uma <strong>segunda cidadania</strong> de país com tratado com os EUA?');
+    showOpts(['Sim, tenho segunda cidadania','Não tenho e não estou buscando'], val => {
+      userMsg(val);
+      if (val.includes('Sim')) { S.profile.tratado = 'Sim'; setSideVisto('E-2'); go('path_e2_investimento'); }
+      else go('path_e2_redireciona');
+    });
+  },
+
+  async path_e2_redireciona() {
+    await think(600);
+    await botMsg('Sem cidadania elegível, o E-2 não é viável no momento. Mas há outros caminhos — como o <strong>EB-2 NIW</strong> (Green Card por mérito) ou <strong>L-1</strong> (empresa). Gostaria de explorar essas alternativas?');
+    showOpts(['Sim, quero explorar outras opções'], () => { userMsg('Sim, quero explorar outras opções'); go('path_select'); });
+  },
+
+  async path_e2_investimento() {
+    setProgress(22);
+    await think(600);
+    await botMsg('Qual é a <strong>faixa de investimento</strong> que você pretende fazer nos EUA?');
+    showOpts(['Menos de US$ 25k','Entre US$ 26k e US$ 50k','Entre US$ 51k e US$ 100k','Acima de US$ 100 mil','Sem previsão de investimento'], val => {
+      userMsg(val);
+      S.profile.investimento = val;
+      if (val === 'Sem previsão de investimento') go('path_offramp_fundos');
+      else go('path_e2_negocio');
+    });
+  },
+
+  async path_e2_negocio() {
+    await think(500);
+    await botMsg('Você já tem em mente o <strong>tipo de negócio</strong> que pretende abrir ou adquirir nos EUA?');
+    showOpts(['Sim, já tenho negócio definido','Estou pesquisando opções','Ainda não sei'], val => {
+      userMsg(val);
+      S.profile.tipoNegocio = val;
+      go('path_e2_fundos');
+    });
+  },
+
+  async path_e2_fundos() {
+    setProgress(28);
+    await think(600);
+    await botMsg(`Você está <strong>financeiramente preparado</strong> para os custos do processo E-2? O investimento total (honorários + documentação) costuma ser de <strong>R$ 35.000 a R$ 55.000</strong>.`);
+    showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
+      userMsg(val);
+      S.profile.fundos = val;
+      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
+      else go('personal_info');
+    });
+  },
+
+  // ──────── DIAGNÓSTICO ────────
+  async path_diagnostico() {
+    setProgress(14);
+    await think(700);
+    await botMsg(`Sem problema, ${S.nome}! Vou te ajudar a identificar o melhor caminho. Qual é o seu <strong>nível de formação mais alto</strong>?`);
+    showOpts(['Doutorado / Mestrado','Bacharelado / Licenciatura','Tecnólogo','Ensino Médio / Sem formação superior'], val => {
+      userMsg(val);
+      S.profile.grauFormacaoDiag = val;
+      go('path_diag_cidadania');
+    });
+  },
+
+  async path_diag_cidadania() {
+    await think(500);
+    await botMsg('Você possui cidadania de país com tratado comercial com os EUA (Brasil, Portugal, Itália, Espanha, Canadá, Argentina)?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.tratadoDiag = val;
+      const temFormacao = !S.profile.grauFormacaoDiag.includes('Ensino Médio');
+      if (temFormacao) { setSideVisto('EB-2 NIW'); go('path_fundos_gc'); }
+      else if (val === 'Sim') { setSideVisto('E-2'); go('path_e2_investimento'); }
+      else go('path_offramp_sem_perfil');
+    });
+  },
+
+  // ──────── OFF-RAMPS ────────
+  async path_offramp_fundos() {
+    setProgress(40);
+    await think(700);
+    await botMsg(`Entendemos completamente, ${S.nome}. O processo de visto é um investimento importante. Nossa equipe pode explicar melhor as opções de pagamento e ajudar a planejar. Posso coletar seus dados para que um especialista entre em contato?`);
+    showOpts(['Sim, quero ser contatado'], () => { userMsg('Sim, quero ser contatado'); go('resultado_nurturing'); });
+  },
+
+  async path_offramp_sem_perfil() {
+    setProgress(30);
+    await think(700);
+    await botMsg(`Com o perfil atual, o encaixe direto em uma categoria é desafiador — mas um especialista pode identificar caminhos que não são imediatamente óbvios. Gostaria que nossa equipe analisasse seu caso de forma personalizada?`);
+    showOpts(['Sim, quero análise personalizada'], () => { userMsg('Sim, quero análise personalizada'); go('resultado_nurturing'); });
+  },
+
+  // ──────── PERFIL PESSOAL ────────
+  async personal_info() {
+    setSideStep(2); setProgress(36);
+    await think(700);
+    await botMsg(`Ótimo, ${S.nome}! Agora vou coletar algumas informações pessoais para enriquecer a análise. Qual é a sua <strong>data de nascimento</strong>?`);
+    waitInput(val => { S.profile.dataNasc = val; go('pi_local'); });
+  },
+
+  async pi_local() {
+    await think(400);
+    await botMsg('Onde você mora atualmente?');
+    showOpts(['Brasil 🇧🇷','Estados Unidos 🇺🇸'], val => { userMsg(val); S.profile.localMora = val; go('pi_profissao'); });
+  },
+
+  async pi_profissao() {
+    await think(400);
+    await botMsg('Qual é a sua <strong>profissão</strong>?');
+    showOpts([
+      'Engenheiro(a)','Médico(a)','Advogado(a)','Desenvolvedor(a) de Software',
+      'Profissional de TI','Dentista','Médico(a) Veterinário','Arquiteto(a)',
+      'Enfermeiro(a)','Engenheiro(a) Agrônomo','Piloto de aviação',
+      'Empreendedor(a)','Professor(a) Universitário(a)','Nutricionista',
+      'Fisioterapeuta','Contador(a)','Economista','Profissional de Marketing','Outra'
+    ], val => {
+      userMsg(val);
+      S.profile.profissao = val;
+      if (val === 'Outra') go('pi_profissao_outra');
+      else go('pi_renda');
+    });
+  },
+
+  async pi_profissao_outra() {
+    await think(300);
+    await botMsg('Qual é a sua profissão?');
+    waitInput(val => { S.profile.profissao = val; go('pi_renda'); });
+  },
+
+  async pi_renda() {
+    await think(400);
+    await botMsg('Qual é a sua <strong>renda média mensal</strong>?');
+    showOpts(['Até R$ 5.000','R$ 5.001 a R$ 10.000','R$ 10.001 a R$ 20.000','R$ 20.001 a R$ 50.000','Acima de R$ 50.000'], val => {
+      userMsg(val);
+      S.profile.renda = val;
+      go('pi_casado');
+    });
+  },
+
+  async pi_casado() {
+    await think(400);
+    await botMsg('Você é <strong>casado(a)</strong>?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.casado = val;
+      if (val === 'Sim') go('pi_filhos');
+      else { S.profile.filhos = 'Não'; go('pi_viagens'); }
+    });
+  },
+
+  async pi_filhos() {
+    await think(350);
+    await botMsg('Você possui <strong>filhos</strong>?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.filhos = val;
+      if (val === 'Sim') go('pi_qtd_filhos');
+      else go('pi_conjuge_visto');
+    });
+  },
+
+  async pi_qtd_filhos() {
+    await think(300);
+    await botMsg('Quantos filhos?');
+    showOpts(['1','2','3 ou mais'], val => { userMsg(val); S.profile.qtdFilhos = val; go('pi_conjuge_visto'); });
+  },
+
+  async pi_conjuge_visto() {
+    await think(350);
+    await botMsg('Seu <strong>cônjuge e filhos</strong> também solicitarão visto americano?');
+    showOpts(['Sim','Não','Não se aplica'], val => { userMsg(val); S.profile.conjugeVisto = val; go('pi_viagens'); });
+  },
+
+  async pi_viagens() {
+    await think(400);
+    await botMsg('Você realizou <strong>viagens ao exterior</strong> nos últimos 5 anos?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.viagens = val;
+      if (val === 'Sim') go('pi_paises');
+      else go('pi_parentes');
+    });
+  },
+
+  async pi_paises() {
+    await think(300);
+    await botMsg('Quais países você visitou? (pode listar todos)');
+    waitInput(val => { S.profile.paises = val; go('pi_parentes'); });
+  },
+
+  async pi_parentes() {
+    await think(400);
+    await botMsg('Você tem <strong>parentes nos EUA</strong>?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.parentesEUA = val;
+      if (val === 'Sim') go('pi_parentes_legal');
+      else go('pi_visto_anterior');
+    });
+  },
+
+  async pi_parentes_legal() {
+    await think(300);
+    await botMsg('Seu parente reside <strong>legalmente</strong> nos EUA?');
+    showOpts(['Sim','Não','Não sei'], val => { userMsg(val); S.profile.parentesLegal = val; go('pi_visto_anterior'); });
+  },
+
+  async pi_visto_anterior() {
+    await think(400);
+    await botMsg('Você tem ou já teve um <strong>visto americano</strong>?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.vistoAnterior = val;
+      if (val === 'Sim') go('pi_visto_negado');
+      else go('pi_planos');
+    });
+  },
+
+  async pi_visto_negado() {
+    await think(350);
+    await botMsg('Seu visto já foi <strong>negado ou cancelado</strong> alguma vez?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.vistoNegado = val;
+      if (val === 'Sim') go('pi_visto_negado_detalhe');
+      else go('pi_planos');
+    });
+  },
+
+  async pi_visto_negado_detalhe() {
+    await think(400);
+    await botMsg('Onde foi a entrevista e qual foi o motivo da negativa (se souber)?');
+    waitInput(val => { S.profile.vistoNegadoDetalhe = val; go('pi_planos'); });
+  },
+
+  async pi_planos() {
+    await think(400);
+    await botMsg('Quais são os seus <strong>planos nos EUA</strong>?');
+    showOpts(['Mudança definitiva / residência','Trabalho temporário','Investimento / negócios','Turismo / lazer','Estudo'], val => {
+      userMsg(val);
+      S.profile.planosEUA = val;
+      go('academic_start');
+    });
+  },
+
+  // ──────── FORMAÇÃO ACADÊMICA ────────
+  async academic_start() {
+    setSideStep(3); setProgress(52);
+    await think(600);
+    await botMsg(`Agora vou registrar sua <strong>formação acadêmica</strong>. Qual é o nome da <strong>instituição de ensino superior</strong> onde concluiu ou está cursando?`);
+    waitInput(val => { S.profile.instAcad1 = val; go('ac_curso'); });
+  },
+
+  async ac_curso() {
+    await think(400);
+    await botMsg('Qual é o nome do <strong>curso</strong>?');
+    waitInput(val => { S.profile.curso1 = val; go('ac_inicio'); });
+  },
+
+  async ac_inicio() {
+    await think(400);
+    await botMsg('Qual foi a <strong>data de início</strong> desse curso? (ex: 03/2015)');
+    waitInput(val => { S.profile.acInicio1 = val; go('ac_status'); });
+  },
+
+  async ac_status() {
+    await think(400);
+    await botMsg('Você <strong>concluiu</strong> essa formação?');
+    showOpts(['Sim, concluí','Ainda estou cursando','Não, curso incompleto'], val => {
+      userMsg(val);
+      S.profile.acStatus1 = val;
+      if (val === 'Sim, concluí') go('ac_conclusao');
+      else go('ac_segunda');
+    });
+  },
+
+  async ac_conclusao() {
+    await think(350);
+    await botMsg('Qual foi a <strong>data de conclusão</strong>? (ex: 12/2019)');
+    waitInput(val => { S.profile.acConclusao1 = val; go('ac_posgrad'); });
+  },
+
+  async ac_posgrad() {
+    await think(350);
+    await botMsg('Essa formação inclui pós-graduação?');
+    showOpts(['Sim — Lato Sensu (especialização/MBA)','Sim — Stricto Sensu (mestrado/doutorado)','Não'], val => {
+      userMsg(val);
+      S.profile.acPosgrad1 = val;
+      go('ac_segunda');
+    });
+  },
+
+  async ac_segunda() {
+    await think(400);
+    await botMsg('Você frequentou <strong>outra instituição de ensino superior</strong>?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      if (val === 'Sim') go('ac_inst2');
+      else go('prof_exp_start');
+    });
+  },
+
+  async ac_inst2() {
+    await think(350);
+    await botMsg('Qual foi a <strong>segunda instituição</strong>?');
+    waitInput(val => { S.profile.instAcad2 = val; go('ac_curso2'); });
+  },
+
+  async ac_curso2() {
+    await think(300);
+    await botMsg('Qual foi o <strong>segundo curso</strong>?');
+    waitInput(val => { S.profile.curso2 = val; go('ac_nivel2'); });
+  },
+
+  async ac_nivel2() {
+    await think(300);
+    await botMsg('Qual é o nível dessa segunda formação?');
+    showOpts(['Graduação','Pós-Graduação','Mestrado','Doutorado'], val => {
+      userMsg(val);
+      S.profile.nivelAcad2 = val;
+      go('ac_inicio2');
+    });
+  },
+
+  async ac_inicio2() {
+    await think(300);
+    await botMsg('Data de <strong>início</strong> da segunda formação? (ex: 03/2020)');
+    waitInput(val => { S.profile.acInicio2 = val; go('ac_status2'); });
+  },
+
+  async ac_status2() {
+    await think(300);
+    await botMsg('Você <strong>concluiu</strong> essa segunda formação?');
+    showOpts(['Sim, concluí','Ainda estou cursando','Não, incompleto'], val => {
+      userMsg(val);
+      S.profile.acStatus2 = val;
+      if (val === 'Sim, concluí') go('ac_conclusao2');
+      else go('prof_exp_start');
+    });
+  },
+
+  async ac_conclusao2() {
+    await think(300);
+    await botMsg('Data de <strong>conclusão</strong>? (ex: 12/2022)');
+    waitInput(val => { S.profile.acConclusao2 = val; go('prof_exp_start'); });
+  },
+
+  // ──────── EXPERIÊNCIA PROFISSIONAL ────────
+  async prof_exp_start() {
+    setSideStep(4); setProgress(65);
+    await think(600);
+    await botMsg(`Excelente! Agora sua <strong>experiência profissional</strong>. Qual é o nome da <strong>empresa onde trabalha atualmente</strong> ou onde trabalhou por último?`);
+    waitInput(val => { S.profile.emp1Nome = val; go('pe_ramo1'); });
+  },
+
+  async pe_ramo1() {
+    await think(350);
+    await botMsg(`Qual é o <strong>ramo de atuação</strong> da ${S.profile.emp1Nome}?`);
+    waitInput(val => { S.profile.emp1Ramo = val; go('pe_cargo1'); });
+  },
+
+  async pe_cargo1() {
+    await think(350);
+    await botMsg('Qual é / foi a sua <strong>função / cargo</strong> nessa empresa?');
+    waitInput(val => { S.profile.emp1Cargo = val; go('pe_entrada1'); });
+  },
+
+  async pe_entrada1() {
+    await think(350);
+    await botMsg('Qual foi a <strong>data de entrada</strong> nessa empresa? (ex: 06/2018)');
+    waitInput(val => { S.profile.emp1Entrada = val; go('pe_saida1'); });
+  },
+
+  async pe_saida1() {
+    await think(350);
+    await botMsg('Qual foi a <strong>data de saída</strong>? (ou "atual" se ainda está lá)');
+    waitInput(val => { S.profile.emp1Saida = val; go('pe_segunda'); });
+  },
+
+  async pe_segunda() {
+    await think(400);
+    await botMsg('Você teve <strong>experiências profissionais relevantes em outra empresa</strong>?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      if (val === 'Sim') go('pe_emp2');
+      else go('pe_projetos');
+    });
+  },
+
+  async pe_emp2() {
+    await think(350);
+    await botMsg('Qual o nome da <strong>segunda empresa</strong>?');
+    waitInput(val => { S.profile.emp2Nome = val; go('pe_ramo2'); });
+  },
+
+  async pe_ramo2() {
+    await think(300);
+    await botMsg(`Ramo de atuação da ${S.profile.emp2Nome}?`);
+    waitInput(val => { S.profile.emp2Ramo = val; go('pe_cargo2'); });
+  },
+
+  async pe_cargo2() {
+    await think(300);
+    await botMsg('Qual era a sua <strong>função</strong> nessa segunda empresa?');
+    waitInput(val => { S.profile.emp2Cargo = val; go('pe_entrada2'); });
+  },
+
+  async pe_entrada2() {
+    await think(300);
+    await botMsg('Data de <strong>entrada</strong> na segunda empresa? (ex: 01/2015)');
+    waitInput(val => { S.profile.emp2Entrada = val; go('pe_saida2'); });
+  },
+
+  async pe_saida2() {
+    await think(300);
+    await botMsg('Data de <strong>saída</strong> da segunda empresa?');
+    waitInput(val => { S.profile.emp2Saida = val; go('pe_terceira'); });
+  },
+
+  async pe_terceira() {
+    await think(350);
+    await botMsg('Você trabalhou em uma <strong>terceira empresa</strong> relevante?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      if (val === 'Sim') go('pe_emp3');
+      else go('pe_projetos');
+    });
+  },
+
+  async pe_emp3() {
+    await think(300);
+    await botMsg('Nome da <strong>terceira empresa</strong>?');
+    waitInput(val => { S.profile.emp3Nome = val; go('pe_cargo3'); });
+  },
+
+  async pe_cargo3() {
+    await think(300);
+    await botMsg('Função na terceira empresa e datas de entrada e saída? (pode responder tudo junto)');
+    waitInput(val => { S.profile.emp3Info = val; go('pe_projetos'); });
+  },
+
+  async pe_projetos() {
+    await think(500);
+    await botMsg('Você realizou <strong>projetos que trouxeram resultados significativos</strong> para uma empresa, para a sociedade ou para sua área de atuação?');
+    showOpts(['Sim','Não'], val => {
+      userMsg(val);
+      S.profile.temProjetos = val;
+      if (val === 'Sim') go('pe_projetos_desc');
+      else go('scoring_intro');
+    });
+  },
+
+  async pe_projetos_desc() {
+    await think(400);
+    await botMsg('Descreva brevemente esses projetos e os resultados alcançados:');
+    waitInput(val => { S.profile.projetosDesc = val; go('scoring_intro'); });
+  },
+
+  // ──────── SCORING ────────
+  async scoring_intro() {
+    setSideStep(5); setProgress(78);
+    await think(700);
+    await botMsg(`Estamos quase lá, <strong>${S.nome}</strong>! Agora vou fazer perguntas específicas sobre os critérios de pré-elegibilidade para o <strong>${S.visto}</strong>. Essas respostas têm peso direto na sua pontuação.`);
+    showOpts(['Entendido, vamos lá!'], () => {
+      userMsg('Entendido, vamos lá!');
+      if (S.visto === 'EB-2 NIW') go('sc_niw_1');
+      else if (S.visto === 'EB-1A') go('sc_eb1_1');
+      else if (S.visto === 'O-1') go('sc_o1_1');
+      else if (S.visto === 'L-1') go('resultado');
+      else if (S.visto === 'E-2') go('resultado');
+      else go('resultado');
+    });
+  },
+
+  // ── NIW CRITERIA ──
+  async sc_niw_1() {
+    await think(500);
+    await botMsg('Você tem ou conseguiria <strong>cartas de recomendação</strong> de pessoas com relevância ou destaque na sua área de atuação?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_cartas = val; go('sc_niw_2'); });
+  },
+  async sc_niw_2() {
+    await think(400);
+    await botMsg('Você possui <strong>certificados de palestras ministradas</strong> ou de participação na organização de eventos da sua área?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_palestras = val; go('sc_niw_3'); });
+  },
+  async sc_niw_3() {
+    await think(400);
+    await botMsg('Tem comprovação de participação como <strong>avaliador ou especialista em bancas</strong> acadêmicas ou profissionais?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_bancas = val; go('sc_niw_4'); });
+  },
+  async sc_niw_4() {
+    await think(400);
+    await botMsg('Possui comprovação de <strong>reportagens ou entrevistas</strong> em que foi citado como fonte de informação?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_reportagens = val; go('sc_niw_5'); });
+  },
+  async sc_niw_5() {
+    await think(400);
+    await botMsg('Você já <strong>publicou artigos de sua autoria</strong> em revistas científicas ou na mídia em geral?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_artigos = val; go('sc_niw_6'); });
+  },
+  async sc_niw_6() {
+    await think(400);
+    await botMsg('Já teve <strong>participação em projetos de pesquisa</strong> na sua área?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_pesquisa = val; go('sc_niw_7'); });
+  },
+  async sc_niw_7() {
+    await think(400);
+    await botMsg('Tem comprovação de <strong>premiações e/ou reconhecimentos</strong> recebidos pelo seu trabalho?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_premios = val; go('sc_niw_8'); });
+  },
+  async sc_niw_8() {
+    await think(400);
+    await botMsg('Possui <strong>certificados de cursos e/ou treinamentos</strong> na sua área?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_cursos = val; go('sc_niw_9'); });
+  },
+  async sc_niw_9() {
+    await think(400);
+    await botMsg('Possui <strong>licenças emitidas por Conselhos Profissionais</strong> ou certificações de organizações reconhecidas?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_licencas = val; go('sc_niw_hab'); });
+  },
+  async sc_niw_hab() {
+    setProgress(86);
+    await think(500);
+    await botMsg('Selecione os critérios abaixo que você acredita <strong>atender</strong> (pode escolher mais de um):');
+    // Multi-select simulado com botões sequenciais
+    const hab = ['Registro acadêmico oficial (diploma ou certificado)','Cartas comprovando 10+ anos de experiência em tempo integral','Licença ou certificação para exercer a profissão','Evidência de salário/remuneração que demonstre capacidade excepcional','Filiação a associações profissionais','Reconhecimento por contribuições significativas à indústria'];
+    const sel = new Set();
+    const w = document.createElement('div');
+    w.className = 'opts-wrap'; w.id = 'opts';
+    const keyMap = ['hab_diploma','hab_10anos','hab_licenca','hab_salario','hab_associacao','hab_reconhecimento'];
+    hab.forEach((h, i) => {
+      const b = document.createElement('button');
+      b.className = 'opt'; b.textContent = h;
+      b.onclick = () => {
+        if (sel.has(i)) { sel.delete(i); b.classList.remove('sel'); S.profile[keyMap[i]] = false; }
+        else { sel.add(i); b.classList.add('sel'); S.profile[keyMap[i]] = true; }
+      };
+      w.appendChild(b);
+    });
+    const conf = document.createElement('button');
+    conf.className = 'opt'; conf.style.cssText = 'background:var(--navy);color:#fff;border-color:var(--navy);margin-top:4px';
+    conf.textContent = '✓ Confirmar seleção';
+    conf.onclick = () => {
+      w.remove();
+      const selecionados = hab.filter((_,i) => sel.has(i));
+      userMsg(selecionados.length ? selecionados.join(', ') : 'Nenhum critério selecionado');
+      // Se perfil tem conquistas → avaliar EB-1A também
+      if (S.profile.temConquistas && S.profile.temConquistas.includes('Sim')) go('sc_eb1_intro');
+      else go('resultado');
+    };
+    w.appendChild(conf);
+    chat.appendChild(w);
+    chat.scrollTop = 9999;
+    ti.disabled = false;
+  },
+
+  async sc_eb1_intro() {
+    setProgress(90);
+    await think(600);
+    await showFact('⭐', 'Seu perfil indicou conquistas extraordinárias. Vou agora coletar os critérios do <b>EB-1A</b> — o caminho de Green Card mais avançado, para profissionais no topo da sua área globalmente.');
+    await pause(300);
+    await botMsg('Responda com base nas suas realizações mais expressivas:');
+    go('sc_eb1_1');
+  },
+
+  // ── EB-1A CRITERIA ──
+  async sc_eb1_1() {
+    await think(400);
+    await botMsg('Já foram publicadas <strong>reportagens ou artigos sobre você</strong> em revistas, jornais ou mídias de grande alcance nacional ou internacional?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_midia = val; go('sc_eb1_2'); });
+  },
+  async sc_eb1_2() {
+    await think(400);
+    await botMsg('Seu trabalho já foi <strong>exibido em exposições ou mostras importantes</strong> em âmbito nacional ou internacional?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_exposicoes = val; go('sc_eb1_3'); });
+  },
+  async sc_eb1_3() {
+    await think(400);
+    await botMsg('Você já ocupou <strong>cargos de liderança ou papel crítico</strong> em alguma organização importante da sua área?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_lideranca = val; go('sc_eb1_4'); });
+  },
+  async sc_eb1_4() {
+    await think(400);
+    await botMsg('Seu <strong>salário ou remuneração</strong> está comprovadamente acima da média dos profissionais da sua área?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_salario = val; go('sc_eb1_5'); });
+  },
+  async sc_eb1_5() {
+    await think(400);
+    await botMsg('Você já recebeu <strong>prêmios de excelência</strong> reconhecidos nacional ou internacionalmente?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_premios = val; go('sc_eb1_6'); });
+  },
+  async sc_eb1_6() {
+    await think(400);
+    await botMsg('Participa de <strong>associações que exigem realizações extraordinárias</strong> para admissão (acesso por convite ou mérito)?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_assoc = val; go('sc_eb1_7'); });
+  },
+  async sc_eb1_7() {
+    await think(400);
+    await botMsg('Você já foi <strong>convidado a avaliar o trabalho de outras pessoas</strong>, individualmente ou como parte de um painel?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_avaliador = val; go('sc_eb1_8'); });
+  },
+  async sc_eb1_8() {
+    await think(400);
+    await botMsg('Tem evidências de <strong>contribuições originais de grande importância</strong> para o seu campo (científicas, artísticas, de negócios)?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_contrib = val; go('sc_eb1_decide'); });
+  },
+
+  async sc_eb1_decide() {
+    // Always show BOTH EB-2 NIW and EB-1A results when EB-1A criteria were collected
+    const keysEb1 = ['eb1_premios','eb1_assoc','eb1_midia','eb1_avaliador','eb1_contrib','eb1_lideranca','eb1_salario'];
+    const simCount = keysEb1.filter(k => S.profile[k] === 'Sim').length;
+    // Store both for dual result
+    S.vistos = ['EB-2 NIW', 'EB-1A'];
+    // Primary visto for sidebar
+    if (simCount >= 3) { setSideVisto('EB-1A'); S.visto = 'EB-1A'; }
+    else { setSideVisto('EB-2 NIW'); S.visto = 'EB-2 NIW'; }
+    go('resultado');
+  },
+
+  // ── O-1 CRITERIA ──
+  async sc_o1_1() {
+    await think(400);
+    await botMsg('Você já recebeu <strong>prêmios ou reconhecimentos nacionais/internacionais</strong> na sua área?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_premios = val; go('sc_o1_2'); });
+  },
+  async sc_o1_2() {
+    await think(400);
+    await botMsg('Existem <strong>publicações em mídia relevante</strong> sobre você ou seu trabalho?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_midia = val; go('sc_o1_3'); });
+  },
+  async sc_o1_3() {
+    await think(400);
+    await botMsg('Você possui <strong>contribuições originais reconhecidas</strong> na sua área?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_contrib = val; go('sc_o1_4'); });
+  },
+  async sc_o1_4() {
+    await think(400);
+    await botMsg('Você ocupa ou já ocupou um <strong>papel de liderança em organizações de destaque</strong>?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_lideranca = val; go('sc_o1_5'); });
+  },
+  async sc_o1_5() {
+    await think(400);
+    await botMsg('Sua remuneração está <strong>acima da média da sua área</strong>?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_salario = val; go('resultado'); });
+  },
+
+  // ──────── RESULTADO ────────
+  async resultado() {
+    setSideStep(6); setProgress(100);
+    const visto = S.visto || 'EB-2 NIW';
+    const score = calcScore(visto, S.profile);
+    setSideBar(score);
+
+    await think(1200);
+    const isDual = S.vistos && S.vistos.length === 2;
+    await botMsg(`<strong>${S.nome}</strong>, sua análise de pré-elegibilidade está pronta! ${isDual ? 'Avaliamos os dois caminhos mais adequados para o seu perfil:' : `Com base em todas as respostas, preparei sua análise para o <strong>${visto}</strong>:`}`);
+    await pause(500);
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+      <div class="msg-wrap" style="max-width:90%">${buildResult(visto, score, S.profile)}</div>`;
+    chat.appendChild(row);
+    chat.scrollTop = 9999;
+
+    // Remove undo at final step
+    const ur = document.getElementById('undo-row'); if (ur) ur.remove();
+    ti.disabled = true; sbBtn.disabled = true;
+    clearInputHandlers();
+  },
+
+  async resultado_nurturing() {
+    setSideStep(6); setProgress(100);
+    await think(900);
+    await botMsg(`Obrigado pelas informações, <strong>${S.nome}</strong>! Registrei seu perfil e nossa equipe entrará em contato em breve para dar os próximos passos. 🙌`);
+    await pause(400);
+    await showFact('📧', `Um e-mail de confirmação foi enviado para <b>${S.email}</b>. Nossa equipe costuma responder em até <b>24 horas úteis</b>.`);
+    ti.disabled = true; sbBtn.disabled = true;
+    clearInputHandlers();
+  }
+};
+
+// ─── START ───
+go('welcome');
+</script>
+</body>
+</html>
