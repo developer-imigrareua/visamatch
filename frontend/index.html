@@ -932,8 +932,75 @@ const flows = {
 
   async contact_phone() {
     await think(500);
-    await botMsg(`Prazer, <strong>${S.nome}</strong>! Qual é o seu <strong>WhatsApp</strong> com DDI? (ex: +55 11 99999-9999)`);
-    waitInput(val => { S.phone = val; go('path_select'); });
+    await botMsg(`Prazer, <strong>${S.nome}</strong>! Qual é o seu <strong>WhatsApp</strong>? Selecione o país e digite o número:`);
+    await pause(200);
+    // Campo especial de telefone com seletor de país
+    clearInputHandlers();
+    const phoneRow = document.createElement('div');
+    phoneRow.id = 'phone-widget';
+    phoneRow.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
+    const countries = [
+      {code:'BR',ddi:'+55',flag:'🇧🇷',name:'Brasil'},
+      {code:'US',ddi:'+1',flag:'🇺🇸',name:'EUA'},
+      {code:'PT',ddi:'+351',flag:'🇵🇹',name:'Portugal'},
+      {code:'AR',ddi:'+54',flag:'🇦🇷',name:'Argentina'},
+      {code:'IT',ddi:'+39',flag:'🇮🇹',name:'Itália'},
+      {code:'ES',ddi:'+34',flag:'🇪🇸',name:'Espanha'},
+      {code:'CA',ddi:'+1',flag:'🇨🇦',name:'Canadá'},
+      {code:'DE',ddi:'+49',flag:'🇩🇪',name:'Alemanha'},
+      {code:'FR',ddi:'+33',flag:'🇫🇷',name:'França'},
+      {code:'MX',ddi:'+52',flag:'🇲🇽',name:'México'},
+    ];
+    phoneRow.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 10px;max-width:420px;transition:border-color .2s" id="phone-wrap">
+        <select id="phone-country" style="border:none;outline:none;font-size:14px;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy)">
+          ${countries.map(c => `<option value="${c.ddi}" ${c.code==='BR'?'selected':''}>${c.flag} ${c.ddi}</option>`).join('')}
+        </select>
+        <div style="width:1px;height:20px;background:rgba(11,25,41,.1)"></div>
+        <input id="phone-num" type="tel" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--navy);flex:1;background:none"/>
+        <button id="phone-send" style="background:var(--navy);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>`;
+    chat.appendChild(phoneRow);
+    chat.scrollTop = 9999;
+
+    // Formata número BR automaticamente
+    document.getElementById('phone-num').addEventListener('input', function() {
+      const ddi = document.getElementById('phone-country').value;
+      if (ddi !== '+55') return;
+      let v = this.value.replace(/\D/g,'');
+      if (v.length > 11) v = v.slice(0,11);
+      if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+      else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+      this.value = v;
+    });
+
+    document.getElementById('phone-wrap').addEventListener('focusin', () =>
+      document.getElementById('phone-wrap').style.borderColor = 'rgba(201,168,76,.45)'
+    );
+    document.getElementById('phone-wrap').addEventListener('focusout', () =>
+      document.getElementById('phone-wrap').style.borderColor = 'rgba(11,25,41,.1)'
+    );
+
+    const submitPhone = () => {
+      const ddi = document.getElementById('phone-country').value;
+      const num = document.getElementById('phone-num').value.trim();
+      if (!num) return;
+      const full = `${ddi} ${num}`;
+      phoneRow.remove();
+      S.phone = full;
+      userMsg(full);
+      // Salva lead parcial após ter email + nome + telefone
+      fetch(`${API_BASE}/lead/partial`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ nome: S.nome, email: S.email, phone: full, etapa: 'contato', profile: S.profile })
+      }).catch(()=>{});
+      go('path_select');
+    };
+
+    document.getElementById('phone-send').onclick = submitPhone;
+    document.getElementById('phone-num').addEventListener('keydown', e => { if(e.key==='Enter') submitPhone(); });
   },
 
   // ──────── TRIAGEM ────────
@@ -1334,6 +1401,11 @@ const flows = {
   async path_offramp_fundos() {
     setProgress(40);
     await think(700);
+    // Salva lead parcial — abandono por fundos
+    fetch(`${API_BASE}/lead/partial`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_fundos', visto: S.visto, profile: S.profile })
+    }).catch(()=>{});
     await botMsg(`Entendemos completamente, ${S.nome}. O processo de visto é um investimento importante. Nossa equipe pode explicar melhor as opções de pagamento e ajudar a planejar. Posso coletar seus dados para que um especialista entre em contato?`);
     showOpts(['Sim, quero ser contatado'], () => { userMsg('Sim, quero ser contatado'); go('resultado_nurturing'); });
   },
@@ -1341,6 +1413,11 @@ const flows = {
   async path_offramp_sem_perfil() {
     setProgress(30);
     await think(700);
+    // Salva lead parcial — abandono por perfil
+    fetch(`${API_BASE}/lead/partial`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile })
+    }).catch(()=>{});
     await botMsg(`Com o perfil atual, o encaixe direto em uma categoria é desafiador — mas um especialista pode identificar caminhos que não são imediatamente óbvios. Gostaria que nossa equipe analisasse seu caso de forma personalizada?`);
     showOpts(['Sim, quero análise personalizada'], () => { userMsg('Sim, quero análise personalizada'); go('resultado_nurturing'); });
   },
@@ -1349,8 +1426,48 @@ const flows = {
   async personal_info() {
     setSideStep(2); setProgress(36);
     await think(700);
-    await botMsg(`Ótimo, ${S.nome}! Agora vou coletar algumas informações pessoais para enriquecer a análise. Qual é a sua <strong>data de nascimento</strong>?`);
-    waitInput(val => { S.profile.dataNasc = val; go('pi_local'); });
+    await botMsg(`Ótimo, ${S.nome}! Agora vou coletar algumas informações pessoais. Qual é a sua <strong>data de nascimento</strong>?`);
+    await pause(200);
+    clearInputHandlers();
+    const dateRow = document.createElement('div');
+    dateRow.id = 'date-widget';
+    dateRow.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
+    dateRow.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 14px;max-width:260px;transition:border-color .2s" id="date-wrap">
+        <input id="date-in" type="text" maxlength="10" placeholder="DD/MM/AAAA"
+          style="border:none;outline:none;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--navy);width:130px;background:none;letter-spacing:.04em"/>
+        <button id="date-send" style="background:var(--navy);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>`;
+    chat.appendChild(dateRow);
+    chat.scrollTop = 9999;
+
+    // Auto-formata DD/MM/AAAA
+    document.getElementById('date-in').addEventListener('input', function() {
+      let v = this.value.replace(/\D/g,'');
+      if (v.length > 8) v = v.slice(0,8);
+      if (v.length > 4) v = `${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4)}`;
+      else if (v.length > 2) v = `${v.slice(0,2)}/${v.slice(2)}`;
+      this.value = v;
+    });
+
+    document.getElementById('date-wrap').addEventListener('focusin', () =>
+      document.getElementById('date-wrap').style.borderColor = 'rgba(201,168,76,.45)'
+    );
+
+    const submitDate = () => {
+      const val = document.getElementById('date-in').value.trim();
+      if (val.length < 8) return;
+      dateRow.remove();
+      S.profile.dataNasc = val;
+      userMsg(val);
+      go('pi_local');
+    };
+
+    document.getElementById('date-send').onclick = submitDate;
+    document.getElementById('date-in').addEventListener('keydown', e => { if(e.key==='Enter') submitDate(); });
+    document.getElementById('date-in').focus();
   },
 
   async pi_local() {
@@ -1977,6 +2094,11 @@ const flows = {
   async resultado_nurturing() {
     setSideStep(6); setProgress(100);
     await think(900);
+    // Salva lead de nurturing (não completou mas quer contato)
+    fetch(`${API_BASE}/lead/partial`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'nurturing_contato', visto: S.visto, profile: S.profile })
+    }).catch(()=>{});
     await botMsg(`Obrigado pelas informações, <strong>${S.nome}</strong>! Registrei seu perfil e nossa equipe entrará em contato em breve para dar os próximos passos. 🙌`);
     await pause(400);
     await showFact('📧', `Um e-mail de confirmação foi enviado para <b>${S.email}</b>. Nossa equipe costuma responder em até <b>24 horas úteis</b>.`);
