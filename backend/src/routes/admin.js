@@ -1,12 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { createClient } = require('@supabase/supabase-js');
+const supabase = require('../lib/supabase');
 const router = express.Router();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
 
 // ── Middleware de autenticação ──
 function auth(req, res, next) {

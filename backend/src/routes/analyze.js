@@ -1,12 +1,7 @@
 const express = require('express');
 const { analyzeProfile } = require('../services/analyzer');
-const { createClient } = require('@supabase/supabase-js');
+const supabase = require('../lib/supabase');
 const router = express.Router();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
 
 // POST /analyze
 // Body: { nome, email, phone, visto, vistos, profile }
