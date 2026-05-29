@@ -9,7 +9,7 @@ REGRAS CRÍTICAS:
 - Seja honesto. Não infle scores para parecer positivo.
 - Baseie-se apenas nos dados fornecidos. Não assuma informações não declaradas.
 - Se um critério está ausente, marque como ausente — não como parcial.
-- O resultado é uma TRIAGEM, não uma análise jurídica oficial. Deixe isso claro na análise.
+- O conteúdo gerado tem caráter estritamente informativo e não constitui aconselhamento jurídico. Não cria relação advogado-cliente. Deixe isso claro na análise.
 - Responda SEMPRE em português do Brasil.
 - Retorne APENAS o JSON solicitado, sem texto adicional.
 `;

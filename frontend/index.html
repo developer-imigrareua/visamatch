@@ -686,7 +686,7 @@ function buildResult(visto, score, p) {
 
   // Legal disclaimer
   const legalHtml = `<div class="legal-disc">
-    ⚖️ <b>Aviso:</b> Este resultado é uma <b>triagem de pré-elegibilidade</b> e não constitui avaliação jurídica oficial, nem configura relação advogado-cliente. Para confirmar elegibilidade e iniciar um processo formal, consulte um advogado licenciado nos EUA.
+    ⚖️ <b>DISCLAIMER:</b> O conteúdo desta análise tem caráter estritamente informativo e não constitui aconselhamento jurídico. Receber este relatório não cria relação advogado-cliente. Para orientação jurídica específica, agende uma consulta com nossos especialistas.
   </div>`;
 
   // Partner CTA
@@ -783,10 +783,10 @@ const flows = {
     setSideStep(0); setProgress(5);
     await think(700);
     await showPopup('⚖️', 'Aviso Jurídico Importante',
-      '<b>Antes de prosseguir, leia com atenção:</b><br><br>' +
-      '• Esta ferramenta realiza uma <b>triagem de pré-elegibilidade</b>, não uma avaliação jurídica oficial.<br><br>' +
-      '• O resultado <b>não configura relação advogado-cliente</b> e não substitui a análise de um profissional licenciado.<br><br>' +
-      '• Para confirmar sua pré-elegibilidade e iniciar um processo formal, consulte um <b>advogado licenciado nos EUA (licensed attorney)</b>.<br><br>' +
+      '<b>DISCLAIMER</b><br><br>' +
+      '• O conteúdo desta ferramenta tem caráter <b>estritamente informativo</b> e não constitui aconselhamento jurídico.<br><br>' +
+      '• Utilizar esta ferramenta <b>não cria relação advogado-cliente</b>.<br><br>' +
+      '• Para orientação jurídica específica, agende uma consulta com nossos especialistas.<br><br>' +
       '• A ImigrarEUA é um HUB de imigração e encaminha os casos qualificados ao escritório parceiro <b>LIV Law</b>, licenciado nos EUA.',
       () => go('contact_email')
     );
