@@ -1,71 +1,105 @@
 #!/bin/bash
-# deploy.sh — Script de deploy para VPS Hostinger
-# Uso: bash deploy.sh
-# Rodar na primeira vez: bash deploy.sh --setup
+# deploy.sh — Visa Match · VPS Hostinger
+#
+# SEGURO: opera apenas em /var/www/visamatch
+# NÃO toca em: liv-ai, n8n, nginx existente, PM2, SSL existente
+#
+# Uso:
+#   bash deploy.sh --setup   → primeira vez (instala nginx conf + sobe container)
+#   bash deploy.sh           → atualiza (pull + rebuild + restart)
 
 set -e
 
 APP_DIR="/var/www/visamatch"
 REPO="https://github.com/developer-imigrareua/visamatch.git"
 BRANCH="main"
-SERVICE="visamatch-api"
+CONTAINER="visamatch"
+NGINX_CONF="/etc/nginx/sites-available/visamatch"
+NGINX_LINK="/etc/nginx/sites-enabled/visamatch"
 
-echo "🚀 Visa Match — Deploy iniciado"
+echo ""
+echo "🚀 Visa Match — Deploy"
+echo "─────────────────────────────────────"
 
-# ── SETUP INICIAL (apenas na primeira vez) ──
+# Garante que não está mexendo em outros projetos
+if [ "$(pwd)" != "$APP_DIR" ] && [ "$1" != "--setup" ]; then
+  cd $APP_DIR 2>/dev/null || { echo "❌ Diretório $APP_DIR não encontrado. Rode com --setup primeiro."; exit 1; }
+fi
+
+# ── SETUP INICIAL ──────────────────────────────────────────────
 if [ "$1" == "--setup" ]; then
-  echo "📦 Instalando dependências do sistema..."
-  apt-get update -qq
-  apt-get install -y nginx nodejs npm git certbot python3-certbot-nginx
+  echo "📁 Clonando repositório em $APP_DIR..."
+  if [ -d "$APP_DIR/.git" ]; then
+    echo "   Repositório já existe, atualizando..."
+    cd $APP_DIR && git pull origin $BRANCH
+  else
+    git clone $REPO $APP_DIR
+    cd $APP_DIR
+  fi
 
-  echo "📦 Instalando PM2..."
-  npm install -g pm2
-
-  echo "📁 Criando diretório do app..."
-  mkdir -p $APP_DIR
-  git clone $REPO $APP_DIR
-  cd $APP_DIR/backend
-  npm install --production
-
-  echo "⚙️  Configurando Nginx..."
-  cp $APP_DIR/nginx/visamatch.conf /etc/nginx/sites-available/visamatch
-  ln -sf /etc/nginx/sites-available/visamatch /etc/nginx/sites-enabled/visamatch
-  rm -f /etc/nginx/sites-enabled/default
-  nginx -t && systemctl reload nginx
-
-  echo "🔑 Criando arquivo .env..."
-  echo "Copie o conteúdo de .env.example para $APP_DIR/backend/.env e preencha as chaves."
-  cp $APP_DIR/backend/.env.example $APP_DIR/backend/.env
   echo ""
-  echo "⚠️  ATENÇÃO: Edite $APP_DIR/backend/.env com as chaves reais antes de continuar!"
-  echo "  nano $APP_DIR/backend/.env"
+  echo "🔑 Configurando .env..."
+  if [ ! -f "$APP_DIR/backend/.env" ]; then
+    cp $APP_DIR/backend/.env.example $APP_DIR/backend/.env
+    echo "   ⚠️  ATENÇÃO: Preencha as chaves em $APP_DIR/backend/.env antes de continuar!"
+    echo "   Comando: nano $APP_DIR/backend/.env"
+    echo ""
+    read -p "   Pressione ENTER após preencher o .env para continuar..."
+  else
+    echo "   .env já existe, mantendo."
+  fi
+
   echo ""
+  echo "🌐 Configurando Nginx (APENAS novo arquivo, sem tocar nos existentes)..."
+  if [ ! -f "$NGINX_CONF" ]; then
+    cp $APP_DIR/nginx/visamatch.conf $NGINX_CONF
+    ln -sf $NGINX_CONF $NGINX_LINK
+    echo "   ✅ Novo site adicionado: visamatch"
+  else
+    echo "   Config Nginx já existe, atualizando..."
+    cp $APP_DIR/nginx/visamatch.conf $NGINX_CONF
+  fi
 
-  echo "▶️  Iniciando API com PM2..."
-  cd $APP_DIR/backend
-  pm2 start src/index.js --name $SERVICE
-  pm2 save
-  pm2 startup
+  echo "   Validando Nginx (sem reiniciar serviços existentes)..."
+  nginx -t
+  systemctl reload nginx
+  echo "   ✅ Nginx recarregado com sucesso"
 
+  echo ""
+  echo "🐳 Subindo container Docker isolado..."
+  cd $APP_DIR
+  docker compose up -d --build
+
+  echo ""
+  echo "🔒 SSL — Para ativar HTTPS (opcional, mas recomendado):"
+  echo "   certbot --nginx -d visamatch.imigrareua.com"
+  echo "   (Não afeta os certificados existentes de ai.liv.law e vault.liv.law)"
+
+  echo ""
   echo "✅ Setup concluído!"
+  echo "   Frontend: http://69.62.95.58"
+  echo "   Admin:    http://69.62.95.58/admin"
+  echo "   API:      http://69.62.95.58/api/health"
   exit 0
 fi
 
-# ── DEPLOY PADRÃO (atualizações) ──
+# ── DEPLOY PADRÃO (atualizações) ───────────────────────────────
 echo "⬇️  Atualizando código..."
 cd $APP_DIR
 git pull origin $BRANCH
 
-echo "📦 Instalando dependências..."
-cd $APP_DIR/backend
-npm install --production
-
-echo "♻️  Reiniciando API..."
-pm2 restart $SERVICE
-
-echo "🔄 Recarregando Nginx..."
-nginx -t && systemctl reload nginx
+echo ""
+echo "🐳 Rebuild e restart do container..."
+docker compose up -d --build
 
 echo ""
-echo "✅ Deploy concluído com sucesso!"
-pm2 status $SERVICE
+echo "⏳ Aguardando container ficar saudável..."
+sleep 5
+
+echo ""
+echo "📊 Status:"
+docker compose ps
+
+echo ""
+echo "✅ Deploy concluído!"
+echo "   Logs: docker logs -f $CONTAINER"
