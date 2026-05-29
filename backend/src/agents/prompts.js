@@ -15,23 +15,70 @@ REGRAS CRÍTICAS:
 `;
 
 const SCHEMA_INSTRUCAO = `
-Retorne um JSON com exatamente esta estrutura:
+Retorne um JSON com EXATAMENTE esta estrutura (sem campos extras, sem texto fora do JSON):
+
 {
   "visto": string,
   "score": number (0 a 100),
+  "aprovacao_pct": number (0 a 100, sua estimativa realista de chance de aprovação),
   "classificacao": "Alta" | "Moderada" | "Em Desenvolvimento" | "Incompatível",
-  "pontos_fortes": string[],
-  "pontos_criticos": string[],
+
+  "fundamento_legal": {
+    "base": string (ex: "INA § 203(b)(2)"),
+    "regulamento": string (ex: "8 C.F.R. § 204.5(k)"),
+    "formulario": string (ex: "I-140")
+  },
+
+  "como_funciona": string (1 parágrafo explicando o visto e seus dois caminhos principais ou requisito central),
+
+  "destaques": string[] (3-5 conquistas/pontos marcantes do candidato para exibir como badges),
+
   "criterios": [
     {
-      "nome": string,
-      "status": "atendido" | "parcial" | "ausente",
-      "peso": "crítico" | "alto" | "médio" | "baixo",
-      "observacao": string
+      "numero": number,
+      "nome": string (nome oficial do critério USCIS),
+      "evidencias": string[] (2-4 evidências específicas do perfil do candidato para este critério),
+      "status": "atendido" | "fortalecer" | "construir",
+      "estrelas": number (1 a 5, onde 5 = evidência irrefutável, 1 = praticamente ausente),
+      "observacao": string (1 frase sobre o status deste critério)
     }
   ],
-  "analise": string (2-3 parágrafos personalizados, mencione o nome do candidato),
-  "proximos_passos": string[] (3-5 ações concretas e priorizadas),
+
+  "scorecard": {
+    "atendidos": number,
+    "total": number,
+    "minimo_exigido": number
+  },
+
+  "veredicto": string (2-3 frases diretas sobre a viabilidade do caso),
+
+  "estrategia_adicional": string (1 parágrafo sobre estratégia complementar, ex: casamento + visto, O-1 → EB-1A, NIW paralelo, etc.),
+
+  "pontos_fortes": string[] (3-5 principais forças do perfil),
+  "pontos_criticos": string[] (2-4 gaps mais importantes a resolver),
+
+  "analise": string (2-3 parágrafos personalizados mencionando o nome do candidato e conectando o perfil aos critérios),
+
+  "documentacao_principal": string[] (6-10 documentos específicos necessários para este caso),
+
+  "custo_estimado": {
+    "itens": [
+      { "nome": string, "valor": string }
+    ],
+    "total": string
+  },
+
+  "processo": {
+    "prazo_regular": string (ex: "2–3 meses"),
+    "prazo_premium": string (ex: "15 dias úteis"),
+    "validade": string (ex: "3 anos, renovável"),
+    "quem_peticiona": string
+  },
+
+  "plano_acao": string[] (4-5 ações concretas e priorizadas para as próximas 2-4 semanas),
+
+  "proximos_passos": string[] (3-5 ações de médio prazo),
+
   "recomendacao_parceiro": "liv" | "phoenix"
 }
 
@@ -41,9 +88,9 @@ Critérios de classificação:
 - Em Desenvolvimento: score >= 0 (perfil incipiente, foco em construção)
 - Incompatível: score < 0 (não elegível no momento)
 
-Critérios de recomendação de parceiro:
-- "liv": classificação Alta ou Moderada (LIV Law — escritório licenciado nos EUA)
-- "phoenix": classificação Em Desenvolvimento ou Incompatível (fortalecimento de perfil)
+Parceiro:
+- "liv": Alta ou Moderada → LIV Law (escritório licenciado nos EUA)
+- "phoenix": Em Desenvolvimento ou Incompatível → fortalecimento de perfil
 `;
 
 // ─── EB-2 NIW ──────────────────────────────────────────────────────────────

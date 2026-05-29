@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Elegibilidade — Visa Match</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0b1929;--navy2:#122238;--navy3:#1a3050;
+  --gold:#c9a84c;--gold2:#dfc06e;--gold3:#f5e6c0;--gold4:#fdf8ec;
+  --cream:#faf8f3;--smoke:#f2ede4;
+  --txt:#18202e;--txt2:#4a5568;--txt3:#94a3b8;
+  --green:#1d9e70;--green2:#d1fae5;
+  --amber:#d97706;--amber2:#fef3c7;
+  --red:#dc2626;--red2:#fee2e2;
+  --blue:#2563eb;--blue2:#dbeafe;
+}
+body{font-family:'DM Sans',sans-serif;background:#e8e4da;color:var(--txt);min-height:100vh;padding:24px}
+
+/* ── PRINT ── */
+@media print{
+  body{background:#fff;padding:0}
+  .no-print{display:none!important}
+  .page{box-shadow:none;margin:0;border-radius:0;max-width:100%}
+  @page{margin:12mm;size:A4}
+}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto 16px;padding:0 4px}
+.toolbar-brand{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--navy2);opacity:.6}
+.toolbar-btns{display:flex;gap:8px}
+.tbtn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.tbtn-print{background:var(--navy);color:#fff}
+.tbtn-print:hover{background:var(--navy3)}
+.tbtn-back{background:#fff;color:var(--txt2);border:1.5px solid rgba(11,25,41,.12)}
+.tbtn-back:hover{border-color:var(--gold);color:var(--navy)}
+
+/* ── PAGE ── */
+.page{max-width:960px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12)}
+
+/* ── HEADER ── */
+.header{background:var(--navy);padding:0;display:grid;grid-template-columns:1fr auto;min-height:160px}
+.header-left{padding:28px 32px;display:flex;flex-direction:column;justify-content:center}
+.visto-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:4px 13px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold2);margin-bottom:10px;width:fit-content}
+.visto-nome{font-family:'Cormorant Garamond',serif;font-size:38px;color:#fff;line-height:1;font-weight:700;margin-bottom:4px}
+.visto-subtitulo{font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px}
+.candidato-nome{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold2)}
+.candidato-profissao{font-size:12.5px;color:rgba(255,255,255,.45);margin-top:2px}
+
+.header-right{background:rgba(255,255,255,.04);border-left:1px solid rgba(255,255,255,.07);padding:28px 32px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:200px;gap:10px}
+.aprovacao-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+.aprovacao-pct{font-family:'Cormorant Garamond',serif;font-size:56px;color:#fff;line-height:1;font-weight:700}
+.aprovacao-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+.aprovacao-alta{background:rgba(29,158,112,.18);border:2px solid var(--green)}
+.aprovacao-mod{background:rgba(217,119,6,.18);border:2px solid var(--amber)}
+.aprovacao-dev{background:rgba(11,25,41,.2);border:2px solid rgba(255,255,255,.2)}
+.aprovacao-inc{background:rgba(220,38,38,.18);border:2px solid var(--red)}
+.classificacao-badge{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.05em}
+.cls-alta{background:rgba(29,158,112,.15);color:#5eead4;border:1px solid rgba(29,158,112,.3)}
+.cls-mod{background:rgba(217,119,6,.15);color:#fcd34d;border:1px solid rgba(217,119,6,.3)}
+.cls-dev{background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.15)}
+.cls-inc{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+
+/* ── DESTAQUES ── */
+.destaques{background:var(--navy2);padding:14px 32px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.06)}
+.destaque{display:flex;align-items:center;gap:7px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--gold3)}
+.destaque-ico{font-size:14px}
+
+/* ── BODY ── */
+.body{display:grid;grid-template-columns:1fr 280px}
+
+/* ── MAIN COLUMN ── */
+.main-col{padding:28px 32px;border-right:1px solid rgba(11,25,41,.07)}
+.section-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(11,25,41,.07)}
+
+/* ── CRITÉRIOS TABLE ── */
+.criterios-table{width:100%;border-collapse:collapse;margin-bottom:28px}
+.criterios-table thead th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);padding:8px 10px;text-align:left;border-bottom:2px solid rgba(11,25,41,.08)}
+.criterios-table tbody tr{border-bottom:1px solid rgba(11,25,41,.05);transition:background .15s}
+.criterios-table tbody tr:hover{background:var(--gold4)}
+.criterios-table td{padding:10px 10px;vertical-align:top}
+.crit-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.crit-num-ok{background:rgba(29,158,112,.1);color:var(--green)}
+.crit-num-fort{background:rgba(217,119,6,.1);color:var(--amber)}
+.crit-num-constr{background:rgba(220,38,38,.07);color:var(--red)}
+.crit-nome{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.crit-evidencias{list-style:none;padding:0}
+.crit-evidencias li{font-size:12px;color:var(--txt2);line-height:1.5;padding-left:12px;position:relative}
+.crit-evidencias li::before{content:'·';position:absolute;left:0;color:var(--txt3)}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap}
+.sp-atendido{background:var(--green2);color:#065f46}
+.sp-fortalecer{background:var(--amber2);color:#78350f}
+.sp-construir{background:var(--red2);color:#7f1d1d}
+.estrelas{display:flex;gap:2px;margin-top:4px}
+.estrela{width:12px;height:12px;border-radius:50%}
+.estrela-on{background:var(--gold)}
+.estrela-off{background:rgba(11,25,41,.1)}
+
+/* ── ANÁLISE ── */
+.analise-text{font-size:13.5px;color:var(--txt2);line-height:1.8;margin-bottom:28px}
+.analise-text p{margin-bottom:10px}
+
+/* ── DOC LIST ── */
+.doc-list{display:flex;flex-direction:column;gap:6px;margin-bottom:28px}
+.doc-item{display:flex;align-items:flex-start;gap:9px;padding:9px 12px;background:var(--smoke);border-radius:8px;font-size:12.5px;color:var(--txt2)}
+.doc-ico{width:18px;height:18px;border-radius:4px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);font-weight:700;flex-shrink:0;margin-top:1px}
+
+/* ── PLANO DE AÇÃO ── */
+.acao-list{display:flex;flex-direction:column;gap:8px;margin-bottom:28px}
+.acao-item{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;background:var(--gold4);border:1px solid rgba(201,168,76,.2);border-radius:9px}
+.acao-num{width:22px;height:22px;background:var(--navy);color:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+.acao-txt{font-size:13px;color:var(--txt);line-height:1.5}
+
+/* ── SIDE COLUMN ── */
+.side-col{padding:28px 24px;background:var(--cream);display:flex;flex-direction:column;gap:20px}
+.side-card{background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:12px;padding:16px}
+.side-card-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.side-card-title svg{width:13px;height:13px;flex-shrink:0}
+
+/* ── FUNDAMENTO LEGAL ── */
+.legal-row{display:flex;flex-direction:column;gap:8px}
+.legal-item{display:flex;flex-direction:column;gap:1px}
+.legal-label{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
+.legal-val{font-size:12.5px;color:var(--navy);font-weight:500}
+
+/* ── COMO FUNCIONA ── */
+.como-text{font-size:12px;color:var(--txt2);line-height:1.65}
+
+/* ── SCORECARD ── */
+.scorecard{display:flex;align-items:center;gap:14px}
+.score-circle{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(201,168,76,.3)}
+.score-frac{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold2);line-height:1}
+.score-label{font-size:8px;color:rgba(255,255,255,.35);letter-spacing:.05em}
+.score-info{flex:1}
+.score-info-main{font-size:13px;font-weight:600;color:var(--navy)}
+.score-info-sub{font-size:11.5px;color:var(--txt2);margin-top:2px}
+.score-req{display:inline-block;margin-top:6px;background:rgba(29,158,112,.09);border:1px solid rgba(29,158,112,.2);border-radius:8px;padding:3px 9px;font-size:11px;font-weight:600;color:var(--green)}
+
+/* ── VEREDICTO ── */
+.veredicto-text{font-size:12.5px;color:var(--txt2);line-height:1.65;font-style:italic}
+
+/* ── CUSTO ── */
+.custo-list{display:flex;flex-direction:column;gap:6px}
+.custo-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--txt2);padding:4px 0;border-bottom:1px solid rgba(11,25,41,.05)}
+.custo-row:last-child{border:none}
+.custo-total{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--navy);border-radius:8px;margin-top:8px}
+.custo-total-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.06em}
+.custo-total-val{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--gold2);font-weight:700}
+
+/* ── PROCESSO ── */
+.proc-list{display:flex;flex-direction:column;gap:7px}
+.proc-row{display:flex;justify-content:space-between;font-size:12px}
+.proc-label{color:var(--txt3);font-weight:500}
+.proc-val{color:var(--navy);font-weight:600;text-align:right;max-width:130px}
+
+/* ── PARCEIRO CTA ── */
+.parceiro-card{border-radius:10px;padding:14px}
+.parceiro-card.liv{background:linear-gradient(135deg,var(--navy2),var(--navy3));border:1px solid rgba(201,168,76,.2)}
+.parceiro-card.phoenix{background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)}
+.parceiro-ico{font-size:22px;margin-bottom:8px}
+.parceiro-nome{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+.parceiro-desc{font-size:11.5px;color:rgba(255,255,255,.55);line-height:1.5}
+
+/* ── FOOTER ── */
+.footer{background:var(--navy2);padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
+.footer-left{font-size:11px;color:rgba(255,255,255,.25);line-height:1.6}
+.footer-right{font-family:'Cormorant Garamond',serif;font-size:14px;color:rgba(201,168,76,.5)}
+
+/* ── LOADING ── */
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:16px}
+.spin{width:36px;height:36px;border:3px solid rgba(11,25,41,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:14px;color:var(--txt3)}
+
+/* ── ERROR ── */
+.error-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:12px;padding:40px}
+.error-ico{font-size:40px}
+.error-title{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy)}
+.error-sub{font-size:13.5px;color:var(--txt3);text-align:center}
+</style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+  <div class="toolbar-brand">Visa Match · ImigrarEUA</div>
+  <div class="toolbar-btns">
+    <button class="tbtn tbtn-back" onclick="window.close()">← Voltar</button>
+    <button class="tbtn tbtn-print" onclick="window.print()">🖨️ Salvar / Imprimir PDF</button>
+  </div>
+</div>
+
+<div class="page" id="report">
+  <div class="loading-state">
+    <div class="spin"></div>
+    <div class="loading-txt">Gerando análise de elegibilidade...</div>
+  </div>
+</div>
+
+<script>
+// ── Carrega dados do localStorage ──
+const raw = localStorage.getItem('visamatch_report');
+if (!raw) {
+  document.getElementById('report').innerHTML = `
+    <div class="error-state">
+      <div class="error-ico">⚠️</div>
+      <div class="error-title">Relatório não encontrado</div>
+      <div class="error-sub">Complete a análise no Visa Match para gerar seu relatório.</div>
+    </div>`;
+} else {
+  const data = JSON.parse(raw);
+  // Se tem múltiplos resultados, renderiza o melhor (tabs são no main app)
+  const analysis = data.melhor || data;
+  const candidato = data.candidato || {};
+  renderReport(analysis, candidato);
+}
+
+function renderReport(a, candidato) {
+  const pct = a.aprovacao_pct ?? a.score ?? 0;
+  const cls = getClass(a.classificacao);
+
+  const html = `
+    ${renderHeader(a, candidato, pct, cls)}
+    ${renderDestaques(a.destaques)}
+    <div class="body">
+      <div class="main-col">
+        ${renderCriterios(a.criterios)}
+        ${renderAnalise(a.analise)}
+        ${renderDocumentacao(a.documentacao_principal)}
+        ${renderPlanoAcao(a.plano_acao)}
+      </div>
+      <div class="side-col">
+        ${renderFundamentoLegal(a.fundamento_legal)}
+        ${renderComoFunciona(a.como_funciona)}
+        ${renderScorecard(a.scorecard)}
+        ${renderVeredicto(a.veredicto, a.estrategia_adicional)}
+        ${renderCusto(a.custo_estimado)}
+        ${renderProcesso(a.processo)}
+        ${renderParceiro(a.recomendacao_parceiro, a.visto)}
+      </div>
+    </div>
+    ${renderFooter(candidato)}
+  `;
+
+  document.getElementById('report').innerHTML = html;
+  document.title = `Relatório ${a.visto} — ${candidato.nome || 'Visa Match'}`;
+}
+
+function renderHeader(a, candidato, pct, cls) {
+  const iconMap = { 'Alta': '✓', 'Moderada': '◑', 'Em Desenvolvimento': '○', 'Incompatível': '✕' };
+  const clsMap = { 'Alta': 'cls-alta aprovacao-alta', 'Moderada': 'cls-mod aprovacao-mod', 'Em Desenvolvimento': 'cls-dev aprovacao-dev', 'Incompatível': 'cls-inc aprovacao-inc' };
+  const aprovClsMap = { 'Alta': 'aprovacao-alta', 'Moderada': 'aprovacao-mod', 'Em Desenvolvimento': 'aprovacao-dev', 'Incompatível': 'aprovacao-inc' };
+  return `
+  <div class="header">
+    <div class="header-left">
+      <div class="visto-tag">✦ Análise de Elegibilidade</div>
+      <div class="visto-nome">${a.visto}</div>
+      <div class="visto-subtitulo">${getSubtitulo(a.visto)}</div>
+      <div class="candidato-nome">${candidato.nome || '—'}</div>
+      <div class="candidato-profissao">${candidato.profissao || ''}</div>
+    </div>
+    <div class="header-right">
+      <div class="aprovacao-label">Análise de Aprovação</div>
+      <div class="aprovacao-pct">${pct}%</div>
+      <div class="aprovacao-icon ${aprovClsMap[a.classificacao] || 'aprovacao-dev'}">${iconMap[a.classificacao] || '○'}</div>
+      <div class="classificacao-badge ${cls.badgeCls}">${a.classificacao}</div>
+    </div>
+  </div>`;
+}
+
+function renderDestaques(destaques) {
+  if (!destaques?.length) return '';
+  const icons = ['🏆','🥇','🌟','🎯','💡','📌','⚡','🔬'];
+  return `<div class="destaques">
+    ${destaques.map((d, i) => `
+      <div class="destaque">
+        <span class="destaque-ico">${icons[i % icons.length]}</span>
+        ${d}
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderCriterios(criterios) {
+  if (!criterios?.length) return '';
+  return `
+  <div class="section-title">Os ${criterios.length} Critérios USCIS — Análise do Perfil</div>
+  <table class="criterios-table">
+    <thead>
+      <tr>
+        <th style="width:32px">#</th>
+        <th>Critério · Evidências Principais</th>
+        <th style="width:100px;text-align:center">Status</th>
+        <th style="width:80px;text-align:center">Força</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${criterios.map(c => {
+        const numCls = c.status === 'atendido' ? 'crit-num-ok' : c.status === 'fortalecer' ? 'crit-num-fort' : 'crit-num-constr';
+        const pillCls = c.status === 'atendido' ? 'sp-atendido' : c.status === 'fortalecer' ? 'sp-fortalecer' : 'sp-construir';
+        const pillTxt = c.status === 'atendido' ? '✓ Atendido' : c.status === 'fortalecer' ? '⚡ Fortalecer' : '◯ Construir';
+        const stars = Array.from({length:5}, (_,i) => `<div class="estrela ${i < (c.estrelas||0) ? 'estrela-on' : 'estrela-off'}"></div>`).join('');
+        const evidencias = (c.evidencias||[]).map(e => `<li>${e}</li>`).join('');
+        return `<tr>
+          <td><div class="crit-num ${numCls}">${c.numero}</div></td>
+          <td>
+            <div class="crit-nome">${c.nome}</div>
+            <ul class="crit-evidencias">${evidencias}</ul>
+          </td>
+          <td style="text-align:center">
+            <div class="status-pill ${pillCls}">${pillTxt}</div>
+          </td>
+          <td style="text-align:center">
+            <div class="estrelas" style="justify-content:center">${stars}</div>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderAnalise(analise) {
+  if (!analise) return '';
+  const paragraphs = analise.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+  return `
+  <div class="section-title">Análise do Perfil</div>
+  <div class="analise-text">${paragraphs}</div>`;
+}
+
+function renderDocumentacao(docs) {
+  if (!docs?.length) return '';
+  return `
+  <div class="section-title">Documentação Principal</div>
+  <div class="doc-list">
+    ${docs.map((d, i) => `
+      <div class="doc-item">
+        <div class="doc-ico">${String.fromCharCode(65+i)}</div>
+        ${d}
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderPlanoAcao(acoes) {
+  if (!acoes?.length) return '';
+  return `
+  <div class="section-title">Plano de Ação — Próximas 2–4 Semanas</div>
+  <div class="acao-list">
+    ${acoes.map((a, i) => `
+      <div class="acao-item">
+        <div class="acao-num">${i+1}</div>
+        <div class="acao-txt">${a}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderFundamentoLegal(fl) {
+  if (!fl) return '';
+  return `
+  <div class="side-card">
+    <div class="side-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Fundamento Legal
+    </div>
+    <div class="legal-row">
+      <div class="legal-item"><div class="legal-label">Base</div><div class="legal-val">${fl.base || '—'}</div></div>
+      <div class="legal-item"><div class="legal-label">Regulamento</div><div class="legal-val">${fl.regulamento || '—'}</div></div>
+      <div class="legal-item"><div class="legal-label">Formulário</div><div class="legal-val">${fl.formulario || '—'}</div></div>
+    </div>
+  </div>`;
+}
+
+function renderComoFunciona(texto) {
+  if (!texto) return '';
+  return `
+  <div class="side-card">
+    <div class="side-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      Como Funciona na Prática
+    </div>
+    <div class="como-text">${texto}</div>
+  </div>`;
+}
+
+function renderScorecard(sc) {
+  if (!sc) return '';
+  return `
+  <div class="side-card">
+    <div class="side-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Scorecard Final
+    </div>
+    <div class="scorecard">
+      <div class="score-circle">
+        <div class="score-frac">${sc.atendidos}/${sc.total}</div>
+        <div class="score-label">CRITÉRIOS</div>
+      </div>
+      <div class="score-info">
+        <div class="score-info-main">${sc.atendidos} de ${sc.total} critérios atendidos</div>
+        <div class="score-info-sub">Mínimo exigido: ${sc.minimo_exigido || 3}</div>
+        <div class="score-req">✦ Exige-se apenas ${sc.minimo_exigido || 3}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderVeredicto(veredicto, estrategia) {
+  if (!veredicto) return '';
+  return `
+  <div class="side-card">
+    <div class="side-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Veredicto
+    </div>
+    <div class="veredicto-text">${veredicto}</div>
+    ${estrategia ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(11,25,41,.07);font-size:12px;color:var(--txt2);line-height:1.65">${estrategia}</div>` : ''}
+  </div>`;
+}
+
+function renderCusto(custo) {
+  if (!custo) return '';
+  const itens = (custo.itens || []).map(i => `
+    <div class="custo-row">
+      <span>${i.nome}</span>
+      <span style="font-weight:600;color:var(--navy)">${i.valor}</span>
+    </div>`).join('');
+  return `
+  <div class="side-card">
+    <div class="side-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Custo Total Estimado
+    </div>
+    <div class="custo-list">
+      ${itens}
+      <div class="custo-total">
+        <span class="custo-total-label">Total</span>
+        <span class="custo-total-val">${custo.total || '—'}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderProcesso(proc) {
+  if (!proc) return '';
+  const rows = [
+    ['Prazo Regular', proc.prazo_regular],
+    ['Premium Processing', proc.prazo_premium],
+    ['Validade', proc.validade],
+    ['Quem peticiona', proc.quem_peticiona],
+  ].filter(r => r[1]);
+  return `
+  <div class="side-card">
+    <div class="side-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Estrutura do Processo
+    </div>
+    <div class="proc-list">
+      ${rows.map(r => `<div class="proc-row"><span class="proc-label">${r[0]}</span><span class="proc-val">${r[1]}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderParceiro(parceiro, visto) {
+  const isLiv = parceiro === 'liv';
+  return `
+  <div class="parceiro-card ${isLiv ? 'liv' : 'phoenix'}">
+    <div class="parceiro-ico">${isLiv ? '⚖️' : '🎓'}</div>
+    <div class="parceiro-nome">${isLiv ? 'LIV Law — Parceiro Oficial' : 'Phoenix — Perfil em Desenvolvimento'}</div>
+    <div class="parceiro-desc">${isLiv
+      ? `Escritório de advocacia licenciado nos EUA, especializado em ${visto}. Parceiro oficial da ImigrarEUA.`
+      : 'Especialista em fortalecimento de perfil para imigração. Ideal para construir as bases antes do processo.'
+    }</div>
+  </div>`;
+}
+
+function renderFooter(candidato) {
+  const dt = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  return `
+  <div class="footer">
+    <div class="footer-left">
+      ⚖️ Este documento é uma <strong style="color:rgba(255,255,255,.4)">triagem de pré-elegibilidade</strong> e não constitui avaliação jurídica oficial,<br>
+      nem configura relação advogado-cliente. Consulte um advogado licenciado nos EUA para confirmar elegibilidade.
+    </div>
+    <div class="footer-right">Visa Match · ${dt}</div>
+  </div>`;
+}
+
+// ── Helpers ──
+function getClass(cls) {
+  const map = {
+    'Alta':            { badgeCls: 'cls-alta' },
+    'Moderada':        { badgeCls: 'cls-mod' },
+    'Em Desenvolvimento': { badgeCls: 'cls-dev' },
+    'Incompatível':    { badgeCls: 'cls-inc' },
+  };
+  return map[cls] || map['Em Desenvolvimento'];
+}
+
+function getSubtitulo(visto) {
+  const map = {
+    'EB-2 NIW':     'Green Card por Interesse Nacional',
+    'EB-1A':        'Habilidade Extraordinária — Green Card',
+    'O-1':          'Habilidade Extraordinária — Visto de Trabalho',
+    'L-1':          'Transferência Intraempresarial',
+    'E-2':          'Visto de Investidor por Tratado',
+    'Family Based': 'Visto Baseado em Família',
+    'H-1B':         'Trabalhador Especializado por Patrocínio',
+  };
+  return map[visto] || 'Análise de Pré-Elegibilidade';
+}
+</script>
+</body>
+</html>
