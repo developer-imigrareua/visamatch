@@ -209,7 +209,64 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);c
 .partner-btn{margin-top:9px;display:inline-block;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 15px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
 .partner-btn:hover{opacity:.85}
 .partner-btn.phoenix-btn{background:#1d4ed8}
-@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{display:none}.chat{padding:18px 14px 10px}.input-zone{padding:10px 14px 14px}.main-head{padding:14px 18px}}
+/* ── MOBILE ── */
+@media(max-width:760px){
+  /* Layout */
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  html,body{overflow:hidden}
+
+  /* Header */
+  .main-head{padding:11px 16px}
+  .head-title{font-size:16px}
+  .head-sub{font-size:10px}
+  .online-badge{font-size:10px;padding:4px 10px}
+
+  /* Chat */
+  .chat{padding:14px 12px 8px;gap:12px}
+  .msg-wrap{max-width:86% !important}
+  .bubble{font-size:13px;padding:10px 14px}
+  .ava{width:28px;height:28px;font-size:11px;flex-shrink:0}
+  .row{gap:8px}
+
+  /* Options — texto quebra em vez de cortar */
+  .opts-wrap{padding-left:36px;gap:6px}
+  .opt{white-space:normal;text-align:left;font-size:12.5px;padding:8px 14px;border-radius:16px;line-height:1.35}
+
+  /* Undo */
+  .undo-btn{font-size:11px;padding:5px 11px}
+
+  /* Input zone */
+  .input-zone{padding:8px 12px 12px}
+  .txt-in{font-size:13px}
+  .in-hint{font-size:9.5px}
+  .in-btn{width:34px;height:34px}
+
+  /* Fact card */
+  .fact-card{font-size:12.5px;padding:12px 14px}
+
+  /* Result card — coluna única */
+  .res-card{border-radius:14px}
+  .res-head{padding:18px 18px}
+  .res-visto{font-size:22px}
+  .res-circle{width:60px;height:60px;top:16px;right:16px}
+  .res-pts{font-size:19px}
+  .res-body{padding:16px 18px}
+  .ctas{flex-direction:column;gap:8px}
+  .cta2{white-space:normal}
+
+  /* AI Full Card — colapsa sidebar para baixo */
+  .ai-full-card-body{grid-template-columns:1fr !important}
+  .ai-full-card-side{border-right:none !important;border-top:1px solid rgba(11,25,41,.07) !important}
+
+  /* Tabs */
+  .dual-tab{font-size:12px;padding:8px 10px}
+
+  /* Popup */
+  .popup{padding:22px 20px}
+  .popup-title{font-size:18px}
+  .popup-body{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -887,8 +944,8 @@ function singleFullCard(a) {
     <!-- DESTAQUES -->
     ${destaques ? `<div style="background:var(--navy2);padding:12px 22px;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid rgba(255,255,255,.06)">${destaques}</div>` : ''}
 
-    <!-- BODY: 2 COLUNAS -->
-    <div style="display:grid;grid-template-columns:1fr 250px">
+    <!-- BODY: 2 COLUNAS (colapsa em mobile) -->
+    <div class="ai-full-card-body" style="display:grid;grid-template-columns:1fr 250px">
 
       <!-- COLUNA PRINCIPAL -->
       <div style="padding:22px 24px;border-right:1px solid rgba(11,25,41,.07)">
@@ -920,7 +977,7 @@ function singleFullCard(a) {
       </div>
 
       <!-- COLUNA LATERAL -->
-      <div style="padding:20px 18px;background:var(--cream);display:flex;flex-direction:column;gap:14px">
+      <div class="ai-full-card-side" style="padding:20px 18px;background:var(--cream);display:flex;flex-direction:column;gap:14px">
 
         <!-- Fundamento Legal -->
         ${a.fundamento_legal ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
