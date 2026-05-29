@@ -6,6 +6,7 @@ const transcribeRoute = require('./routes/transcribe');
 const leadRoute = require('./routes/lead');
 const sessionRoute = require('./routes/session');
 const adminRoute = require('./routes/admin');
+const analyzeRoute = require('./routes/analyze');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use('/transcribe', transcribeRoute);
 app.use('/lead', leadRoute);
 app.use('/session', sessionRoute);
 app.use('/api/admin', adminRoute);
+app.use('/analyze', analyzeRoute);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Visa Match API running on port ${PORT}`));
