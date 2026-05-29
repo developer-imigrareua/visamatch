@@ -71,15 +71,14 @@ if [ "$1" == "--setup" ]; then
   docker compose up -d --build
 
   echo ""
-  echo "🔒 SSL — Para ativar HTTPS (opcional, mas recomendado):"
+  echo "🔒 SSL — Para ativar HTTPS (não afeta certificados existentes):"
   echo "   certbot --nginx -d visamatch.imigrareua.com"
-  echo "   (Não afeta os certificados existentes de ai.liv.law e vault.liv.law)"
 
   echo ""
   echo "✅ Setup concluído!"
-  echo "   Frontend: http://69.62.95.58"
-  echo "   Admin:    http://69.62.95.58/admin"
-  echo "   API:      http://69.62.95.58/api/health"
+  echo "   Frontend: https://visamatch.imigrareua.com"
+  echo "   Admin:    https://visamatch.imigrareua.com/admin"
+  echo "   API:      https://visamatch.imigrareua.com/api/health"
   exit 0
 fi
 
