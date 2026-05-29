@@ -14,22 +14,43 @@ router.post('/', async (req, res) => {
     // 1. Roda os agentes IA
     const analysis = await analyzeProfile({ nome, email, visto, vistos, profile });
 
-    // 2. Salva lead no Supabase com a análise completa
-    const bestScore = analysis.melhor?.score ?? null;
-    const bestVisto = analysis.melhor?.visto ?? visto;
+    // 2. Salva lead completo no Supabase
+    const bestScore    = analysis.melhor?.score ?? null;
+    const bestPct      = analysis.melhor?.aprovacao_pct ?? null;
+    const bestVisto    = analysis.melhor?.visto ?? visto;
+    const bestClassif  = analysis.melhor?.classificacao ?? null;
 
     if (email) {
-      await supabase.from('leads').insert({
-        nome,
-        email,
-        phone,
-        visto_recomendado: bestVisto,
-        score: bestScore,
-        profile: { ...profile, ai_analysis: analysis },
-        hubspot_synced: false,
-      }).then(({ error }) => {
-        if (error) console.error('Supabase save error:', error);
-      });
+      // Tenta atualizar lead parcial existente pelo email
+      const { data: existing } = await supabase
+        .from('leads').select('id').eq('email', email)
+        .eq('completo', false).order('created_at', { ascending: false }).limit(1).single();
+
+      if (existing) {
+        await supabase.from('leads').update({
+          nome, phone,
+          visto_recomendado: bestVisto,
+          score: bestScore,
+          aprovacao_pct: bestPct,
+          classificacao: bestClassif,
+          completo: true,
+          etapa_abandono: null,
+          profile: { ...profile, ai_analysis: analysis },
+          updated_at: new Date().toISOString(),
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('leads').insert({
+          nome, email, phone,
+          visto_recomendado: bestVisto,
+          score: bestScore,
+          aprovacao_pct: bestPct,
+          classificacao: bestClassif,
+          completo: true,
+          etapa_abandono: null,
+          profile: { ...profile, ai_analysis: analysis },
+          hubspot_synced: false,
+        });
+      }
     }
 
     // 3. Retorna análise para o frontend

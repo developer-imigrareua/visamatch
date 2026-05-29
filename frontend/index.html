@@ -300,6 +300,25 @@ const chat = document.getElementById('chat');
 const ti = document.getElementById('ti');
 const sbBtn = document.getElementById('sb-btn');
 
+// ─── SESSION SAVE (debounced, só salva se tem email) ───
+let _sessionId = localStorage.getItem('vm_session_id') || null;
+let _sessionTimer = null;
+function saveSession(etapa) {
+  if (!S.email) return;
+  clearTimeout(_sessionTimer);
+  _sessionTimer = setTimeout(async () => {
+    try {
+      const body = { state: { ...S, _etapa: etapa }, session_id: _sessionId, email: S.email };
+      const res = await fetch(`${API_BASE}/session`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.session_id) { _sessionId = data.session_id; localStorage.setItem('vm_session_id', _sessionId); }
+    } catch(e) {}
+  }, 800);
+}
+
 function ts() { return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function fml(n) { return n ? n.split(' ')[0] : ''; }
 
@@ -1276,6 +1295,7 @@ const flows = {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ nome: S.nome, email: S.email, phone: full, etapa: 'contato', profile: S.profile })
       }).catch(()=>{});
+      saveSession('contato_completo');
       go('path_select');
     };
 
@@ -1705,6 +1725,7 @@ const flows = {
   // ──────── PERFIL PESSOAL ────────
   async personal_info() {
     setSideStep(2); setProgress(36);
+    saveSession('perfil_pessoal');
     await think(700);
     await botMsg(`Ótimo, ${S.nome}! Agora vou coletar algumas informações pessoais. Qual é a sua <strong>data de nascimento</strong>?`);
     await pause(200);
@@ -1902,6 +1923,7 @@ const flows = {
   // ──────── FORMAÇÃO ACADÊMICA ────────
   async academic_start() {
     setSideStep(3); setProgress(52);
+    saveSession('formacao_academica');
     await think(600);
     await botMsg(`Agora vou registrar sua <strong>formação acadêmica</strong>. Qual é o nome da <strong>instituição de ensino superior</strong> onde concluiu ou está cursando?`);
     waitInput(val => { S.profile.instAcad1 = val; go('ac_curso'); });
@@ -2004,6 +2026,7 @@ const flows = {
   // ──────── EXPERIÊNCIA PROFISSIONAL ────────
   async prof_exp_start() {
     setSideStep(4); setProgress(65);
+    saveSession('experiencia_profissional');
     await think(600);
     await botMsg(`Excelente! Agora sua <strong>experiência profissional</strong>. Qual é o nome da <strong>empresa onde trabalha atualmente</strong> ou onde trabalhou por último?`);
     waitInput(val => { S.profile.emp1Nome = val; go('pe_ramo1'); });
@@ -2115,6 +2138,7 @@ const flows = {
   // ──────── SCORING ────────
   async scoring_intro() {
     setSideStep(5); setProgress(78);
+    saveSession('scoring');
     await think(700);
     await botMsg(`Estamos quase lá, <strong>${S.nome}</strong>! Agora vou fazer perguntas específicas sobre os critérios de pré-elegibilidade para o <strong>${S.visto}</strong>. Essas respostas têm peso direto na sua pontuação.`);
     showOpts(['Entendido, vamos lá!'], () => {

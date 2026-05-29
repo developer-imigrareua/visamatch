@@ -18,7 +18,7 @@ app.get('/health', (_, res) => res.json({ status: 'ok' }));
 app.use('/transcribe', transcribeRoute);
 app.use('/lead', leadRoute);
 app.use('/session', sessionRoute);
-app.use('/api/admin', adminRoute);
+app.use('/admin', adminRoute);
 app.use('/analyze', analyzeRoute);
 
 const PORT = process.env.PORT || 3000;
