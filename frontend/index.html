@@ -789,24 +789,19 @@ function singleFullCard(a) {
   const pct  = a.aprovacao_pct ?? a.score ?? 0;
   const nome = S.profile.nomeCompleto || S.nome || '';
   const prof = S.profile.profissao || '';
-  const gen  = S.profile.genero || '';
+  const cardId = 'ai-card-' + Date.now();
 
-  // Avatar por gênero
-  const avatar = gen === 'Mulher'
-    ? `<svg viewBox="0 0 64 64" width="54" height="54" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="32" cy="32" r="32" fill="#1a3050"/>
-        <circle cx="32" cy="24" r="10" fill="#dfc06e"/>
-        <ellipse cx="32" cy="52" rx="16" ry="12" fill="#dfc06e"/>
-        <path d="M22 36 Q32 44 42 36" fill="#1a3050"/>
-      </svg>`
-    : gen === 'Homem'
-    ? `<svg viewBox="0 0 64 64" width="54" height="54" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="32" cy="32" r="32" fill="#1a3050"/>
-        <circle cx="32" cy="24" r="10" fill="#dfc06e"/>
-        <ellipse cx="32" cy="52" rx="16" ry="12" fill="#dfc06e"/>
-        <rect x="20" y="14" width="24" height="6" rx="3" fill="#c9a84c"/>
-      </svg>`
-    : `<div style="width:54px;height:54px;background:linear-gradient(135deg,var(--navy3),var(--navy4));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold2);font-weight:700">${nome.charAt(0).toUpperCase()}</div>`;
+  // Avatar — usa foto se já foi enviada, senão mostra inicial + botão upload
+  const fotoSalva = S.profile.foto || null;
+  const avatarId  = 'avatar-' + cardId;
+  const inputId   = 'foto-input-' + cardId;
+  const avatar = fotoSalva
+    ? `<img src="${fotoSalva}" style="width:54px;height:54px;border-radius:50%;object-fit:cover"/>`
+    : `<div style="position:relative;width:54px;height:54px;cursor:pointer" onclick="document.getElementById('${inputId}').click()" title="Adicionar foto">
+        <div style="width:54px;height:54px;background:linear-gradient(135deg,var(--navy3),var(--navy));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold2);font-weight:700" id="${avatarId}">${nome.charAt(0).toUpperCase()}</div>
+        <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px">📷</div>
+        <input type="file" id="${inputId}" accept="image/*" style="display:none" onchange="handleFotoUpload(this,'${avatarId}')"/>
+      </div>`;
 
   // Classificação
   const clsMap = {
@@ -999,6 +994,22 @@ function singleFullCard(a) {
       </button>
     </div>
   </div>`;
+}
+
+function handleFotoUpload(input, avatarId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const src = e.target.result;
+    S.profile.foto = src;
+    // Atualiza o avatar no card
+    const el = document.getElementById(avatarId);
+    if (el) {
+      el.parentElement.innerHTML = `<img src="${src}" style="width:54px;height:54px;border-radius:50%;object-fit:cover"/>`;
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 function getSubtituloVisto(v) {
@@ -1205,29 +1216,20 @@ const flows = {
     await think(500);
     await botMsg('Ótimo! E qual é o seu <strong>nome completo</strong>? (nome e sobrenome)');
     waitInput(val => {
-      // Validação: pelo menos 2 palavras com 2+ caracteres cada
       const partes = val.trim().split(/\s+/).filter(p => p.length >= 2);
       if (partes.length < 2) {
         userMsg(val);
         botMsg('⚠️ Por favor, informe seu <strong>nome e sobrenome</strong> completos.');
-        waitInput(v2 => { S.nome = fml(v2); S.profile.nomeCompleto = v2; go('contact_gender'); });
+        waitInput(v2 => { S.nome = fml(v2); S.profile.nomeCompleto = v2; go('contact_phone'); });
         return;
       }
-      S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_gender');
-    });
-  },
-
-  async contact_gender() {
-    await think(300);
-    await botMsg(`Prazer, <strong>${S.nome}</strong>! Como você se identifica?`);
-    showOpts(['Homem','Mulher','Prefiro não informar'], val => {
-      userMsg(val); S.profile.genero = val; go('contact_phone');
+      S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_phone');
     });
   },
 
   async contact_phone() {
     await think(500);
-    await botMsg(`Prazer, <strong>${S.nome}</strong>! Qual é o seu <strong>WhatsApp</strong>? Selecione o país e digite o número:`);
+    await botMsg(`Prazer, <strong>${S.nome}</strong>! Qual é o seu <strong>WhatsApp</strong> com DDI? Selecione o país e digite o número:`);
     await pause(200);
     // Campo especial de telefone — esconde input principal
     clearInputHandlers();
