@@ -281,13 +281,18 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);c
 </div>
 
 <script>
+// ─── API ───
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : '';
+
 // ─── STATE ───
 const S = {
   step: 'welcome', sStep: 0, prog: 0,
   nome: '', email: '', phone: '',
   profile: {}, visto: null, vistos: [],
   inputHandler: null, inputKeyHandler: null,
-  history: [] // [{step, sStep, prog, profileSnap, visto, vistos}]
+  history: []
 };
 
 // ─── HELPERS ───
@@ -734,6 +739,126 @@ function buildResult(visto, score, p) {
       </div>
     </div>`)}
   </div>`;
+}
+
+// ─── AI SUMMARY CARD ───
+function buildAISummaryCard(analysis) {
+  const resultados = analysis.resultados || [analysis.melhor];
+  const isDual = analysis.isDual && resultados.length > 1;
+
+  function singleCard(a, compact) {
+    if (!a) return '';
+    const pct = a.aprovacao_pct ?? a.score ?? 0;
+    const clsMap = {
+      'Alta':               { bar:'var(--green)', bg:'rgba(29,158,112,.08)', cor:'#0f6b49', brd:'rgba(29,158,112,.2)' },
+      'Moderada':           { bar:'var(--amber)', bg:'rgba(217,119,6,.08)',  cor:'#7c4a00', brd:'rgba(217,119,6,.2)' },
+      'Em Desenvolvimento': { bar:'var(--txt3)',  bg:'rgba(11,25,41,.04)',   cor:'var(--txt2)', brd:'rgba(11,25,41,.1)' },
+      'Incompatível':       { bar:'var(--red)',   bg:'rgba(220,38,38,.06)',  cor:'#7f1d1d', brd:'rgba(220,38,38,.15)' },
+    };
+    const cls = clsMap[a.classificacao] || clsMap['Em Desenvolvimento'];
+
+    // Critérios — top 5
+    const crits = (a.criterios || []).slice(0, 5).map(c => {
+      const icon = c.status === 'atendido' ? '✓' : c.status === 'fortalecer' ? '⚡' : '◯';
+      const cor  = c.status === 'atendido' ? 'var(--green)' : c.status === 'fortalecer' ? 'var(--amber)' : 'var(--txt3)';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--smoke);border-radius:7px;font-size:12.5px">
+        <span style="color:${cor};font-weight:700;flex-shrink:0">${icon}</span>
+        <span style="color:var(--txt2)">${c.nome}</span>
+      </div>`;
+    }).join('');
+
+    // Pontos fortes / críticos
+    const fortes = (a.pontos_fortes || []).slice(0,3).map(p =>
+      `<div style="display:flex;gap:6px;font-size:12px;color:var(--txt2)"><span style="color:var(--green);flex-shrink:0">✓</span>${p}</div>`
+    ).join('');
+    const criticos = (a.pontos_criticos || []).slice(0,2).map(p =>
+      `<div style="display:flex;gap:6px;font-size:12px;color:var(--txt2)"><span style="color:var(--amber);flex-shrink:0">⚡</span>${p}</div>`
+    ).join('');
+
+    const header = compact
+      ? `<div style="background:linear-gradient(135deg,var(--navy),var(--navy3));padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:12px 12px 0 0">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:19px;color:#fff">${a.visto}</div>
+          <div style="text-align:right">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--gold2);line-height:1">${pct}%</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.05em">APROVAÇÃO</div>
+          </div>
+        </div>`
+      : `<div class="res-head">
+          <div class="res-tag">✦ Visa Match · Análise IA</div>
+          <div class="res-visto">${a.visto}</div>
+          <div class="res-nome">${S.nome} · Análise de Pré-Elegibilidade</div>
+          <div class="res-circle">
+            <div class="res-pts">${pct}%</div>
+            <div class="res-pts-lbl">aprovação</div>
+          </div>
+        </div>`;
+
+    return `<div class="res-card" style="${compact ? 'border-radius:12px;overflow:hidden' : ''}">
+      ${header}
+      <div class="res-body">
+        <div class="res-cls" style="background:${cls.bg};color:${cls.cor};border:1px solid ${cls.brd}">
+          ${a.classificacao}
+        </div>
+
+        ${crits ? `<div class="sec-lbl">Critérios USCIS Avaliados</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">${crits}</div>` : ''}
+
+        ${fortes || criticos ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          <div>
+            <div class="sec-lbl">Pontos Fortes</div>
+            <div style="display:flex;flex-direction:column;gap:5px">${fortes}</div>
+          </div>
+          <div>
+            <div class="sec-lbl">Gaps Críticos</div>
+            <div style="display:flex;flex-direction:column;gap:5px">${criticos}</div>
+          </div>
+        </div>` : ''}
+
+        ${a.veredicto ? `<div class="verdict"><p style="font-style:italic">${a.veredicto}</p></div>` : ''}
+
+        <div class="legal-disc">
+          ⚖️ <b>DISCLAIMER:</b> O conteúdo desta análise tem caráter estritamente informativo e não constitui aconselhamento jurídico. Receber este relatório não cria relação advogado-cliente. Para orientação jurídica específica, agende uma consulta com nossos especialistas.
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="cta1" onclick="window.open('report.html','_blank')" style="display:flex;align-items:center;justify-content:center;gap:8px">
+            📄 Ver Relatório Completo de Elegibilidade
+          </button>
+          <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')">
+            📧 Receber relatório por e-mail
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if (!isDual) return singleCard(analysis.melhor || resultados[0], false);
+
+  // Dual: tabs NIW + EB-1A
+  const [r1, r2] = resultados;
+  return `<div>
+    <div class="dual-tab-row">
+      <button class="dual-tab active" id="tab-ai-1" onclick="switchAITab(1)">${r1?.visto} · ${r1?.aprovacao_pct ?? r1?.score ?? 0}%</button>
+      <button class="dual-tab" id="tab-ai-2" onclick="switchAITab(2)">${r2?.visto} · ${r2?.aprovacao_pct ?? r2?.score ?? 0}%</button>
+    </div>
+    <div id="ai-panel-1">${singleCard(r1, true)}</div>
+    <div id="ai-panel-2" style="display:none">${singleCard(r2, true)}</div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+      <button class="cta1" onclick="window.open('report.html','_blank')" style="display:flex;align-items:center;justify-content:center;gap:8px">
+        📄 Ver Relatório Completo de Elegibilidade
+      </button>
+      <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')">
+        📧 Receber relatório por e-mail
+      </button>
+    </div>
+  </div>`;
+}
+
+function switchAITab(n) {
+  document.getElementById('ai-panel-1').style.display = n === 1 ? '' : 'none';
+  document.getElementById('ai-panel-2').style.display = n === 2 ? '' : 'none';
+  document.getElementById('tab-ai-1').className = 'dual-tab' + (n===1?' active':'');
+  document.getElementById('tab-ai-2').className = 'dual-tab' + (n===2?' active':'');
 }
 
 // ─── TAB SWITCHER for dual results ───
@@ -1778,25 +1903,75 @@ const flows = {
   async resultado() {
     setSideStep(6); setProgress(100);
     const visto = S.visto || 'EB-2 NIW';
-    const score = calcScore(visto, S.profile);
-    setSideBar(score);
-
-    await think(1200);
-    const isDual = S.vistos && S.vistos.length === 2;
-    await botMsg(`<strong>${S.nome}</strong>, sua análise de pré-elegibilidade está pronta! ${isDual ? 'Avaliamos os dois caminhos mais adequados para o seu perfil:' : `Com base em todas as respostas, preparei sua análise para o <strong>${visto}</strong>:`}`);
-    await pause(500);
-
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
-      <div class="msg-wrap" style="max-width:90%">${buildResult(visto, score, S.profile)}</div>`;
-    chat.appendChild(row);
-    chat.scrollTop = 9999;
-
-    // Remove undo at final step
     const ur = document.getElementById('undo-row'); if (ur) ur.remove();
     ti.disabled = true; sbBtn.disabled = true;
     clearInputHandlers();
+
+    await think(800);
+    const isDual = S.vistos && S.vistos.length === 2;
+    await botMsg(`Perfeito, <strong>${S.nome}</strong>! Estou processando sua análise com IA — isso leva alguns segundos.`);
+
+    const typRow = showTyping();
+
+    try {
+      const res = await fetch(`${API_BASE}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: S.nome,
+          email: S.email,
+          phone: S.phone,
+          visto: S.visto,
+          vistos: S.vistos,
+          profile: S.profile
+        })
+      });
+
+      rmTyping();
+
+      if (!res.ok) throw new Error('API error ' + res.status);
+      const analysis = await res.json();
+
+      // Armazena para o relatório
+      localStorage.setItem('visamatch_report', JSON.stringify({
+        ...analysis,
+        candidato: { nome: S.nome, email: S.email, profissao: S.profile.profissao }
+      }));
+
+      // Score para a sidebar
+      const bestScore = analysis.melhor?.score ?? 0;
+      setSideBar(bestScore);
+      if (analysis.melhor?.visto) setSideVisto(analysis.melhor.visto);
+
+      await botMsg(`Sua análise de pré-elegibilidade está pronta! ${isDual ? 'Avaliamos os dois caminhos mais indicados para o seu perfil.' : `Analisei seu perfil para o <strong>${visto}</strong>.`}`);
+      await pause(400);
+
+      // Card resumo no chat
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+        <div class="msg-wrap" style="max-width:92%">${buildAISummaryCard(analysis)}</div>`;
+      chat.appendChild(row);
+      chat.scrollTop = 9999;
+
+    } catch (err) {
+      rmTyping();
+      console.warn('Análise IA indisponível, usando scoring local:', err);
+
+      // ── Fallback: scoring local ──
+      const score = calcScore(visto, S.profile);
+      setSideBar(score);
+
+      await botMsg(`<strong>${S.nome}</strong>, sua análise de pré-elegibilidade está pronta! ${isDual ? 'Avaliamos os dois caminhos mais adequados para o seu perfil:' : `Com base em todas as respostas, preparei sua análise para o <strong>${visto}</strong>:`}`);
+      await pause(400);
+
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+        <div class="msg-wrap" style="max-width:90%">${buildResult(visto, score, S.profile)}</div>`;
+      chat.appendChild(row);
+      chat.scrollTop = 9999;
+    }
   },
 
   async resultado_nurturing() {
