@@ -28,6 +28,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--navy);di
 .btn:disabled{opacity:.5;cursor:default}
 .err{background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:9px;padding:10px 13px;font-size:12.5px;color:var(--red);margin-bottom:16px;display:none}
 .err.show{display:block}
+.pwd-wrap{position:relative}
+.pwd-wrap input{width:100%;padding-right:42px}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3);padding:0;display:flex;align-items:center;transition:color .2s}
+.eye-btn:hover{color:var(--navy)}
 </style>
 </head>
 <body>
@@ -40,7 +44,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--navy);di
   <div class="err" id="err">Senha incorreta. Tente novamente.</div>
   <div class="field">
     <label>SENHA DE ACESSO</label>
-    <input type="password" id="pwd" placeholder="••••••••" autocomplete="current-password"/>
+    <div class="pwd-wrap">
+      <input type="password" id="pwd" placeholder="••••••••" autocomplete="current-password"/>
+      <button class="eye-btn" type="button" onclick="togglePwd(this)" tabindex="-1">
+        <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
   </div>
   <button class="btn" id="btn" onclick="login()">Entrar</button>
 </div>
@@ -48,6 +59,15 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--navy);di
 const API = '/api/admin';
 
 document.getElementById('pwd').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+function togglePwd(btn) {
+  const input = document.getElementById('pwd');
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.querySelector('svg').innerHTML = isHidden
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
 
 // Redireciona se já tem token válido
 if (localStorage.getItem('admin_token')) {
