@@ -133,6 +133,13 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 @keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
 .in-hint{font-size:11px;color:var(--txt3);margin-top:8px;text-align:center;display:flex;align-items:center;justify-content:center;gap:16px}
 
+/* Input zone dimmed quando há botões de seleção ativos */
+.input-zone.dimmed {
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── PROGRESS BAR ── */
 .prog-strip{height:3px;background:var(--surface4);flex-shrink:0}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--pink));transition:width .6s ease;width:0%}
@@ -280,7 +287,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
     </div>
     <div class="sb-card">
       <div class="sb-card-lbl">Avaliando seu perfil para o Visto</div>
-      <div class="sb-visto" id="sb-visto">—</div>
+      <div class="sb-visto" id="sb-visto"></div>
       <div class="sb-bar-bg"><div class="sb-bar" id="sb-bar"></div></div>
     </div>
   </div>
@@ -297,6 +304,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   </div>
   <div class="prog-strip"><div class="prog-fill" id="prog"></div></div>
   <div class="chat" id="chat"></div>
+  <div id="structured-zone" style="display:none;padding:10px 32px 0;background:rgba(255,255,255,.95);border-top:1px solid rgba(194,198,216,.4)"></div>
   <div class="input-zone">
     <div class="input-row">
       <input class="txt-in" id="ti" type="text" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off"/>
@@ -307,10 +315,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
         <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
-    <div class="in-hint">
-      <span>Responda com os botões ou digitando livremente</span>
-      <span style="color:var(--pink);font-weight:600;font-size:11px">🎙 Áudio disponível</span>
-    </div>
+    <div class="in-hint"></div>
   </div>
 </main>
 </div>
@@ -370,6 +375,7 @@ function fml(n) { return n ? n.split(' ')[0] : ''; }
 function setProgress(pct) {
   S.prog = pct;
   document.getElementById('prog').style.width = pct + '%';
+  document.getElementById('sb-bar').style.width = pct + '%';
 }
 
 function setSideStep(n) {
@@ -442,30 +448,116 @@ function showPopup(ico, title, body, onClose) {
 
 // ─── MIC ───
 let mediaRecorder, audioChunks = [], isRecording = false;
+let waveformAnimFrame = null;
+
 document.getElementById('mic-btn').onclick = async () => {
   const micBtn = document.getElementById('mic-btn');
+
   if (!isRecording) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new AudioContext();
+      const source   = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+
       mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
+      audioChunks   = [];
       mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = () => {
+
+      // Waveform UI no chat
+      const waveRow = document.createElement('div');
+      waveRow.id = 'waveform-row';
+      waveRow.className = 'row';
+      waveRow.innerHTML = `<div class="ava ava-user" style="background:linear-gradient(135deg,var(--blue),var(--pink))">🎙</div>
+        <div class="msg-wrap">
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:18px 18px 4px 18px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh)">
+            <canvas id="waveform-canvas" width="160" height="36" style="display:block"></canvas>
+            <span style="font-size:12px;color:var(--pink);font-weight:700;animation:pulse 1s infinite">● Gravando...</span>
+          </div>
+        </div>`;
+      chat.appendChild(waveRow);
+      chat.scrollTop = 9999;
+
+      // Anima o waveform
+      const canvas  = document.getElementById('waveform-canvas');
+      const ctx2d   = canvas.getContext('2d');
+      const bufLen  = analyser.frequencyBinCount;
+      const dataArr = new Uint8Array(bufLen);
+
+      function drawWave() {
+        waveformAnimFrame = requestAnimationFrame(drawWave);
+        analyser.getByteTimeDomainData(dataArr);
+        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+        ctx2d.beginPath();
+        ctx2d.strokeStyle = '#0053d0';
+        ctx2d.lineWidth = 2;
+        const sliceW = canvas.width / bufLen;
+        let x = 0;
+        for (let i = 0; i < bufLen; i++) {
+          const v = dataArr[i] / 128.0;
+          const y = (v * canvas.height) / 2;
+          i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+          x += sliceW;
+        }
+        ctx2d.lineTo(canvas.width, canvas.height / 2);
+        ctx2d.stroke();
+      }
+      drawWave();
+
+      mediaRecorder.onstop = async () => {
+        cancelAnimationFrame(waveformAnimFrame);
         stream.getTracks().forEach(t => t.stop());
-        addUserMsg('🎙 [Áudio enviado — em produção seria transcrito pela IA]');
-        const val = ti.dataset.lastAudio || '';
-        if (val && S.inputHandler) S.inputHandler('resposta via áudio');
+        audioCtx.close();
+
+        // Remove waveform
+        const wr = document.getElementById('waveform-row');
+        if (wr) wr.remove();
+
+        // Mostra "transcrevendo..."
+        const typRow = showTyping();
+        await pause(300);
+
+        try {
+          const blob = new Blob(audioChunks, { type: 'audio/webm' });
+          const form = new FormData();
+          form.append('audio', blob, 'audio.webm');
+          const res  = await fetch(`${API_BASE}/transcribe`, { method: 'POST', body: form });
+          rmTyping();
+
+          if (res.ok) {
+            const { text } = await res.json();
+            if (text && text.trim()) {
+              // Coloca transcrição no input para o usuário revisar antes de enviar
+              document.querySelector('.input-zone').classList.remove('dimmed');
+              ti.disabled = false;
+              ti.value = text.trim();
+              ti.focus();
+              // Adiciona mensagem informando que pode editar
+              await botMsg(`🎙 Transcrição pronta! Revise o texto abaixo e pressione enviar quando estiver pronto.`);
+            }
+          } else {
+            rmTyping();
+            await botMsg('⚠️ Não foi possível transcrever o áudio. Por favor, digite sua resposta.');
+          }
+        } catch(err) {
+          rmTyping();
+          await botMsg('⚠️ Erro na transcrição. Por favor, digite sua resposta.');
+        }
       };
+
       mediaRecorder.start();
       isRecording = true;
       micBtn.classList.add('recording');
+
     } catch(e) {
       showPopup('🎙', 'Acesso ao microfone', 'Permita o acesso ao microfone nas configurações do seu navegador para usar o recurso de áudio.', null);
     }
   } else {
     mediaRecorder.stop();
     isRecording = false;
-    document.getElementById('mic-btn').classList.remove('recording');
+    micBtn.classList.remove('recording');
   }
 };
 
@@ -526,7 +618,7 @@ function showOpts(opts, handler) {
   rmOpts();
   // Esconde o campo de texto quando há botões de seleção
   ti.disabled = true;
-  document.querySelector('.input-zone').style.display = 'none';
+  document.querySelector('.input-zone').classList.add('dimmed');
   const w = document.createElement('div');
   w.className = 'opts-wrap'; w.id = 'opts';
   opts.forEach(op => {
@@ -536,7 +628,7 @@ function showOpts(opts, handler) {
       document.querySelectorAll('.opt').forEach(x => { x.disabled = true; x.classList.add('sel'); });
       const ur2 = document.getElementById('undo-row'); if (ur2) ur2.remove();
       // Restaura o campo de texto ao selecionar
-      document.querySelector('.input-zone').style.display = '';
+      document.querySelector('.input-zone').classList.remove('dimmed');
       ti.disabled = false;
       w.remove(); handler(op);
     };
@@ -576,6 +668,9 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   clearInputHandlers();
   ti.disabled = true;
   document.querySelector('.input-zone').style.display = 'none';
+  const sz = document.getElementById('structured-zone');
+  sz.innerHTML = '';
+  sz.style.display = '';
   const widgetId = 'my-widget-' + Date.now();
   const wrapId   = 'my-wrap-' + Date.now();
   const inputId  = 'my-in-'   + Date.now();
@@ -584,7 +679,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
 
   const row = document.createElement('div');
   row.id = widgetId;
-  row.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
+  row.style.cssText = 'animation:optIn .3s ease both';
 
   const currentBtn = allowCurrent
     ? `<button id="${currId}" style="background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:0 13px;height:36px;font-family:'Inter Tight',sans-serif;font-size:12.5px;font-weight:600;color:var(--txt2);cursor:pointer;flex-shrink:0;transition:all .15s">Atual</button>`
@@ -600,8 +695,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
       </button>
     </div>`;
 
-  chat.appendChild(row);
-  chat.scrollTop = 9999;
+  sz.appendChild(row);
 
   const inputEl = document.getElementById(inputId);
   const wrapEl  = document.getElementById(wrapId);
@@ -619,6 +713,8 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   const submit = (val) => {
     if (!val || val.length < 4) return;
     row.remove();
+    sz.style.display = 'none';
+    sz.innerHTML = '';
     document.querySelector('.input-zone').style.display = '';
     ti.disabled = false;
     S.profile[profileKey] = val;
@@ -1348,10 +1444,13 @@ const flows = {
     // Campo especial de telefone — esconde input principal
     clearInputHandlers();
     ti.disabled = true;
-    document.querySelector('.input-zone').style.display = 'none';
+    document.querySelector('.input-zone').style.display = 'none'; // phone-hide;
+    const sz = document.getElementById('structured-zone');
+    sz.innerHTML = '';
+    sz.style.display = '';
     const phoneRow = document.createElement('div');
     phoneRow.id = 'phone-widget';
-    phoneRow.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
+    phoneRow.style.cssText = 'animation:optIn .3s ease both';
     const countries = [
       {code:'BR',ddi:'+55',flag:'🇧🇷',name:'Brasil'},
       {code:'US',ddi:'+1',flag:'🇺🇸',name:'EUA'},
@@ -1375,8 +1474,7 @@ const flows = {
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>`;
-    chat.appendChild(phoneRow);
-    chat.scrollTop = 9999;
+    sz.appendChild(phoneRow);
 
     // Formata número BR automaticamente
     document.getElementById('phone-num').addEventListener('input', function() {
@@ -1402,7 +1500,9 @@ const flows = {
       if (!num) return;
       const full = `${ddi} ${num}`;
       phoneRow.remove();
-      document.querySelector('.input-zone').style.display = '';
+      sz.style.display = 'none';
+      sz.innerHTML = '';
+      document.querySelector('.input-zone').style.display = ''  ; // phone-restore;
       ti.disabled = false;
       S.phone = full;
       userMsg(full);
@@ -1885,10 +1985,13 @@ const flows = {
     await pause(200);
     clearInputHandlers();
     ti.disabled = true;
-    document.querySelector('.input-zone').style.display = 'none';
+    document.querySelector('.input-zone').style.display = 'none'; // date-hide;
+    const szDate = document.getElementById('structured-zone');
+    szDate.innerHTML = '';
+    szDate.style.display = '';
     const dateRow = document.createElement('div');
     dateRow.id = 'date-widget';
-    dateRow.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
+    dateRow.style.cssText = 'animation:optIn .3s ease both';
     dateRow.innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 14px;max-width:260px;transition:border-color .2s" id="date-wrap">
         <input id="date-in" type="text" maxlength="10" placeholder="DD/MM/AAAA"
@@ -1897,8 +2000,7 @@ const flows = {
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>`;
-    chat.appendChild(dateRow);
-    chat.scrollTop = 9999;
+    szDate.appendChild(dateRow);
 
     // Auto-formata DD/MM/AAAA
     document.getElementById('date-in').addEventListener('input', function() {
@@ -1917,7 +2019,9 @@ const flows = {
       const val = document.getElementById('date-in').value.trim();
       if (val.length < 8) return;
       dateRow.remove();
-      document.querySelector('.input-zone').style.display = '';
+      szDate.style.display = 'none';
+      szDate.innerHTML = '';
+      document.querySelector('.input-zone').style.display = ''  ; // date-restore;
       ti.disabled = false;
       S.profile.dataNasc = val;
       userMsg(val);
@@ -2365,20 +2469,23 @@ const flows = {
       w.appendChild(b);
     });
     const conf = document.createElement('button');
-    conf.className = 'opt'; conf.style.cssText = 'background:var(--navy);color:#fff;border-color:var(--navy);margin-top:4px';
+    conf.className = 'opt';
+    conf.style.cssText = 'background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;border-color:transparent;margin-top:4px;font-weight:700';
     conf.textContent = '✓ Confirmar seleção';
     conf.onclick = () => {
       w.remove();
+      document.querySelector('.input-zone').classList.remove('dimmed');
+      ti.disabled = false;
       const selecionados = hab.filter((_,i) => sel.has(i));
       userMsg(selecionados.length ? selecionados.join(', ') : 'Nenhum critério selecionado');
-      // Se perfil tem conquistas → avaliar EB-1A também
       if (S.profile.temConquistas && S.profile.temConquistas.includes('Sim')) go('sc_eb1_intro');
       else go('resultado');
     };
     w.appendChild(conf);
     chat.appendChild(w);
     chat.scrollTop = 9999;
-    ti.disabled = false;
+    document.querySelector('.input-zone').classList.add('dimmed');
+    ti.disabled = true;
   },
 
   async sc_eb1_intro() {
