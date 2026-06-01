@@ -304,7 +304,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   </div>
   <div class="prog-strip"><div class="prog-fill" id="prog"></div></div>
   <div class="chat" id="chat"></div>
-  <div id="structured-zone" style="display:none;padding:10px 32px 0;background:rgba(255,255,255,.95);border-top:1px solid rgba(194,198,216,.4)"></div>
+  <div id="structured-zone" style="display:none;padding:14px 32px 14px;background:rgba(255,255,255,.95);border-top:1px solid rgba(194,198,216,.4)"></div>
   <div class="input-zone">
     <div class="input-row">
       <input class="txt-in" id="ti" type="text" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off"/>
@@ -1306,7 +1306,7 @@ function buildAISummaryCard(analysis) {
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button class="cta1" onclick="window.open('report.html','_blank')" style="display:flex;align-items:center;justify-content:center;gap:8px">
+          <button class="cta1" onclick="window.open('report.html','_blank','fullscreen=yes')" style="display:flex;align-items:center;justify-content:center;gap:8px">
             📄 Ver Relatório Completo de Elegibilidade
           </button>
           <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')">
@@ -1329,7 +1329,7 @@ function buildAISummaryCard(analysis) {
     <div id="ai-panel-1">${singleCard(r1, true)}</div>
     <div id="ai-panel-2" style="display:none">${singleCard(r2, true)}</div>
     <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-      <button class="cta1" onclick="window.open('report.html','_blank')" style="display:flex;align-items:center;justify-content:center;gap:8px">
+      <button class="cta1" onclick="window.open('report.html','_blank','fullscreen=yes')" style="display:flex;align-items:center;justify-content:center;gap:8px">
         📄 Ver Relatório Completo de Elegibilidade
       </button>
       <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')">
