@@ -877,6 +877,18 @@ function singleFullCard(a) {
     </span>`
   ).join('');
 
+  // Sobre este Visto
+  const sobreMap = {
+    'EB-2 NIW': 'O <b>EB-2 NIW</b> (National Interest Waiver) é um Green Card de residência permanente que dispensa o requisito de oferta de emprego e de patrocinador. É voltado a profissionais com grau avançado ou habilidade excepcional cuja atuação beneficia o interesse nacional americano. O principal benefício é a independência: você mesmo peticiona, sem depender de uma empresa.',
+    'EB-1A': 'O <b>EB-1A</b> é o Green Card de categoria mais alta, reservado a profissionais com habilidade extraordinária reconhecida nacional ou internacionalmente. Não requer patrocinador e não passa por sorteio. Quem obtém o EB-1A está entre os poucos no topo de sua área globalmente — e o processo pode ser autopeticionar.',
+    'O-1': 'O <b>visto O-1</b> é um visto de trabalho temporário (renovável) para pessoas com habilidade extraordinária em ciências, artes, educação, negócios ou esportes. Requer um patrocinador nos EUA (empresa ou agente), mas é um caminho para atuar legalmente enquanto estrutura a residência permanente.',
+    'L-1': 'O <b>visto L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa internacional. Não passa por sorteio e não exige patrocinador externo. O L-1A (executivo/gerente) abre caminho direto para o Green Card EB-1C.',
+    'E-2': 'O <b>visto E-2</b> é voltado a investidores de países com tratado comercial com os EUA. Permite gerir seu próprio negócio no país e é renovável indefinidamente. O principal benefício é a agilidade — sem sorteio, sem patrocinador — mas exige cidadania elegível e investimento substancial.',
+    'Family Based': 'O <b>visto baseado em família</b> é um dos caminhos mais tradicionais para a residência permanente nos EUA. Depende de um vínculo familiar qualificado com cidadão americano ou residente permanente (Green Card holder), que peticionará em seu favor.',
+    'H-1B': 'O <b>visto H-1B</b> é destinado a trabalhadores em ocupações especializadas, exigindo patrocínio de uma empresa americana e participação no sorteio anual. Embora popular, a aprovação depende de sorte no sorteio, o que torna o planejamento estratégico essencial.',
+  };
+  const sobreTxt = sobreMap[a.visto] || '';
+
   // Critérios
   const crits = (a.criterios||[]).map(c => {
     const stMap = { atendido:['✓','#065f46','rgba(29,158,112,.08)','rgba(29,158,112,.2)'], fortalecer:['⚡','#78350f','rgba(217,119,6,.08)','rgba(217,119,6,.2)'], construir:['◯','#7f1d1d','rgba(220,38,38,.06)','rgba(220,38,38,.18)'] };
@@ -944,6 +956,12 @@ function singleFullCard(a) {
     <!-- DESTAQUES -->
     ${destaques ? `<div style="background:var(--navy2);padding:12px 22px;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid rgba(255,255,255,.06)">${destaques}</div>` : ''}
 
+    <!-- SOBRE ESTE VISTO -->
+    ${sobreTxt ? `<div style="padding:16px 24px;background:var(--gold4);border-bottom:1px solid rgba(201,168,76,.12)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:7px">Sobre este Visto</div>
+      <div style="font-size:13px;color:var(--txt2);line-height:1.7">${sobreTxt}</div>
+    </div>` : ''}
+
     <!-- BODY: 2 COLUNAS (colapsa em mobile) -->
     <div class="ai-full-card-body" style="display:grid;grid-template-columns:1fr 250px">
 
@@ -1003,29 +1021,9 @@ function singleFullCard(a) {
 
         <!-- Veredicto -->
         ${a.veredicto ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
-          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">📋 Veredicto</div>
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">📋 Resumo</div>
           <div style="font-size:12px;color:var(--txt2);line-height:1.65;font-style:italic">${a.veredicto}</div>
           ${a.estrategia_adicional ? `<div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(11,25,41,.07);font-size:11.5px;color:var(--txt2);line-height:1.6">${a.estrategia_adicional}</div>` : ''}
-        </div>` : ''}
-
-        <!-- Custo -->
-        ${a.custo_estimado?.itens?.length ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
-          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">💰 Custo Total Estimado</div>
-          ${custoItens}
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--navy);border-radius:7px;margin-top:8px">
-            <span style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.05em">Total</span>
-            <span style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--gold2);font-weight:700">${a.custo_estimado.total}</span>
-          </div>
-        </div>` : ''}
-
-        <!-- Processo -->
-        ${a.processo ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
-          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">⏱ Estrutura do Processo</div>
-          ${[['Prazo Regular',a.processo.prazo_regular],['Premium Processing',a.processo.prazo_premium],['Validade',a.processo.validade],['Quem peticiona',a.processo.quem_peticiona]].filter(r=>r[1]).map(r=>`
-            <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:6px">
-              <span style="color:var(--txt3)">${r[0]}</span>
-              <span style="font-weight:600;color:var(--navy);text-align:right;max-width:130px">${r[1]}</span>
-            </div>`).join('')}
         </div>` : ''}
 
         <!-- Parceiro -->
@@ -1042,13 +1040,16 @@ function singleFullCard(a) {
     </div>
 
     <!-- FOOTER CTAs -->
-    <div style="padding:16px 24px;background:#fff;border-top:1px solid rgba(11,25,41,.06);display:flex;gap:10px">
-      <button class="cta1" onclick="window.open('report.html','_blank')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px">
-        📄 Ver Relatório Completo (PDF)
-      </button>
-      <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')" style="white-space:nowrap">
-        📧 Receber por e-mail
-      </button>
+    <div style="padding:16px 24px;background:#fff;border-top:1px solid rgba(11,25,41,.06)">
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="flex:1;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:13px 18px;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          💬 Fale com Advogado Licenciado
+        </button>
+        <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')" style="white-space:nowrap">
+          📧 Receber por e-mail
+        </button>
+      </div>
+      <div style="text-align:center;font-size:11.5px;color:var(--txt3);margin-top:8px">LIV Law — Escritório licenciado nos EUA, parceiro oficial da ImigrarEUA para diagnóstico completo do seu caso.</div>
     </div>
   </div>`;
 }
@@ -1570,7 +1571,7 @@ const flows = {
     showOpts(['Não está presente nos EUA','Visto não-imigratório (turismo, estudante etc.)','Sem status definido'], val => {
       userMsg(val);
       S.profile.statusBeneficiario = val;
-      go('personal_info');
+      go('resultado');
     });
   },
 
@@ -1624,7 +1625,7 @@ const flows = {
     showOpts(['Menos de R$ 1 milhão/ano','Entre R$ 1 e 2 milhões/ano','Entre R$ 2 e 5 milhões/ano','Acima de R$ 5 milhões/ano'], val => {
       userMsg(val);
       S.profile.faturamento = val;
-      go('path_l1_fundos');
+      go('resultado');
     });
   },
 
@@ -1645,13 +1646,7 @@ const flows = {
     await think(700);
     await showFact('🌟', 'O <b>visto O-1</b> é reservado a indivíduos com habilidades extraordinárias em ciências, artes, educação, negócios ou esportes. Exige evidências concretas de reconhecimento acima da média.');
     await pause(300);
-    await botMsg(`Você está <strong>financeiramente preparado</strong> para investir no processo O-1? O investimento total (honorários + documentação) costuma ser de <strong>R$ 35.000 a R$ 55.000</strong>.`);
-    showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
-      userMsg(val);
-      S.profile.fundos = val;
-      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
-      else go('personal_info');
-    });
+    go('sc_o1_1');
   },
 
   async path_offramp_hib_info() {
@@ -1715,7 +1710,7 @@ const flows = {
     showOpts(['Sim, já tenho negócio definido','Estou pesquisando opções','Ainda não sei'], val => {
       userMsg(val);
       S.profile.tipoNegocio = val;
-      go('path_e2_fundos');
+      go('gate_e2_complementar');
     });
   },
 
@@ -1729,6 +1724,50 @@ const flows = {
       if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
       else go('personal_info');
     });
+  },
+
+  // ──────── GATE E-2 COMPLEMENTAR ────────
+  async gate_e2_complementar() {
+    setProgress(32);
+    await think(600);
+    await botMsg('Ótimo! Gostaria de uma <strong>avaliação completa</strong>? Posso também avaliar seu perfil para os vistos <strong>L-1</strong> e <strong>O-1</strong> em paralelo.');
+    showOpts(['Sim, quero avaliação completa','Não, apenas o E-2'], val => {
+      userMsg(val);
+      if (val.includes('Sim')) go('gate_l1_posicao');
+      else go('resultado');
+    });
+  },
+
+  async gate_l1_posicao() {
+    await think(500);
+    await botMsg('Para avaliar o <strong>L-1</strong>, qual é a sua <strong>posição na empresa</strong>?');
+    showOpts(['Fundador / Empreendedor','Sócio / Acionista','Executivo / Gerente','Funcionário com Conhecimento Especializado'], val => {
+      userMsg(val); S.profile.posicao = val; go('gate_l1_func');
+    });
+  },
+
+  async gate_l1_func() {
+    await think(400);
+    await botMsg('Quantos <strong>funcionários</strong> tem a empresa?');
+    showOpts(['Menos de 5 funcionários','Entre 5 e 10 funcionários','Entre 11 e 50 funcionários','Mais de 50 funcionários'], val => {
+      userMsg(val); S.profile.numFunc = val; go('gate_l1_fat');
+    });
+  },
+
+  async gate_l1_fat() {
+    await think(400);
+    await botMsg('Qual é o <strong>faturamento anual</strong> da empresa?');
+    showOpts(['Menos de R$ 1 milhão/ano','Entre R$ 1 e 2 milhões/ano','Entre R$ 2 e 5 milhões/ano','Acima de R$ 5 milhões/ano'], val => {
+      userMsg(val); S.profile.faturamento = val;
+      S._afterO1 = 'gate_o1_fim';
+      go('sc_o1_1');
+    });
+  },
+
+  async gate_o1_fim() {
+    S.vistos = ['E-2','L-1','O-1'];
+    setSideVisto('E-2 + L-1 + O-1');
+    go('resultado');
   },
 
   // ──────── DIAGNÓSTICO ────────
@@ -1837,7 +1876,17 @@ const flows = {
   async pi_local() {
     await think(400);
     await botMsg('Onde você mora atualmente?');
-    showOpts(['Brasil 🇧🇷','Estados Unidos 🇺🇸'], val => { userMsg(val); S.profile.localMora = val; go('pi_profissao'); });
+    showOpts(['Brasil 🇧🇷','Estados Unidos 🇺🇸','Outro país 🌍'], val => {
+      userMsg(val);
+      if (val.includes('Outro')) go('pi_local_outro');
+      else { S.profile.localMora = val; go('pi_profissao'); }
+    });
+  },
+
+  async pi_local_outro() {
+    await think(300);
+    await botMsg('Qual país você reside atualmente?');
+    waitInput(val => { S.profile.localMora = val; go('pi_profissao'); });
   },
 
   async pi_profissao() {
@@ -1853,14 +1902,14 @@ const flows = {
       userMsg(val);
       S.profile.profissao = val;
       if (val === 'Outra') go('pi_profissao_outra');
-      else go('pi_renda');
+      else go('pi_casado');
     });
   },
 
   async pi_profissao_outra() {
     await think(300);
     await botMsg('Qual é a sua profissão?');
-    waitInput(val => { S.profile.profissao = val; go('pi_renda'); });
+    waitInput(val => { S.profile.profissao = val; go('pi_casado'); });
   },
 
   async pi_renda() {
@@ -1880,7 +1929,7 @@ const flows = {
       userMsg(val);
       S.profile.casado = val;
       if (val === 'Sim') go('pi_filhos');
-      else { S.profile.filhos = 'Não'; go('pi_viagens'); }
+      else { S.profile.filhos = 'Não'; go('hist_visto_anterior'); }
     });
   },
 
@@ -1904,79 +1953,59 @@ const flows = {
   async pi_conjuge_visto() {
     await think(350);
     await botMsg('Seu <strong>cônjuge e filhos</strong> também solicitarão visto americano?');
-    showOpts(['Sim','Não','Não se aplica'], val => { userMsg(val); S.profile.conjugeVisto = val; go('pi_viagens'); });
+    showOpts(['Sim','Não','Não se aplica'], val => { userMsg(val); S.profile.conjugeVisto = val; go('hist_visto_anterior'); });
   },
 
-  async pi_viagens() {
+  // ──────── HISTÓRICO IMIGRATÓRIO ────────
+  async hist_visto_anterior() {
     await think(400);
-    await botMsg('Você realizou <strong>viagens ao exterior</strong> nos últimos 5 anos?');
-    showOpts(['Sim','Não'], val => {
-      userMsg(val);
-      S.profile.viagens = val;
-      if (val === 'Sim') go('pi_paises');
-      else go('pi_parentes');
-    });
+    await botMsg('Você tem ou já teve algum <strong>visto americano</strong>?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.temVistoAnterior = val; go('hist_visto_negado'); });
   },
 
-  async pi_paises() {
-    await think(300);
-    await botMsg('Quais países você visitou? (pode listar todos)');
-    waitInput(val => { S.profile.paises = val; go('pi_parentes'); });
-  },
-
-  async pi_parentes() {
-    await think(400);
-    await botMsg('Você tem <strong>parentes nos EUA</strong>?');
-    showOpts(['Sim','Não'], val => {
-      userMsg(val);
-      S.profile.parentesEUA = val;
-      if (val === 'Sim') go('pi_parentes_legal');
-      else go('pi_visto_anterior');
-    });
-  },
-
-  async pi_parentes_legal() {
-    await think(300);
-    await botMsg('Seu parente reside <strong>legalmente</strong> nos EUA?');
-    showOpts(['Sim','Não','Não sei'], val => { userMsg(val); S.profile.parentesLegal = val; go('pi_visto_anterior'); });
-  },
-
-  async pi_visto_anterior() {
-    await think(400);
-    await botMsg('Você tem ou já teve um <strong>visto americano</strong>?');
-    showOpts(['Sim','Não'], val => {
-      userMsg(val);
-      S.profile.vistoAnterior = val;
-      if (val === 'Sim') go('pi_visto_negado');
-      else go('pi_planos');
-    });
-  },
-
-  async pi_visto_negado() {
+  async hist_visto_negado() {
     await think(350);
-    await botMsg('Seu visto já foi <strong>negado ou cancelado</strong> alguma vez?');
-    showOpts(['Sim','Não'], val => {
-      userMsg(val);
-      S.profile.vistoNegado = val;
-      if (val === 'Sim') go('pi_visto_negado_detalhe');
-      else go('pi_planos');
-    });
+    await botMsg('Você já teve algum <strong>pedido de visto ou residência negado</strong> nos EUA?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.vistoNegado = val; go('hist_esteve_eua'); });
   },
 
-  async pi_visto_negado_detalhe() {
-    await think(400);
-    await botMsg('Onde foi a entrevista e qual foi o motivo da negativa (se souber)?');
-    waitInput(val => { S.profile.vistoNegadoDetalhe = val; go('pi_planos'); });
+  async hist_esteve_eua() {
+    await think(350);
+    await botMsg('Você já esteve <strong>legalmente nos Estados Unidos</strong>?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.esteveEUALegal = val; go('hist_em_solo'); });
   },
 
-  async pi_planos() {
+  async hist_em_solo() {
+    await think(350);
+    await botMsg('Atualmente você está em <strong>solo americano</strong>?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.emSoloAmericano = val; go('hist_fora_status'); });
+  },
+
+  async hist_fora_status() {
+    await think(350);
+    await botMsg('Você está ou já esteve <strong>fora de status</strong> (sem documentação regular) nos EUA?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.foraDeSatus = val; go('hist_entrada_inspecao'); });
+  },
+
+  async hist_entrada_inspecao() {
+    await think(350);
+    await botMsg('Você já entrou em território americano <strong>sem inspeção</strong> — por exemplo, atravessando a fronteira sem se identificar à fiscalização imigratória?');
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.entradaSemInspecao = val; go('prazo_mudanca'); });
+  },
+
+  async prazo_mudanca() {
     await think(400);
-    await botMsg('Quais são os seus <strong>planos nos EUA</strong>?');
-    showOpts(['Mudança definitiva / residência','Trabalho temporário','Investimento / negócios','Turismo / lazer','Estudo'], val => {
-      userMsg(val);
-      S.profile.planosEUA = val;
-      go('academic_start');
-    });
+    await botMsg('Quando você pretende <strong>mudar para os EUA</strong>?');
+    const ano = new Date().getFullYear();
+    const opts = [
+      `Ainda este ano (${ano})`,
+      `1º semestre de ${ano + 1}`,
+      `2º semestre de ${ano + 1}`,
+      `1º semestre de ${ano + 2}`,
+      `2º semestre de ${ano + 2}`,
+      `Ainda não sei`
+    ];
+    showOpts(opts, val => { userMsg(val); S.profile.prazoMudanca = val; go('academic_start'); });
   },
 
   // ──────── FORMAÇÃO ACADÊMICA ────────
@@ -2198,6 +2227,9 @@ const flows = {
   async scoring_intro() {
     setSideStep(5); setProgress(78);
     saveSession('scoring');
+    // Vistos sem perguntas de scoring vão direto para resultado
+    const _semScoring = ['Family Based','H-1B'];
+    if (_semScoring.includes(S.visto)) { go('resultado'); return; }
     await think(700);
     await botMsg(`Estamos quase lá, <strong>${S.nome}</strong>! Agora vou fazer perguntas específicas sobre os critérios de pré-elegibilidade para o <strong>${S.visto}</strong>. Essas respostas têm peso direto na sua pontuação.`);
     showOpts(['Entendido, vamos lá!'], () => {
@@ -2380,7 +2412,7 @@ const flows = {
   async sc_o1_5() {
     await think(400);
     await botMsg('Sua remuneração está <strong>acima da média da sua área</strong>?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_salario = val; go('resultado'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_salario = val; go(S._afterO1 || 'resultado'); });
   },
 
   // ──────── RESULTADO ────────
