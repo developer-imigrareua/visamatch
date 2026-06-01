@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Visa Match — ImigrarEUA</title>
+<link rel="icon" type="image/jpeg" href="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200&display=swap" rel="stylesheet">
 <style>
@@ -28,11 +29,11 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 
 /* ── SIDEBAR ── */
 .sidebar{background:linear-gradient(180deg,#1A72F6 0%,#002b70 100%);display:flex;flex-direction:column;overflow:hidden;position:relative}
-.sb-glow{display:none}
+.sb-glow{position:absolute;bottom:0;left:0;right:0;height:55%;background-image:url('https://lp.imigrareua.com/wp-content/uploads/2026/06/bandeira-eua-desfoque-visamatch.png');background-size:cover;background-position:center top;opacity:.38;pointer-events:none;z-index:0}
 .sb-inner{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;padding:28px 20px}
 
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.1)}
-.brand-ico{width:44px;height:44px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Manrope',sans-serif;font-size:18px;color:var(--blue);font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.brand-ico{width:44px;height:44px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Manrope',sans-serif;font-size:18px;color:var(--blue);font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.2);border:2px solid rgba(255,255,255,.4)}
 .brand-name{font-family:'Manrope',sans-serif;font-size:18px;color:#fff;line-height:1.2;font-weight:700}
 .brand-by{font-size:10px;color:rgba(255,255,255,.6);letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-top:1px}
 
@@ -67,7 +68,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* ── CHAT ── */
-.chat{flex:1;overflow-y:auto;padding:32px 36px 16px;display:flex;flex-direction:column;gap:20px;scroll-behavior:smooth;max-width:900px;width:100%;margin:0 auto;box-sizing:border-box}
+.chat{flex:1;overflow-y:auto;padding:28px 32px 16px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth;width:100%;box-sizing:border-box}
 .chat::-webkit-scrollbar{width:4px}
 .chat::-webkit-scrollbar-thumb{background:rgba(115,118,135,.2);border-radius:4px}
 
@@ -76,7 +77,8 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 @keyframes msgIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 .row.user{flex-direction:row-reverse}
 .ava{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;box-shadow:var(--sh)}
-.ava-bot{background:linear-gradient(135deg,var(--blue2),var(--blue4));color:#fff}
+.ava-bot{background:#fff;border:2px solid rgba(0,83,208,.15);overflow:hidden;padding:0}
+.ava-bot-img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
 .ava-bot-t{font-family:'Manrope',sans-serif;font-size:13px;font-weight:800;color:#fff}
 .ava-user{background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;font-size:12px;font-weight:700}
 .msg-wrap{max-width:68%}
@@ -226,6 +228,8 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   .app{grid-template-columns:1fr}
   .sidebar{display:none}
   html,body{overflow:hidden}
+  /* Usa altura dinâmica do viewport para não ser afetado pelo teclado */
+  .app{height:100dvh}
   .main-head{padding:11px 16px}
   .head-title{font-size:17px}
   .head-sub{font-size:10px}
@@ -258,7 +262,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   <div class="sb-glow"></div>
   <div class="sb-inner">
     <div class="brand">
-      <div class="brand-ico">V</div>
+      <div class="brand-ico" style="overflow:hidden;padding:0"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" style="width:100%;height:100%;object-fit:cover" alt="ImigrarEUA"/></div>
       <div>
         <div class="brand-name">Visa Match</div>
         <div class="brand-by">ImigrarEUA</div>
@@ -470,7 +474,7 @@ async function botMsg(html, delay = 0) {
   return new Promise(r => setTimeout(() => {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="bubble bot-b">${html}</div><div class="ts">${ts()}</div></div>`;
     chat.appendChild(row); chat.scrollTop = 9999; r();
   }, delay));
@@ -490,7 +494,7 @@ function addUserMsg(txt) { userMsg(txt); }
 function showTyping() {
   const row = document.createElement('div');
   row.id = 'typ'; row.className = 'row';
-  row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+  row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
     <div class="msg-wrap"><div class="typing-bub"><span></span><span></span><span></span></div></div>`;
   chat.appendChild(row); chat.scrollTop = 9999; return row;
 }
@@ -500,7 +504,7 @@ function showFact(ico, body, delay = 200) {
   return new Promise(r => setTimeout(() => {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="fact-card"><span class="fact-ico">${ico}</span>${body}</div></div>`;
     chat.appendChild(row); chat.scrollTop = 9999; r();
   }, delay));
@@ -510,7 +514,7 @@ function showAlert(body, delay = 100) {
   return new Promise(r => setTimeout(() => {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="alert">${body}</div></div>`;
     chat.appendChild(row); chat.scrollTop = 9999; r();
   }, delay));
@@ -520,6 +524,9 @@ function rmOpts() { const o = document.getElementById('opts'); if (o) o.remove()
 
 function showOpts(opts, handler) {
   rmOpts();
+  // Esconde o campo de texto quando há botões de seleção
+  ti.disabled = true;
+  document.querySelector('.input-zone').style.display = 'none';
   const w = document.createElement('div');
   w.className = 'opts-wrap'; w.id = 'opts';
   opts.forEach(op => {
@@ -528,13 +535,14 @@ function showOpts(opts, handler) {
     b.onclick = () => {
       document.querySelectorAll('.opt').forEach(x => { x.disabled = true; x.classList.add('sel'); });
       const ur2 = document.getElementById('undo-row'); if (ur2) ur2.remove();
+      // Restaura o campo de texto ao selecionar
+      document.querySelector('.input-zone').style.display = '';
+      ti.disabled = false;
       w.remove(); handler(op);
     };
     w.appendChild(b);
   });
   chat.appendChild(w); chat.scrollTop = 9999;
-  ti.disabled = false; ti.focus();
-  // show undo after first real question
   if (S.history.length > 2) setTimeout(addUndoBtn, 150);
 }
 
@@ -561,6 +569,70 @@ function waitInput(onVal) {
 }
 
 function pause(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Widget de data MM/AAAA (cursos, empregos) ──
+// allowCurrent: mostra botão "Atual" para campos de saída
+function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
+  clearInputHandlers();
+  ti.disabled = true;
+  document.querySelector('.input-zone').style.display = 'none';
+  const widgetId = 'my-widget-' + Date.now();
+  const wrapId   = 'my-wrap-' + Date.now();
+  const inputId  = 'my-in-'   + Date.now();
+  const sendId   = 'my-send-' + Date.now();
+  const currId   = 'my-curr-' + Date.now();
+
+  const row = document.createElement('div');
+  row.id = widgetId;
+  row.style.cssText = 'padding:4px 0 4px 44px;animation:optIn .3s ease both';
+
+  const currentBtn = allowCurrent
+    ? `<button id="${currId}" style="background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:0 13px;height:36px;font-family:'Inter Tight',sans-serif;font-size:12.5px;font-weight:600;color:var(--txt2);cursor:pointer;flex-shrink:0;transition:all .15s">Atual</button>`
+    : '';
+
+  row.innerHTML = `
+    <div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;transition:border-color .2s,box-shadow .2s" id="${wrapId}">
+      <input id="${inputId}" type="text" maxlength="7" placeholder="MM/AAAA"
+        style="border:none;outline:none;font-size:15px;font-family:'Inter Tight',sans-serif;color:var(--txt);width:110px;background:none;letter-spacing:.04em"/>
+      ${currentBtn}
+      <button id="${sendId}" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>`;
+
+  chat.appendChild(row);
+  chat.scrollTop = 9999;
+
+  const inputEl = document.getElementById(inputId);
+  const wrapEl  = document.getElementById(wrapId);
+
+  // Auto-formata MM/AAAA
+  inputEl.addEventListener('input', function() {
+    let v = this.value.replace(/\D/g,'');
+    if (v.length > 6) v = v.slice(0,6);
+    if (v.length > 2) v = `${v.slice(0,2)}/${v.slice(2)}`;
+    this.value = v;
+  });
+  wrapEl.addEventListener('focusin',  () => { wrapEl.style.borderColor='var(--blue)'; wrapEl.style.boxShadow='0 0 0 4px rgba(0,83,208,.06)'; });
+  wrapEl.addEventListener('focusout', () => { wrapEl.style.borderColor='var(--border2)'; wrapEl.style.boxShadow=''; });
+
+  const submit = (val) => {
+    if (!val || val.length < 4) return;
+    row.remove();
+    document.querySelector('.input-zone').style.display = '';
+    ti.disabled = false;
+    S.profile[profileKey] = val;
+    userMsg(val);
+    go(nextStep);
+  };
+
+  document.getElementById(sendId).onclick = () => submit(inputEl.value.trim());
+  inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') submit(inputEl.value.trim()); });
+  if (allowCurrent) {
+    document.getElementById(currId).onclick = () => submit('atual');
+  }
+  inputEl.focus();
+}
 
 async function think(ms = 900) {
   const t = showTyping(); await pause(ms); rmTyping(); return t;
@@ -2009,8 +2081,8 @@ const flows = {
 
   async ac_inicio() {
     await think(400);
-    await botMsg('Qual foi a <strong>data de início</strong> desse curso? (ex: 03/2015)');
-    waitInput(val => { S.profile.acInicio1 = val; go('ac_status'); });
+    await botMsg('Qual foi a <strong>data de início</strong> desse curso?');
+    showMonthYearWidget('acInicio1', 'ac_status');
   },
 
   async ac_status() {
@@ -2026,8 +2098,8 @@ const flows = {
 
   async ac_conclusao() {
     await think(350);
-    await botMsg('Qual foi a <strong>data de conclusão</strong>? (ex: 12/2019)');
-    waitInput(val => { S.profile.acConclusao1 = val; go('ac_posgrad'); });
+    await botMsg('Qual foi a <strong>data de conclusão</strong>?');
+    showMonthYearWidget('acConclusao1', 'ac_posgrad');
   },
 
   async ac_posgrad() {
@@ -2074,8 +2146,8 @@ const flows = {
 
   async ac_inicio2() {
     await think(300);
-    await botMsg('Data de <strong>início</strong> da segunda formação? (ex: 03/2020)');
-    waitInput(val => { S.profile.acInicio2 = val; go('ac_status2'); });
+    await botMsg('Data de <strong>início</strong> da segunda formação?');
+    showMonthYearWidget('acInicio2', 'ac_status2');
   },
 
   async ac_status2() {
@@ -2091,8 +2163,8 @@ const flows = {
 
   async ac_conclusao2() {
     await think(300);
-    await botMsg('Data de <strong>conclusão</strong>? (ex: 12/2022)');
-    waitInput(val => { S.profile.acConclusao2 = val; go('prof_exp_start'); });
+    await botMsg('Data de <strong>conclusão</strong>?');
+    showMonthYearWidget('acConclusao2', 'prof_exp_start');
   },
 
   // ──────── EXPERIÊNCIA PROFISSIONAL ────────
@@ -2118,14 +2190,14 @@ const flows = {
 
   async pe_entrada1() {
     await think(350);
-    await botMsg('Qual foi a <strong>data de entrada</strong> nessa empresa? (ex: 06/2018)');
-    waitInput(val => { S.profile.emp1Entrada = val; go('pe_saida1'); });
+    await botMsg('Qual foi a <strong>data de entrada</strong> nessa empresa?');
+    showMonthYearWidget('emp1Entrada', 'pe_saida1');
   },
 
   async pe_saida1() {
     await think(350);
-    await botMsg('Qual foi a <strong>data de saída</strong>? (ou "atual" se ainda está lá)');
-    waitInput(val => { S.profile.emp1Saida = val; go('pe_segunda'); });
+    await botMsg('Qual foi a <strong>data de saída</strong>? (clique em "Atual" se ainda está lá)');
+    showMonthYearWidget('emp1Saida', 'pe_segunda', true);
   },
 
   async pe_segunda() {
@@ -2158,14 +2230,14 @@ const flows = {
 
   async pe_entrada2() {
     await think(300);
-    await botMsg('Data de <strong>entrada</strong> na segunda empresa? (ex: 01/2015)');
-    waitInput(val => { S.profile.emp2Entrada = val; go('pe_saida2'); });
+    await botMsg('Data de <strong>entrada</strong> na segunda empresa?');
+    showMonthYearWidget('emp2Entrada', 'pe_saida2');
   },
 
   async pe_saida2() {
     await think(300);
     await botMsg('Data de <strong>saída</strong> da segunda empresa?');
-    waitInput(val => { S.profile.emp2Saida = val; go('pe_terceira'); });
+    showMonthYearWidget('emp2Saida', 'pe_terceira', true);
   },
 
   async pe_terceira() {
@@ -2460,7 +2532,7 @@ const flows = {
 
       const row = document.createElement('div');
       row.className = 'row';
-      row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+      row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
         <div class="msg-wrap" style="max-width:96%">${buildFullAICard(analysis)}</div>`;
       chat.appendChild(row);
       chat.scrollTop = 9999;
@@ -2474,7 +2546,7 @@ const flows = {
       await pause(400);
       const row = document.createElement('div');
       row.className = 'row';
-      row.innerHTML = `<div class="ava ava-bot"><span class="ava-bot-t">V</span></div>
+      row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
         <div class="msg-wrap" style="max-width:92%">${buildResult(visto, score, S.profile)}</div>`;
       chat.appendChild(row);
       chat.scrollTop = 9999;
@@ -2496,6 +2568,36 @@ const flows = {
     clearInputHandlers();
   }
 };
+
+// ─── MOBILE KEYBOARD FIX ───
+// Quando o teclado virtual abre no iOS/Android, reposiciona o input-zone
+if (window.visualViewport) {
+  const inputZone = document.querySelector('.input-zone');
+  const mainEl    = document.querySelector('.main');
+
+  function onViewportResize() {
+    const vv = window.visualViewport;
+    const keyboardHeight = window.innerHeight - vv.height;
+    if (keyboardHeight > 100) {
+      // Teclado aberto: empurra input-zone para cima do teclado
+      inputZone.style.position   = 'fixed';
+      inputZone.style.bottom     = keyboardHeight + 'px';
+      inputZone.style.left       = '0';
+      inputZone.style.right      = '0';
+      inputZone.style.zIndex     = '100';
+    } else {
+      // Teclado fechado: volta ao normal
+      inputZone.style.position = '';
+      inputZone.style.bottom   = '';
+      inputZone.style.left     = '';
+      inputZone.style.right    = '';
+      inputZone.style.zIndex   = '';
+    }
+  }
+
+  window.visualViewport.addEventListener('resize', onViewportResize);
+  window.visualViewport.addEventListener('scroll', onViewportResize);
+}
 
 // ─── START ───
 go('welcome');
