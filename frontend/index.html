@@ -891,10 +891,10 @@ function buildSingleCard(visto, score, p, showHeader = true) {
       <div class="res-nome">Análise de pré-elegibilidade — ${p.nomeCompleto || S.nome}</div>
       <div class="res-circle"><div class="res-pts">${pts}</div><div class="res-pts-lbl">pontos</div></div>
     </div>` : `
-    <div style="background:linear-gradient(135deg,var(--navy),var(--navy3));padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:#fff">${visto}</div>
+    <div style="background:linear-gradient(135deg,var(--blue4),var(--blue3));padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Manrope',sans-serif;font-size:20px;color:#fff">${visto}</div>
       <div style="text-align:right">
-        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold2)">${pts}</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:22px;color:#fff">${pts}</div>
         <div style="font-size:9px;color:rgba(255,255,255,.4);letter-spacing:.05em">PONTOS</div>
       </div>
     </div>`;
@@ -1007,8 +1007,8 @@ function singleFullCard(a) {
   const avatar = fotoSalva
     ? `<img src="${fotoSalva}" style="width:54px;height:54px;border-radius:50%;object-fit:cover"/>`
     : `<div style="position:relative;width:54px;height:54px;cursor:pointer" onclick="document.getElementById('${inputId}').click()" title="Adicionar foto">
-        <div style="width:54px;height:54px;background:linear-gradient(135deg,var(--navy3),var(--navy));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold2);font-weight:700" id="${avatarId}">${nome.charAt(0).toUpperCase()}</div>
-        <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px">📷</div>
+        <div style="width:54px;height:54px;background:linear-gradient(135deg,var(--blue3),var(--blue4));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Manrope',sans-serif;font-size:22px;color:#fff;font-weight:700" id="${avatarId}">${nome.charAt(0).toUpperCase()}</div>
+        <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--pink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px">📷</div>
         <input type="file" id="${inputId}" accept="image/*" style="display:none" onchange="handleFotoUpload(this,'${avatarId}')"/>
       </div>`;
 
@@ -1024,7 +1024,7 @@ function singleFullCard(a) {
   // Destaques badges
   const icons = ['🏆','🥇','🌟','🎯','💡','⚡'];
   const destaques = (a.destaques||[]).map((d,i)=>
-    `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);border-radius:20px;padding:5px 12px;font-size:11.5px;font-weight:600;color:var(--gold3);margin:3px">
+    `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 12px;font-size:11.5px;font-weight:600;color:#fff;margin:3px">
       ${icons[i%icons.length]} ${d}
     </span>`
   ).join('');
@@ -1045,14 +1045,14 @@ function singleFullCard(a) {
   const crits = (a.criterios||[]).map(c => {
     const stMap = { atendido:['✓','#065f46','rgba(29,158,112,.08)','rgba(29,158,112,.2)'], fortalecer:['⚡','#78350f','rgba(217,119,6,.08)','rgba(217,119,6,.2)'], construir:['◯','#7f1d1d','rgba(220,38,38,.06)','rgba(220,38,38,.18)'] };
     const [ico,cor,bg,brd] = stMap[c.status]||stMap.construir;
-    const stars = Array.from({length:5},(_,i)=>`<span style="color:${i<(c.estrelas||0)?'var(--gold)':'rgba(11,25,41,.12)'}">★</span>`).join('');
+    const stars = Array.from({length:5},(_,i)=>`<span style="color:${i<(c.estrelas||0)?'var(--pink)':'rgba(11,25,41,.12)'}">★</span>`).join('');
     const evids = (c.evidencias||[]).map(e=>`<div style="font-size:11.5px;color:var(--txt2);padding-left:10px;position:relative">· ${e}</div>`).join('');
     return `<tr style="border-bottom:1px solid rgba(11,25,41,.05)">
       <td style="padding:10px 8px;width:28px;vertical-align:top">
         <div style="width:26px;height:26px;border-radius:50%;background:${bg};border:1px solid ${brd};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${cor}">${c.numero||''}</div>
       </td>
       <td style="padding:10px 8px;vertical-align:top">
-        <div style="font-size:12.5px;font-weight:600;color:var(--navy);margin-bottom:3px">${c.nome}</div>
+        <div style="font-size:12.5px;font-weight:600;color:var(--blue4);margin-bottom:3px">${c.nome}</div>
         ${evids}
       </td>
       <td style="padding:10px 8px;vertical-align:top;text-align:center;white-space:nowrap">
@@ -1064,16 +1064,16 @@ function singleFullCard(a) {
 
   // Documentação
   const docs = (a.documentacao_principal||[]).map((d,i)=>
-    `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--smoke);border-radius:7px;font-size:12px;color:var(--txt2)">
-      <div style="width:18px;height:18px;background:var(--navy);color:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px">${String.fromCharCode(65+i)}</div>
+    `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--surface3);border-radius:7px;font-size:12px;color:var(--txt2)">
+      <div style="width:18px;height:18px;background:var(--blue4);color:var(--pink);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px">${String.fromCharCode(65+i)}</div>
       ${d}
     </div>`
   ).join('');
 
   // Plano de ação
   const acoes = (a.plano_acao||a.proximos_passos||[]).map((ac,i)=>
-    `<div style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;background:var(--gold4);border:1px solid rgba(201,168,76,.18);border-radius:8px">
-      <div style="width:20px;height:20px;background:var(--navy);color:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${i+1}</div>
+    `<div style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;background:var(--surface3);border:1px solid var(--border);border-radius:8px">
+      <div style="width:20px;height:20px;background:var(--blue4);color:var(--pink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${i+1}</div>
       <div style="font-size:12.5px;color:var(--txt);line-height:1.5">${ac}</div>
     </div>`
   ).join('');
@@ -1081,36 +1081,36 @@ function singleFullCard(a) {
   // Custo
   const custoItens = (a.custo_estimado?.itens||[]).map(it=>
     `<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--txt2);padding:4px 0;border-bottom:1px solid rgba(11,25,41,.05)">
-      <span>${it.nome}</span><span style="font-weight:600;color:var(--navy)">${it.valor}</span>
+      <span>${it.nome}</span><span style="font-weight:600;color:var(--blue4)">${it.valor}</span>
     </div>`
   ).join('');
 
   return `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(11,25,41,.1)">
 
     <!-- HEADER -->
-    <div style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);padding:22px 24px;display:flex;align-items:center;gap:16px;position:relative">
-      <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(201,168,76,.1) 0%,transparent 70%);border-radius:50%"></div>
-      <div style="flex-shrink:0;border-radius:50%;overflow:hidden;border:2px solid rgba(201,168,76,.3)">${avatar}</div>
+    <div style="background:linear-gradient(135deg,#1A72F6 0%,#002b70 100%);padding:22px 24px;display:flex;align-items:center;gap:16px;position:relative">
+      <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);border-radius:50%"></div>
+      <div style="flex-shrink:0;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.3)">${avatar}</div>
       <div style="flex:1">
-        <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold2);margin-bottom:7px">✦ Análise de Elegibilidade</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#fff;line-height:1;font-weight:700">${a.visto}</div>
+        <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-bottom:7px">✦ Análise de Elegibilidade</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:28px;color:#fff;line-height:1;font-weight:700">${a.visto}</div>
         <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin:3px 0 6px">${getSubtituloVisto(a.visto)}</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--gold2)">${nome}</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:17px;color:#fff">${nome}</div>
         <div style="font-size:11.5px;color:rgba(255,255,255,.4)">${prof}</div>
       </div>
       <div style="text-align:center;flex-shrink:0">
         <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">Análise de Aprovação</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:48px;color:#fff;line-height:1;font-weight:700">${pct}%</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:48px;color:#fff;line-height:1;font-weight:700">${pct}%</div>
         <div style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);margin-top:5px">${cls.ico} ${a.classificacao}</div>
       </div>
     </div>
 
     <!-- DESTAQUES -->
-    ${destaques ? `<div style="background:var(--navy2);padding:12px 22px;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid rgba(255,255,255,.06)">${destaques}</div>` : ''}
+    ${destaques ? `<div style="background:var(--blue3);padding:12px 22px;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid rgba(255,255,255,.06)">${destaques}</div>` : ''}
 
     <!-- SOBRE ESTE VISTO -->
-    ${sobreTxt ? `<div style="padding:16px 24px;background:var(--gold4);border-bottom:1px solid rgba(201,168,76,.12)">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:7px">Sobre este Visto</div>
+    ${sobreTxt ? `<div style="padding:16px 24px;background:var(--surface3);border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:7px">Sobre este Visto</div>
       <div style="font-size:13px;color:var(--txt2);line-height:1.7">${sobreTxt}</div>
     </div>` : ''}
 
@@ -1147,24 +1147,24 @@ function singleFullCard(a) {
       </div>
 
       <!-- COLUNA LATERAL -->
-      <div class="ai-full-card-side" style="padding:20px 18px;background:var(--cream);display:flex;flex-direction:column;gap:14px">
+      <div class="ai-full-card-side" style="padding:20px 18px;background:var(--surface2);display:flex;flex-direction:column;gap:14px">
 
         <!-- Fundamento Legal -->
         ${a.fundamento_legal ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
           <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">⚖️ Fundamento Legal</div>
-          ${[['Base',a.fundamento_legal.base],['Regulamento',a.fundamento_legal.regulamento],['Formulário',a.fundamento_legal.formulario]].map(([l,v])=>v?`<div style="margin-bottom:7px"><div style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)">${l}</div><div style="font-size:12px;font-weight:600;color:var(--navy)">${v}</div></div>`:''). join('')}
+          ${[['Base',a.fundamento_legal.base],['Regulamento',a.fundamento_legal.regulamento],['Formulário',a.fundamento_legal.formulario]].map(([l,v])=>v?`<div style="margin-bottom:7px"><div style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)">${l}</div><div style="font-size:12px;font-weight:600;color:var(--blue4)">${v}</div></div>`:''). join('')}
         </div>` : ''}
 
         <!-- Scorecard -->
         ${a.scorecard ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
           <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">✦ Scorecard Final</div>
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid rgba(201,168,76,.3);flex-shrink:0">
-              <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--gold2);line-height:1">${a.scorecard.atendidos}/${a.scorecard.total}</div>
+            <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1A72F6,#002b70);display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.3);flex-shrink:0">
+              <div style="font-family:'Manrope',sans-serif;font-size:18px;color:#fff;line-height:1">${a.scorecard.atendidos}/${a.scorecard.total}</div>
               <div style="font-size:7.5px;color:rgba(255,255,255,.35);letter-spacing:.05em">CRITÉRIOS</div>
             </div>
             <div>
-              <div style="font-size:12.5px;font-weight:600;color:var(--navy)">${a.scorecard.atendidos} de ${a.scorecard.total} atendidos</div>
+              <div style="font-size:12.5px;font-weight:600;color:var(--blue4)">${a.scorecard.atendidos} de ${a.scorecard.total} atendidos</div>
               <div style="font-size:11px;color:var(--txt3);margin-top:2px">Mínimo: ${a.scorecard.minimo_exigido||3}</div>
               <div style="display:inline-block;margin-top:5px;background:rgba(29,158,112,.09);border:1px solid rgba(29,158,112,.2);border-radius:7px;padding:2px 8px;font-size:10.5px;font-weight:600;color:var(--green)">✦ Exige-se apenas ${a.scorecard.minimo_exigido||3}</div>
             </div>
@@ -1179,11 +1179,11 @@ function singleFullCard(a) {
         </div>` : ''}
 
         <!-- Parceiro -->
-        <div style="border-radius:10px;padding:14px;${a.recomendacao_parceiro==='liv'?'background:linear-gradient(135deg,var(--navy2),var(--navy3));border:1px solid rgba(201,168,76,.2)':'background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)'}">
+        <div style="border-radius:10px;padding:14px;${a.recomendacao_parceiro==='liv'?'background:linear-gradient(135deg,#1A72F6,#002b70);border:1px solid rgba(255,255,255,.2)':'background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)'}">
           <div style="font-size:20px;margin-bottom:6px">${a.recomendacao_parceiro==='liv'?'⚖️':'🎓'}</div>
           <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Law — Parceiro Oficial':'Phoenix — Fortalecimento de Perfil'}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Escritório licenciado nos EUA, especializado em ${a.visto}.`:'Especialista em melhoria de perfil para imigração.'}</div>
-          <button onclick="alert('Em produção: redirecionaria para o parceiro.')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'var(--gold)':'rgba(255,255,255,.15)'};color:${a.recomendacao_parceiro==='liv'?'var(--navy)':'#fff'};border:none;border-radius:7px;padding:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+          <button onclick="alert('Em produção: redirecionaria para o parceiro.')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'linear-gradient(135deg,var(--blue),var(--pink))':'rgba(255,255,255,.15)'};color:#fff;border:none;border-radius:7px;padding:8px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
             ${a.recomendacao_parceiro==='liv'?'Agendar avaliação →':'Conhecer a Phoenix →'}
           </button>
         </div>
@@ -1194,7 +1194,7 @@ function singleFullCard(a) {
     <!-- FOOTER CTAs -->
     <div style="padding:16px 24px;background:#fff;border-top:1px solid rgba(11,25,41,.06)">
       <div style="display:flex;gap:10px;margin-bottom:8px">
-        <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="flex:1;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:13px 18px;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="flex:1;background:var(--blue4);color:#fff;border:none;border-radius:11px;padding:13px 18px;font-family:'Inter Tight',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
           💬 Fale com Advogado Licenciado
         </button>
         <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')" style="white-space:nowrap">
@@ -1246,7 +1246,7 @@ function buildAISummaryCard(analysis) {
     const crits = (a.criterios || []).slice(0, 5).map(c => {
       const icon = c.status === 'atendido' ? '✓' : c.status === 'fortalecer' ? '⚡' : '◯';
       const cor  = c.status === 'atendido' ? 'var(--green)' : c.status === 'fortalecer' ? 'var(--amber)' : 'var(--txt3)';
-      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--smoke);border-radius:7px;font-size:12.5px">
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface3);border-radius:7px;font-size:12.5px">
         <span style="color:${cor};font-weight:700;flex-shrink:0">${icon}</span>
         <span style="color:var(--txt2)">${c.nome}</span>
       </div>`;
@@ -1261,10 +1261,10 @@ function buildAISummaryCard(analysis) {
     ).join('');
 
     const header = compact
-      ? `<div style="background:linear-gradient(135deg,var(--navy),var(--navy3));padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:12px 12px 0 0">
-          <div style="font-family:'Cormorant Garamond',serif;font-size:19px;color:#fff">${a.visto}</div>
+      ? `<div style="background:linear-gradient(135deg,var(--blue4),var(--blue3));padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:12px 12px 0 0">
+          <div style="font-family:'Manrope',sans-serif;font-size:19px;color:#fff">${a.visto}</div>
           <div style="text-align:right">
-            <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--gold2);line-height:1">${pct}%</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:26px;color:#fff;line-height:1">${pct}%</div>
             <div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.05em">APROVAÇÃO</div>
           </div>
         </div>`
@@ -1465,12 +1465,12 @@ const flows = {
     ];
     phoneRow.innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 10px;max-width:420px;transition:border-color .2s" id="phone-wrap">
-        <select id="phone-country" style="border:none;outline:none;font-size:14px;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy)">
+        <select id="phone-country" style="border:none;outline:none;font-size:14px;background:none;cursor:pointer;font-family:'Inter Tight',sans-serif;color:var(--blue4)">
           ${countries.map(c => `<option value="${c.ddi}" ${c.code==='BR'?'selected':''}>${c.flag} ${c.ddi}</option>`).join('')}
         </select>
         <div style="width:1px;height:20px;background:rgba(11,25,41,.1)"></div>
-        <input id="phone-num" type="tel" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--navy);flex:1;background:none"/>
-        <button id="phone-send" style="background:var(--navy);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <input id="phone-num" type="tel" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:14px;font-family:'Inter Tight',sans-serif;color:var(--blue4);flex:1;background:none"/>
+        <button id="phone-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>`;
@@ -1488,7 +1488,7 @@ const flows = {
     });
 
     document.getElementById('phone-wrap').addEventListener('focusin', () =>
-      document.getElementById('phone-wrap').style.borderColor = 'rgba(201,168,76,.45)'
+      document.getElementById('phone-wrap').style.borderColor = 'var(--blue2)'
     );
     document.getElementById('phone-wrap').addEventListener('focusout', () =>
       document.getElementById('phone-wrap').style.borderColor = 'rgba(11,25,41,.1)'
@@ -1995,8 +1995,8 @@ const flows = {
     dateRow.innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 14px;max-width:260px;transition:border-color .2s" id="date-wrap">
         <input id="date-in" type="text" maxlength="10" placeholder="DD/MM/AAAA"
-          style="border:none;outline:none;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--navy);width:130px;background:none;letter-spacing:.04em"/>
-        <button id="date-send" style="background:var(--navy);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          style="border:none;outline:none;font-size:15px;font-family:'Inter Tight',sans-serif;color:var(--blue4);width:130px;background:none;letter-spacing:.04em"/>
+        <button id="date-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>`;
@@ -2012,7 +2012,7 @@ const flows = {
     });
 
     document.getElementById('date-wrap').addEventListener('focusin', () =>
-      document.getElementById('date-wrap').style.borderColor = 'rgba(201,168,76,.45)'
+      document.getElementById('date-wrap').style.borderColor = 'var(--blue2)'
     );
 
     const submitDate = () => {
