@@ -785,6 +785,24 @@ async function think(ms = 900) {
   const t = showTyping(); await pause(ms); rmTyping(); return t;
 }
 
+async function chatForgotPassword() {
+  try {
+    const r = await fetch(API_BASE + '/auth/send-code', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: S.email })
+    });
+    if (r.ok) {
+      await botMsg('📧 Enviamos um código de 6 dígitos para <strong>' + S.email + '</strong>. Digite o código abaixo:');
+      go('chat_verify_code');
+    } else {
+      await botMsg('⚠️ Não foi possível enviar o código. Tente novamente.');
+    }
+  } catch(e) {
+    await botMsg('⚠️ Erro de conexão. Continuando sem login.');
+    go('contact_name');
+  }
+}
+
 // ─── SCORING ENGINE ───
 function calcScore(visto, p) {
   let s = 0;
@@ -1610,20 +1628,156 @@ const flows = {
     setSideStep(0); setProgress(5);
     await think(500);
     await botMsg('Para enviar sua análise completa, preciso do seu <strong>e-mail</strong>. Qual é?');
-    waitInput(val => {
-      // Validação de e-mail
+    waitInput(async val => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
       if (!emailRegex.test(val)) {
         userMsg(val);
-        botMsg('⚠️ Esse e-mail não parece válido. Por favor, digite um e-mail com o formato <strong>nome@dominio.com</strong>.');
+        botMsg('⚠️ E-mail inválido. Por favor, use o formato <strong>nome@dominio.com</strong>.');
         waitInput(v2 => {
           if (!emailRegex.test(v2)) { userMsg(v2); botMsg('⚠️ E-mail inválido. Tente novamente.'); waitInput(v3 => { S.email = v3; go('contact_name'); }); }
-          else { S.email = v2; go('contact_name'); }
+          else { S.email = v2; go('check_email_exists'); }
         });
         return;
       }
-      S.email = val; go('contact_name');
+      S.email = val;
+      go('check_email_exists');
     });
+  },
+
+  async check_email_exists() {
+    const typRow = showTyping();
+    try {
+      const res = await fetch(API_BASE + '/auth/check-email', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: S.email })
+      });
+      rmTyping();
+      if (!res.ok) { go('contact_name'); return; }
+      const { hasAccount, hasLead, nome } = await res.json();
+      if (hasAccount) {
+        if (nome) S.nome = nome.split(' ')[0];
+        const greet = nome ? ', <strong>' + nome.split(' ')[0] + '</strong>' : '';
+        await botMsg('Olá' + greet + '! Identificamos uma conta com este e-mail. Digite sua senha para continuar:');
+        go('chat_login_password');
+      } else if (hasLead) {
+        await botMsg('Bem-vindo de volta! Identificamos que você já realizou uma análise anteriormente. Vamos continuar com uma nova análise.');
+        go('contact_name');
+      } else {
+        go('contact_name');
+      }
+    } catch(e) {
+      rmTyping();
+      go('contact_name');
+    }
+  },
+
+  async chat_login_password() {
+    clearInputHandlers();
+    ti.disabled = true;
+    const sz = document.getElementById('structured-zone');
+    sz.innerHTML = ''; sz.style.display = '';
+    const inputId = 'chat-pwd-' + Date.now();
+    const row = document.createElement('div');
+    row.style.cssText = 'animation:optIn .3s ease both';
+    row.innerHTML = '<div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;min-width:280px">' +
+      '<input id="' + inputId + '" type="password" placeholder="Sua senha" autocomplete="current-password" ' +
+      'style="border:none;outline:none;font-size:15px;font-family:\'Inter Tight\',sans-serif;color:var(--txt);flex:1;background:none"/>' +
+      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>' +
+      '<div style="margin-top:8px"><button onclick="chatForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--blue);cursor:pointer;padding:0;font-family:\'Inter Tight\',sans-serif">Esqueceu a senha? Receber código por e-mail</button></div>';
+    sz.appendChild(row);
+
+    const doLoginChat = async () => {
+      const el = document.getElementById(inputId);
+      const pwd = el ? el.value : '';
+      if (!pwd) return;
+      const btn = document.getElementById(inputId + '-send');
+      if (btn) btn.disabled = true;
+      try {
+        const r = await fetch(API_BASE + '/auth/login', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email: S.email, password: pwd })
+        });
+        const data = await r.json();
+        sz.style.display = 'none'; sz.innerHTML = '';
+        document.querySelector('.input-zone').style.display = '';
+        ti.disabled = false;
+        if (r.ok) {
+          localStorage.setItem('vm_user_token', data.token);
+          localStorage.setItem('vm_user', JSON.stringify(data.user));
+          S.nome = (data.user.nome || '').split(' ')[0] || S.nome;
+          userMsg('••••••••');
+          await botMsg('✅ Bem-vindo de volta, <strong>' + S.nome + '</strong>! Vamos continuar sua análise.');
+          go('contact_name');
+        } else {
+          userMsg('••••••••');
+          await botMsg('⚠️ Senha incorreta. Tente novamente ou clique em "Esqueceu a senha?"');
+          go('chat_login_password');
+        }
+      } catch(e) {
+        sz.style.display = 'none'; sz.innerHTML = '';
+        document.querySelector('.input-zone').style.display = '';
+        ti.disabled = false;
+        go('contact_name');
+      }
+    };
+    const sendBtn = document.getElementById(inputId + '-send');
+    if (sendBtn) sendBtn.onclick = doLoginChat;
+    const inEl = document.getElementById(inputId);
+    if (inEl) { inEl.addEventListener('keydown', e => { if(e.key==='Enter') doLoginChat(); }); inEl.focus(); }
+  },
+
+  async chat_verify_code() {
+    clearInputHandlers();
+    ti.disabled = true;
+    const sz = document.getElementById('structured-zone');
+    sz.innerHTML = ''; sz.style.display = '';
+    const inputId = 'chat-code-' + Date.now();
+    const row = document.createElement('div');
+    row.style.cssText = 'animation:optIn .3s ease both';
+    row.innerHTML = '<div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;min-width:240px">' +
+      '<input id="' + inputId + '" type="text" maxlength="6" placeholder="000000" autocomplete="one-time-code" ' +
+      'style="border:none;outline:none;font-size:20px;font-family:\'Manrope\',sans-serif;color:var(--blue);width:100px;background:none;letter-spacing:6px;font-weight:700"/>' +
+      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>';
+    sz.appendChild(row);
+
+    const doVerify = async () => {
+      const el = document.getElementById(inputId);
+      const code = el ? el.value.trim() : '';
+      if (!code || code.length < 6) return;
+      try {
+        const r = await fetch(API_BASE + '/auth/verify-code', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email: S.email, code })
+        });
+        const data = await r.json();
+        sz.style.display = 'none'; sz.innerHTML = '';
+        document.querySelector('.input-zone').style.display = '';
+        ti.disabled = false;
+        if (r.ok) {
+          localStorage.setItem('vm_user_token', data.token);
+          localStorage.setItem('vm_user', JSON.stringify(data.user));
+          S.nome = (data.user.nome || '').split(' ')[0] || S.nome;
+          userMsg(code);
+          await botMsg('✅ Código verificado! Bem-vindo de volta, <strong>' + S.nome + '</strong>. Vamos continuar.');
+          go('contact_name');
+        } else {
+          userMsg(code);
+          await botMsg('⚠️ ' + (data.error || 'Código incorreto.') + ' Tente novamente.');
+          go('chat_verify_code');
+        }
+      } catch(e) {
+        sz.style.display = 'none'; sz.innerHTML = '';
+        document.querySelector('.input-zone').style.display = '';
+        ti.disabled = false;
+        go('contact_name');
+      }
+    };
+    const sendBtn = document.getElementById(inputId + '-send');
+    if (sendBtn) sendBtn.onclick = doVerify;
+    const inEl = document.getElementById(inputId);
+    if (inEl) { inEl.addEventListener('keydown', e => { if(e.key==='Enter') doVerify(); }); inEl.focus(); }
   },
 
   async contact_name() {
