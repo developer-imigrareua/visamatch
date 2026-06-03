@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Visa Match — ImigrarEUA</title>
+<title>Visa Match · ImigrarEUA</title>
 <link rel="icon" type="image/jpeg" href="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200&display=swap" rel="stylesheet">
@@ -839,9 +839,9 @@ function partnerCtaHtml(partner, visto) {
     return `<div class="partner-cta liv">
       <div class="partner-ico liv">⚖️</div>
       <div class="partner-info">
-        <div class="partner-name">LIV Law — Parceiro Oficial ImigrarEUA</div>
+        <div class="partner-name">LIV Immigration Law · Parceiro Oficial ImigrarEUA</div>
         <div class="partner-desc">Escritório de advocacia <b>licenciado nos EUA</b>, especializado em vistos de trabalho e Green Card. Parceiro oficial da ImigrarEUA para casos de ${visto}.</div>
-        <button class="partner-btn" onclick="alert('Em produção: redirecionaria para o site da LIV Law ou formulário de contato.')">Agendar avaliação com a LIV Law →</button>
+        <button class="partner-btn" onclick="alert('Em produção: redirecionaria para o site da LIV Immigration Law ou formulário de contato.')">Agendar avaliação com a LIV Immigration Law →</button>
       </div>
     </div>`;
   }
@@ -915,10 +915,10 @@ function buildSingleCard(visto, score, p, showHeader = true) {
     'EB-2 NIW':'Com base no seu perfil, o <b>EB-2 NIW</b> representa um caminho promissor para a residência permanente nos EUA sem depender de patrocinador. Esse visto valoriza profissionais cuja expertise beneficia o interesse nacional americano.',
     'EB-1A':'Suas conquistas indicam potencial para o <b>EB-1A</b>, um dos caminhos mais prestigiosos de Green Card, reservado a profissionais no topo de suas áreas globalmente. Um dossiê robusto é essencial.',
     'O-1':'O <b>visto O-1</b> é ideal para quem demonstra realizações relevantes e reconhecidas na área. É um visto de trabalho temporário com renovação possível, que permite atuar nos EUA e eventualmente transitar para a residência permanente.',
-    'L-1':'O <b>L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa. É um dos caminhos mais diretos e sem sorteio — e seu perfil dentro da empresa é um ativo central.',
+    'L-1':'O <b>L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa. É um dos caminhos mais diretos e sem sorteio. Seu perfil dentro da empresa é um ativo central.',
     'E-2':'Com cidadania de país com tratado e capacidade de investimento, o <b>E-2</b> oferece um caminho ágil para gerenciar seu próprio negócio nos EUA. É renovável e cria base para outros caminhos futuros.',
     'Family Based':'O visto baseado em família oferece um caminho estruturado quando há vínculo direto com cidadão americano ou residente permanente.',
-    'H-1B':'O <b>H-1B</b> requer patrocínio de empresa americana e passa por sorteio anual — o que torna estratégia e timing decisivos.'
+    'H-1B':'O <b>H-1B</b> requer patrocínio de empresa americana e passa por sorteio anual, o que torna estratégia e timing decisivos.'
   };
 
   const crits = critMap[visto] || [];
@@ -1221,10 +1221,10 @@ function singleFullCard(a) {
   // Sobre este Visto
   const sobreMap = {
     'EB-2 NIW': 'O <b>EB-2 NIW</b> (National Interest Waiver) é um Green Card de residência permanente que dispensa o requisito de oferta de emprego e de patrocinador. É voltado a profissionais com grau avançado ou realizações relevantes e reconhecidas cuja atuação beneficia o interesse nacional americano. O principal benefício é a independência: você mesmo peticiona, sem depender de uma empresa.',
-    'EB-1A': 'O <b>EB-1A</b> é o Green Card de categoria mais alta, reservado a profissionais com realizações relevantes e reconhecidas nacional ou internacionalmente. Não requer patrocinador e não passa por sorteio. Quem obtém o EB-1A está entre os poucos no topo de sua área globalmente — e o processo pode ser autopeticionar.',
+    'EB-1A': 'O <b>EB-1A</b> é o Green Card de categoria mais alta, reservado a profissionais com realizações relevantes e reconhecidas nacional ou internacionalmente. Não requer patrocinador e não passa por sorteio. Quem obtém o EB-1A está entre os poucos no topo de sua área globalmente e o processo pode ser autopeticionar.',
     'O-1': 'O <b>visto O-1</b> é um visto de trabalho temporário (renovável) para pessoas com realizações relevantes e reconhecidas em ciências, artes, educação, negócios ou esportes. Requer um patrocinador nos EUA (empresa ou agente), mas é um caminho para atuar legalmente enquanto estrutura a residência permanente.',
     'L-1': 'O <b>visto L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa internacional. Não passa por sorteio e requer a empresa como sponsor. O L-1A (executivo/gerente) abre caminho direto para o Green Card EB-1C.',
-    'E-2': 'O <b>visto E-2</b> é voltado a investidores de países com tratado comercial com os EUA. Permite gerir seu próprio negócio no país e é renovável indefinidamente. O principal benefício é a agilidade — sem sorteio, sem patrocinador — mas exige cidadania elegível e investimento substancial.',
+    'E-2': 'O <b>visto E-2</b> é voltado a investidores de países com tratado comercial com os EUA. Permite gerir seu próprio negócio no país e é renovável indefinidamente. O principal benefício é a agilidade, sem sorteio, sem patrocinador — mas exige cidadania elegível e investimento substancial.',
     'Family Based': 'O <b>visto baseado em família</b> é um dos caminhos mais tradicionais para a residência permanente nos EUA. Depende de um vínculo familiar qualificado com cidadão americano ou residente permanente (Green Card holder), que peticionará em seu favor.',
     'H-1B': 'O <b>visto H-1B</b> é destinado a trabalhadores em ocupações especializadas, exigindo patrocínio de uma empresa americana e participação no sorteio anual. Embora popular, a aprovação depende de sorte no sorteio, o que torna o planejamento estratégico essencial.',
   };
@@ -1310,7 +1310,7 @@ function singleFullCard(a) {
       <div style="padding:22px 24px;border-right:1px solid rgba(11,25,41,.07)">
 
         <!-- Critérios -->
-        ${crits ? `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(11,25,41,.07)">Os ${a.criterios.length} Critérios USCIS — Análise do Perfil</div>
+        ${crits ? `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(11,25,41,.07)">Os ${a.criterios.length} Critérios USCIS · Análise do Perfil</div>
         <table style="width:100%;border-collapse:collapse;margin-bottom:22px">
           <thead><tr>
             <th style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding:6px 8px;text-align:left;border-bottom:2px solid rgba(11,25,41,.07)">#</th>
@@ -1326,7 +1326,7 @@ function singleFullCard(a) {
         <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:22px">${docs}</div>` : ''}
 
         <!-- Plano de ação -->
-        ${acoes ? `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(11,25,41,.07)">Plano de Ação — Próximas 2–4 Semanas</div>
+        ${acoes ? `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(11,25,41,.07)">Plano de Ação · Próximas 2–4 Semanas</div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:22px">${acoes}</div>` : ''}
 
         <!-- Disclaimer -->
@@ -1370,11 +1370,11 @@ function singleFullCard(a) {
         <!-- Parceiro -->
         <div style="border-radius:10px;padding:14px;${a.recomendacao_parceiro==='liv'?'background:linear-gradient(135deg,#1A72F6,#002b70);border:1px solid rgba(255,255,255,.2)':'background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)'}">
           <div style="font-size:20px;margin-bottom:6px">${a.recomendacao_parceiro==='liv'?'⚖️':'🎓'}</div>
-          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Law — Parceiro Oficial':'Phoenix — Fortalecimento de Perfil'}</div>
+          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Immigration Law · Parceiro Oficial':'Phoenix — Fortalecimento de Perfil'}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Escritório licenciado nos EUA, especializado em ${a.visto}.`:'Especialista em melhoria de perfil para imigração.'}</div>
           ${a.recomendacao_parceiro==='liv' && (a.score||0) >= 40 ? `
   <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
-    💬 Falar com nossos especialistas — sem custo
+    💬 Falar com nossos especialistas, sem custo
   </button>
   <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 12px;font-family:'Inter Tight',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">
     📅 Agendar consulta com advogado licenciado
@@ -1423,7 +1423,7 @@ function handleFotoUpload(input, avatarId) {
 }
 
 function getSubtituloVisto(v) {
-  return {'EB-2 NIW':'Green Card por Interesse Nacional','EB-1A':'Realizações de Destaque — Green Card','O-1':'Realizações de Destaque — Trabalho','L-1':'Transferência Intraempresarial','E-2':'Investidor por Tratado','Family Based':'Baseado em Família','H-1B':'Trabalhador Especializado'}[v]||'Análise de Critérios';
+  return {'EB-2 NIW':'Green Card por Interesse Nacional','EB-1A':'Realizações de Destaque · Green Card','O-1':'Realizações de Destaque · Trabalho','L-1':'Transferência Intraempresarial','E-2':'Investidor por Tratado','Family Based':'Baseado em Família','H-1B':'Trabalhador Especializado'}[v]||'Análise de Critérios';
 }
 
 // ─── AI SUMMARY CARD ───
@@ -1581,9 +1581,9 @@ const flows = {
 
   async explain() {
     await think();
-    await showFact('🇺🇸', '<b>ImigrarEUA</b> nasceu em 2016 e já impactou mais de <b>1 milhão de pessoas por mês</b>. Somos um HUB completo de imigração legal para os EUA — reunindo especialistas, parceiros e soluções em um só lugar.');
+    await showFact('🇺🇸', '<b>ImigrarEUA</b> nasceu em 2016 e já impactou mais de <b>1 milhão de pessoas por mês</b>. Somos um HUB completo de imigração legal para os EUA, reunindo especialistas, parceiros e soluções em um só lugar.');
     await pause(300);
-    await botMsg('O Visa Match faz uma triagem inteligente do seu perfil, calcula um <strong>score de pré-elegibilidade</strong> com base nos critérios reais do USCIS e indica os parceiros certos para o seu caso.');
+    await botMsg('O Visa Match faz uma análise inteligente do seu perfil, calcula um <strong>score de elegibilidade</strong> com base nos critérios reais do USCIS e indica os parceiros certos para o seu caso.');
     await pause(300);
     await botMsg('Todas as informações são usadas exclusivamente para a sua análise. Vamos começar?');
     showOpts(['Vamos começar!'], () => { userMsg('Vamos começar!'); go('disclaimer_legal'); });
@@ -1592,12 +1592,11 @@ const flows = {
   async disclaimer_legal() {
     setSideStep(0); setProgress(5);
     await think(700);
-    await showPopup('⚖️', 'Aviso Jurídico Importante',
-      '<b>DISCLAIMER</b><br><br>' +
-      '• Esta ferramenta realiza uma <b>análise de critérios</b> com base nas informações fornecidas e não constitui aconselhamento jurídico.<br><br>' +
-      '• O resultado desta análise conecta você a <b>especialistas e consultores da ImigrarEUA</b>, que avaliam seu caso e, quando aplicável, encaminham para advogados licenciados nos EUA.<br><br>' +
-      '• <b>Não configura relação advogado-cliente</b> e não substitui consulta jurídica formal.<br><br>' +
-      '• A ImigrarEUA é um HUB de imigração. Os casos qualificados são encaminhados ao escritório parceiro <b>LIV Law</b>, licenciado nos EUA, para avaliação especializada.',
+    await showPopup('⚖️', 'Antes de começar',
+      'Olá! Antes de iniciar sua análise, leia este aviso:<br><br>' +
+      '• Esta ferramenta realiza uma <b>análise de critérios de elegibilidade</b> com base nas suas respostas e não constitui aconselhamento jurídico.<br><br>' +
+      '• Ao concluir, você será conectado a <b>especialistas da ImigrarEUA</b>, que avaliam seu caso e, quando aplicável, encaminham para advogados licenciados nos EUA pela <b>LIV Immigration Law</b>.<br><br>' +
+      '• Esta análise <b>não configura relação advogado-cliente</b> e não substitui consulta jurídica formal.',
       () => go('contact_email')
     );
   },
@@ -1834,7 +1833,7 @@ const flows = {
     await think(700);
     const visoSugerido = S.profile.temConquistas && S.profile.temConquistas.includes('Sim') ? 'EB-2 NIW (com potencial para EB-1A)' : 'EB-2 NIW';
     setSideVisto('EB-2 NIW');
-    await botMsg(`Com base no seu perfil, o caminho mais adequado começa pelo <strong>EB-2 NIW</strong> — Green Card por interesse nacional, sem precisar de empregador patrocinador. ${S.profile.temConquistas && S.profile.temConquistas.includes('Sim') ? 'Seu histórico de conquistas também pode abrir o caminho para o <strong>EB-1A</strong> em paralelo.' : ''}`);
+    await botMsg(`Com base no seu perfil, o caminho mais adequado começa pelo <strong>EB-2 NIW</strong> Green Card por interesse nacional, sem precisar de empregador patrocinador. ${S.profile.temConquistas && S.profile.temConquistas.includes('Sim') ? 'Seu histórico de conquistas também pode abrir o caminho para o <strong>EB-1A</strong> em paralelo.' : ''}`);
     await pause(300);
     await botMsg(`Você está <strong>financeiramente preparado</strong> para investir no processo? O investimento total para o EB-2 NIW ou EB-1A (honorários + documentação) é de aproximadamente <strong>R$ 85.000</strong>.`);
     showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
@@ -2010,7 +2009,7 @@ const flows = {
   async path_offramp_hib_info() {
     await think(700);
     await showFact('ℹ️', 'O <b>H-1B</b> exige patrocínio de uma empresa americana e passa por sorteio anual em abril. Para profissionais sem oferta de emprego, exploramos outros caminhos como o <b>EB-2 NIW</b>, que é independente de empregador.');
-    await botMsg(`${S.nome}, para esse perfil, o caminho mais promissor seria o <strong>EB-2 NIW</strong> — que não exige oferta de emprego. Gostaria de avaliar essa opção?`);
+    await botMsg(`${S.nome}, para esse perfil, o caminho mais promissor seria o <strong>EB-2 NIW</strong> que não exige oferta de emprego,. Gostaria de avaliar essa opção?`);
     showOpts(['Sim, quero avaliar o EB-2 NIW'], val => {
       userMsg(val);
       setSideVisto('EB-2 NIW');
@@ -2046,7 +2045,7 @@ const flows = {
 
   async path_e2_redireciona() {
     await think(600);
-    await botMsg('Sem cidadania elegível, o E-2 não é viável no momento. Mas há outros caminhos — como o <strong>EB-2 NIW</strong> (Green Card por mérito) ou <strong>L-1</strong> (empresa). Gostaria de explorar essas alternativas?');
+    await botMsg('Sem cidadania elegível, o E-2 não é viável no momento. Mas há outros caminhos como o <strong>EB-2 NIW</strong> (Green Card por mérito) ou <strong>L-1</strong> (empresa). Gostaria de explorar essas alternativas?');
     showOpts(['Sim, quero explorar outras opções'], () => { userMsg('Sim, quero explorar outras opções'); go('path_select'); });
   },
 
@@ -2207,7 +2206,7 @@ const flows = {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile })
     }).catch(()=>{});
-    await botMsg(`Com o perfil atual, o encaixe direto em uma categoria é desafiador — mas um especialista pode identificar caminhos que não são imediatamente óbvios. Gostaria que nossa equipe analisasse seu caso de forma personalizada?`);
+    await botMsg(`Com o perfil atual, o encaixe direto em uma categoria é desafiador, mas um especialista pode identificar caminhos que não são imediatamente óbvios. Gostaria que nossa equipe analisasse seu caso de forma personalizada?`);
     showOpts(['Sim, quero análise personalizada'], () => { userMsg('Sim, quero análise personalizada'); go('resultado_nurturing'); });
   },
 

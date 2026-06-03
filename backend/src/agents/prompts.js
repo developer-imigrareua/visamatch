@@ -89,7 +89,7 @@ Critérios de classificação:
 - Incompatível: score < 0 (não elegível no momento)
 
 Parceiro:
-- "liv": Alta ou Moderada → LIV Law (escritório licenciado nos EUA)
+- "liv": Alta ou Moderada → LIV Immigration Law (escritório licenciado nos EUA)
 - "phoenix": Em Desenvolvimento ou Incompatível → fortalecimento de perfil
 `;
 
