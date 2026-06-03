@@ -49,8 +49,17 @@ router.post('/login', async (req, res) => {
 
     if (!user) return res.status(401).json({ error: 'E-mail não encontrado.' });
 
+    // Debug: verifica se hash existe
+    if (!user.password_hash) {
+      console.error('Login: password_hash vazio para', email);
+      return res.status(401).json({ error: 'Conta sem senha configurada. Use "Esqueci a senha" para definir.' });
+    }
+
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ error: 'Senha incorreta.' });
+    if (!valid) {
+      console.warn('Login: senha incorreta para', email, '| hash length:', user.password_hash?.length);
+      return res.status(401).json({ error: 'Senha incorreta.' });
+    }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user: { id: user.id, email: user.email, nome: user.nome } });
