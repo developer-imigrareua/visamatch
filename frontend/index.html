@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Visa Match · ImigrarEUA</title>
 <link rel="icon" type="image/jpeg" href="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,7 +115,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 .opt.sel{background:var(--surface3);border-color:var(--blue);color:var(--blue);opacity:.5;pointer-events:none}
 
 /* ── INPUT ── */
-.input-zone{padding:14px 36px 18px;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-top:1px solid var(--border);flex-shrink:0}
+.input-zone{padding:14px 36px calc(18px + env(safe-area-inset-bottom, 0px));background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-top:1px solid var(--border);flex-shrink:0}
 .input-row{display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:16px;padding:6px 6px 6px 18px;transition:border-color .2s,box-shadow .2s}
 .input-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,83,208,.06)}
 .txt-in{flex:1;background:none;border:none;outline:none;font-family:'Inter Tight','Inter',sans-serif;font-size:16px;color:var(--txt);padding:7px 0;font-weight:400}
@@ -248,7 +248,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   .row{gap:8px}
   .opts-wrap{padding-left:38px;gap:6px}
   .opt{font-size:12.5px;padding:8px 14px}
-  .input-zone{padding:8px 12px 12px}
+  .input-zone{padding:8px 12px calc(16px + env(safe-area-inset-bottom, 8px))}
   .txt-in{font-size:16px} /* iOS no-zoom */
   .in-hint{font-size:10px}
   .in-btn{width:36px;height:36px}
