@@ -3408,7 +3408,11 @@ async function checkAndResumeSession() {
   if (!savedId) { go('welcome'); return; }
 
   try {
-    const res = await fetch(`${API_BASE}/session/${savedId}`);
+    // Timeout de 4s — se travar, inicia welcome mesmo assim
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`${API_BASE}/session/${savedId}`, { signal: controller.signal });
+    clearTimeout(timeout);
     if (!res.ok) { localStorage.removeItem('vm_session_id'); go('welcome'); return; }
     const { state, updated_at } = await res.json();
 
@@ -3478,18 +3482,22 @@ async function checkAndResumeSession() {
 }
 
 // ─── ANTI-AUTOFILL ───
-function clearAutofill() { if (ti && ti.value && ti !== document.activeElement) ti.value = ''; }
-setTimeout(clearAutofill, 100);
-setTimeout(clearAutofill, 500);
-setTimeout(clearAutofill, 1000);
-// Detecta autofill via animação CSS (Chrome)
-document.addEventListener('animationstart', e => { if (e.animationName === 'onAutoFillStart') clearAutofill(); }, true);
-// Detecta input event vindo de autofill (não de digitação do usuário)
-ti.addEventListener('input', e => {
-  if (e.inputType === undefined && ti.value && ti !== document.activeElement) ti.value = '';
-});
+// Usa readonly trick: campo fica readonly por 300ms, depois libera para digitação
+// Isso impede o browser de preencher automaticamente no carregamento
+if (ti) {
+  ti.setAttribute('readonly', true);
+  setTimeout(() => { if (ti) { ti.removeAttribute('readonly'); ti.value = ''; } }, 300);
+}
 
 // ─── START ───
+// Safety net: se o chat ainda estiver vazio após 3s, inicia o fluxo diretamente
+setTimeout(() => {
+  if (chat && chat.children.length === 0) {
+    console.warn('Safety net: iniciando welcome diretamente');
+    go('welcome');
+  }
+}, 3000);
+
 checkAndResumeSession();
 </script>
 
