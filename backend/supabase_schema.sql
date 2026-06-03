@@ -83,3 +83,6 @@ CREATE TABLE IF NOT EXISTS user_analyses (
   analysis_json JSONB
 );
 CREATE INDEX IF NOT EXISTS idx_user_analyses_user_id ON user_analyses(user_id);
+
+-- Migração: IP nas sessões
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ip_address TEXT;

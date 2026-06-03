@@ -392,6 +392,7 @@ let _sessionId = localStorage.getItem('vm_session_id') || null;
 let _sessionTimer = null;
 function saveSession(etapa) {
   if (!S.email) return;
+  if (localStorage.getItem('vm_lgpd_consent') === 'declined') return;
   clearTimeout(_sessionTimer);
   _sessionTimer = setTimeout(async () => {
     try {
@@ -3023,6 +3024,63 @@ async function checkAndResumeSession() {
 
 // ─── START ───
 checkAndResumeSession();
+</script>
+
+<!-- LGPD CONSENT -->
+<div id="lgpd-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0b1c30;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 -4px 20px rgba(0,0,0,.2);animation:slideUp .4s ease">
+  <div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.55;flex:1">
+    🔒 <strong style="color:#fff">Privacidade e LGPD:</strong> Coletamos dados fornecidos por você para realizar a análise de elegibilidade e melhorar nossos serviços. Nenhum dado é compartilhado com terceiros sem consentimento. <a href="#" onclick="showLGPDDetails(event)" style="color:var(--pink);text-decoration:underline">Saiba mais</a>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button onclick="lgpdDecline()" style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 16px;font-family:'Inter Tight',sans-serif;font-size:12.5px;cursor:pointer">Recusar</button>
+    <button onclick="lgpdAccept()" style="background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:8px;padding:8px 18px;font-family:'Inter Tight',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Aceitar e continuar</button>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+</style>
+
+<script>
+// LGPD
+(function() {
+  const consent = localStorage.getItem('vm_lgpd_consent');
+  if (!consent) {
+    // Mostra o banner após 1s
+    setTimeout(() => {
+      const b = document.getElementById('lgpd-banner');
+      if (b) b.style.display = 'flex';
+    }, 1000);
+  }
+})();
+
+function lgpdAccept() {
+  localStorage.setItem('vm_lgpd_consent', 'accepted');
+  localStorage.setItem('vm_lgpd_date', new Date().toISOString());
+  document.getElementById('lgpd-banner').style.display = 'none';
+}
+
+function lgpdDecline() {
+  localStorage.setItem('vm_lgpd_consent', 'declined');
+  document.getElementById('lgpd-banner').style.display = 'none';
+  // Se recusar, limpa qualquer sessão salva
+  localStorage.removeItem('vm_session_id');
+}
+
+function showLGPDDetails(e) {
+  e.preventDefault();
+  showPopup('🔒', 'Política de Privacidade — LGPD',
+    '<b>Quais dados coletamos:</b><br>• Nome, e-mail e telefone fornecidos no formulário<br>• Respostas do fluxo de avaliação<br>• Dados de sessão (progresso, etapa atual)<br>• Endereço IP para segurança<br><br>' +
+    '<b>Como usamos:</b><br>• Gerar sua análise de elegibilidade<br>• Conectar você a especialistas da ImigrarEUA<br>• Melhorar a ferramenta com base em padrões anônimos<br><br>' +
+    '<b>Seus direitos (LGPD):</b><br>• Acesso, correção e exclusão dos seus dados a qualquer momento<br>• Contato: <b>contato@imigrareua.com</b><br><br>' +
+    'Ao aceitar, você consente com a coleta conforme descrito acima.',
+    null
+  );
+}
+
+// Wrapper para saveSession que respeita LGPD
+const _origSaveSession = typeof saveSession === 'function' ? saveSession : null;
+// A verificação de consentimento é feita na própria saveSession — se declined, não salva
 </script>
 </body>
 </html>

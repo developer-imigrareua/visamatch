@@ -177,6 +177,73 @@ router.get('/users/:id/analyses', auth, async (req, res) => {
   res.json(data || []);
 });
 
+// ── GET /api/admin/funnel ── funil de abandono por etapa
+router.get('/funnel', auth, async (req, res) => {
+  try {
+    // Conta leads por etapa de abandono
+    const { data: abandons } = await supabase
+      .from('leads')
+      .select('etapa_abandono')
+      .not('etapa_abandono', 'is', null);
+
+    // Conta sessões por step atual
+    const { data: sessions } = await supabase
+      .from('sessions')
+      .select('state->step, state->prog')
+      .gte('updated_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+    // Total de leads completos
+    const { count: completos } = await supabase
+      .from('leads').select('*', { count: 'exact', head: true }).eq('completo', true);
+
+    // Total iniciados (todos os leads + sessões únicas)
+    const { count: total } = await supabase
+      .from('leads').select('*', { count: 'exact', head: true });
+
+    // Agrega abandono por etapa
+    const abandonMap = {};
+    (abandons || []).forEach(r => {
+      const k = r.etapa_abandono || 'desconhecido';
+      abandonMap[k] = (abandonMap[k] || 0) + 1;
+    });
+
+    // Agrega sessões em andamento por step
+    const stepMap = {};
+    (sessions || []).forEach(r => {
+      const k = r.step || 'welcome';
+      stepMap[k] = (stepMap[k] || 0) + 1;
+    });
+
+    // Funil ordenado pelas etapas do fluxo
+    const funnelSteps = [
+      { id: 'contato',                label: 'Contato',                 icon: '📧' },
+      { id: 'triagem',                label: 'Triagem / Caminho',        icon: '🔀' },
+      { id: 'abandono_fundos',        label: 'Abandonou (fundos)',       icon: '💰' },
+      { id: 'abandono_sem_perfil',    label: 'Abandonou (sem perfil)',   icon: '❌' },
+      { id: 'nurturing_contato',      label: 'Nurturing (quer contato)', icon: '📞' },
+      { id: 'perfil_pessoal',         label: 'Perfil Pessoal',           icon: '👤' },
+      { id: 'formacao_academica',     label: 'Formação Acadêmica',       icon: '🎓' },
+      { id: 'experiencia_profissional', label: 'Experiência',            icon: '💼' },
+      { id: 'scoring',                label: 'Scoring',                  icon: '📊' },
+      { id: 'completo',               label: 'Análise Completa',         icon: '✅' },
+    ];
+
+    const funnel = funnelSteps.map(s => ({
+      ...s,
+      abandons: abandonMap[s.id] || 0,
+      em_andamento: stepMap[s.id] || 0,
+    }));
+
+    // Taxa de conversão geral
+    const conversionRate = total > 0 ? Math.round(((completos || 0) / total) * 100) : 0;
+
+    res.json({ funnel, total, completos, conversionRate, abandonMap, stepMap });
+  } catch (err) {
+    console.error('Funnel error:', err);
+    res.status(500).json({ error: 'Erro ao calcular funil.' });
+  }
+});
+
 // ── GET /api/admin/sessions ── sessões ativas
 router.get('/sessions', auth, async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
@@ -184,7 +251,7 @@ router.get('/sessions', auth, async (req, res) => {
   try {
     const { data, count, error } = await supabase
       .from('sessions')
-      .select('id, created_at, updated_at, email, state->step, state->prog, state->visto', { count: 'exact' })
+      .select('id, created_at, updated_at, email, ip_address, state->step, state->prog, state->visto, state->nome', { count: 'exact' })
       .order('updated_at', { ascending: false })
       .range(offset, offset + limit - 1);
     if (error) throw error;

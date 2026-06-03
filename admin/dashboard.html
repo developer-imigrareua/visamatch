@@ -136,6 +136,24 @@ td.nome{color:var(--txt);font-weight:500}
 .spin{width:18px;height:18px;border:2px solid rgba(11,25,41,.1);border-top-color:var(--blue2);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:48px;color:var(--txt3);font-size:13.5px}
+/* ── FUNNEL ── */
+.funnel-list{display:flex;flex-direction:column;gap:8px}
+.funnel-item{display:grid;grid-template-columns:180px 1fr 80px 80px;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:10px}
+.funnel-label{font-size:13px;font-weight:500;color:var(--txt);display:flex;align-items:center;gap:7px}
+.funnel-bar-wrap{height:10px;background:rgba(11,25,41,.05);border-radius:5px;overflow:hidden}
+.funnel-bar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--blue2),var(--pink));transition:width .6s ease}
+.funnel-num{font-size:12.5px;font-weight:700;color:var(--txt);text-align:right}
+.funnel-pct{font-size:11px;color:var(--txt3);text-align:right}
+/* ── STAT ROW ── */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.stat-val{font-family:'Manrope',sans-serif;font-size:28px;color:var(--txt);font-weight:700;line-height:1}
+.stat-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
+.stat-sub{font-size:12px;color:var(--txt2);margin-top:2px}
+/* ── HEATMAP HOURS ── */
+.hours-grid{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-top:8px}
+.hour-cell{height:24px;border-radius:3px;background:rgba(11,25,41,.05);position:relative;cursor:default}
+.hour-cell:hover::after{content:attr(data-tip);position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0b1c30;color:#fff;font-size:10px;padding:3px 7px;border-radius:5px;white-space:nowrap;z-index:10}
 </style>
 </head>
 <body>
@@ -169,6 +187,10 @@ td.nome{color:var(--txt);font-weight:500}
     <button class="nav-item" onclick="showPanel('sessions')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Sessões Ativas
+    </button>
+    <button class="nav-item" onclick="showPanel('analytics')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Analytics
     </button>
   </nav>
   <div class="sb-footer">
@@ -264,6 +286,30 @@ td.nome{color:var(--txt);font-weight:500}
       <div class="pagination" id="sessions-pagination"></div>
     </div>
 
+    <!-- ANALYTICS PANEL -->
+    <div class="panel" id="panel-analytics">
+      <!-- Stats resumo -->
+      <div class="stat-row" id="analytics-stats">
+        <div class="loading"><div class="spin"></div></div>
+      </div>
+      <!-- Funil -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">🔽 Funil de Conversão — Onde os usuários param</div>
+        <div class="funnel-list" id="funnel-list"><div class="loading"><div class="spin"></div>Carregando funil...</div></div>
+      </div>
+      <!-- Grid 2 colunas -->
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">📊 Abandono por Etapa</div>
+          <div id="abandon-chart" style="height:200px;position:relative;margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🕐 Sessões em Andamento (por etapa)</div>
+          <div id="step-chart" style="height:200px;position:relative;margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 </div>
@@ -297,6 +343,7 @@ const panels = {
   leads:     { title: 'Leads',            sub: 'Todos os leads coletados' },
   users:     { title: 'Usuários',         sub: 'Usuários cadastrados no portal' },
   sessions:  { title: 'Sessões Ativas',   sub: 'Análises em andamento nas últimas 24h' },
+  analytics: { title: 'Analytics',  sub: 'Funil de conversão e padrões de comportamento' },
 };
 
 function showPanel(id) {
@@ -309,6 +356,7 @@ function showPanel(id) {
   if (id === 'leads') { document.getElementById('leads-detail-view').style.display = 'none'; document.getElementById('leads-list-view').style.display = ''; loadLeads(1); }
   if (id === 'users') loadUsers(1);
   if (id === 'sessions') loadSessions(1);
+  if (id === 'analytics') loadAnalytics();
 }
 
 // ── LOAD ALL ──
@@ -446,6 +494,7 @@ function renderLeadsTable({ leads, total, page, pages }) {
       <td>${l.visto_recomendado || '—'}</td>
       <td><span class="score-pill ${sc.cls}">${l.score ?? '—'} pts</span></td>
       <td>${dt}</td>
+      <td style="font-size:12px;color:var(--txt3)">${l.updated_at ? new Date(l.updated_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
       <td><span class="hs-badge ${l.hubspot_synced ? 'hs-ok' : 'hs-no'}">${l.hubspot_synced ? 'Sincronizado' : 'Pendente'}</span></td>
       <td><button class="view-btn" onclick="viewLead('${l.id}')">Ver</button></td>
     </tr>`;
@@ -454,7 +503,7 @@ function renderLeadsTable({ leads, total, page, pages }) {
   document.getElementById('leads-table-wrap').innerHTML = `
     <table>
       <thead><tr>
-        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th>Data</th><th>HubSpot</th><th></th>
+        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th>Criado</th><th>Última interação</th><th>HubSpot</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -516,6 +565,109 @@ function scoreClass(score) {
 function debounceSearch() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => loadLeads(1), 400);
+}
+
+// ── ANALYTICS ──
+async function loadAnalytics() {
+  document.getElementById('analytics-stats').innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
+  document.getElementById('funnel-list').innerHTML = '<div class="loading"><div class="spin"></div></div>';
+
+  const [funnelData, statsData] = await Promise.all([
+    apiFetch('/funnel').catch(() => ({})),
+    apiFetch('/stats').catch(() => ({}))
+  ]);
+
+  renderAnalyticsStats(funnelData, statsData);
+  renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0);
+  renderAbandonChart(funnelData.abandonMap || {});
+  renderStepChart(funnelData.stepMap || {});
+}
+
+function renderAnalyticsStats(f, s) {
+  const conv = f.conversionRate || 0;
+  const total = f.total || 0;
+  const completos = f.completos || 0;
+  document.getElementById('analytics-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Taxa de Conversão</div>
+      <div class="stat-val" style="color:${conv>=30?'var(--green)':conv>=15?'var(--amber)':'var(--red)'}">${conv}%</div>
+      <div class="stat-sub">${completos} análises completas de ${total} iniciadas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Leads Totais</div>
+      <div class="stat-val">${total}</div>
+      <div class="stat-sub">Todos os tempos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Maior Abandono</div>
+      <div class="stat-val" style="font-size:18px;color:var(--amber)">${getTopAbandono(f.abandonMap)}</div>
+      <div class="stat-sub">Etapa com mais saídas</div>
+    </div>`;
+}
+
+function getTopAbandono(map) {
+  if (!map || !Object.keys(map).length) return '—';
+  const top = Object.entries(map).sort((a,b) => b[1]-a[1])[0];
+  const labels = { abandono_fundos:'Sem fundos', abandono_sem_perfil:'Sem perfil', nurturing_contato:'Nurturing', contato:'Contato' };
+  return labels[top[0]] || top[0];
+}
+
+function renderFunnel(funnel, total, completos) {
+  if (!funnel.length) { document.getElementById('funnel-list').innerHTML = '<div class="empty">Sem dados ainda.</div>'; return; }
+  const maxVal = Math.max(...funnel.map(f => f.abandons + f.em_andamento), completos, 1);
+  const rows = funnel.map(f => {
+    const val = f.id === 'completo' ? completos : (f.abandons + f.em_andamento);
+    const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+    const barW = Math.round((val / maxVal) * 100);
+    const color = f.id === 'completo' ? 'background:linear-gradient(90deg,var(--green),#1d9e70)' :
+                  f.abandons > 0 ? 'background:linear-gradient(90deg,var(--amber),#d97706)' :
+                  'background:linear-gradient(90deg,var(--blue2),var(--pink))';
+    return `<div class="funnel-item">
+      <div class="funnel-label">${f.icon} ${f.label}</div>
+      <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${barW}%;${color}"></div></div>
+      <div class="funnel-num">${val}</div>
+      <div class="funnel-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+  document.getElementById('funnel-list').innerHTML = `
+    <div style="display:grid;grid-template-columns:180px 1fr 80px 80px;gap:12px;padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">
+      <span>Etapa</span><span>Distribuição</span><span style="text-align:right">Usuários</span><span style="text-align:right">%</span>
+    </div>
+    ${rows}`;
+}
+
+function renderAbandonChart(map) {
+  const el = document.getElementById('abandon-chart');
+  if (!map || !Object.keys(map).length) { el.innerHTML = '<div class="empty">Sem dados de abandono.</div>'; return; }
+  const labels = { abandono_fundos:'Fundos', abandono_sem_perfil:'Sem perfil', nurturing_contato:'Nurturing', contato:'Contato' };
+  const entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,6);
+  const max = Math.max(...entries.map(e=>e[1]), 1);
+  const bars = entries.map(([k,v]) => {
+    const h = Math.round((v/max)*160);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:11px;font-weight:700;color:var(--amber)">${v}</span>
+      <div style="width:100%;height:${h}px;background:linear-gradient(180deg,var(--amber),#d97706);border-radius:4px 4px 0 0;min-height:4px"></div>
+      <span style="font-size:9.5px;color:var(--txt3);text-align:center;line-height:1.2">${labels[k]||k}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="display:flex;align-items:flex-end;gap:8px;height:100%;padding-bottom:20px">${bars}</div>`;
+}
+
+function renderStepChart(map) {
+  const el = document.getElementById('step-chart');
+  if (!map || !Object.keys(map).length) { el.innerHTML = '<div class="empty">Nenhuma sessão ativa.</div>'; return; }
+  const stepLabels = { welcome:'Bem-vindo', contact_email:'Email', contact_name:'Nome', path_select:'Triagem', personal_info:'Perfil', academic_start:'Formação', prof_exp_start:'Experiência', scoring_intro:'Scoring', resultado:'Resultado' };
+  const entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,8);
+  const max = Math.max(...entries.map(e=>e[1]), 1);
+  const bars = entries.map(([k,v]) => {
+    const h = Math.round((v/max)*160);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:11px;font-weight:700;color:var(--blue2)">${v}</span>
+      <div style="width:100%;height:${h}px;background:linear-gradient(180deg,var(--blue2),var(--blue4));border-radius:4px 4px 0 0;min-height:4px"></div>
+      <span style="font-size:9.5px;color:var(--txt3);text-align:center;line-height:1.2">${stepLabels[k]||k}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="display:flex;align-items:flex-end;gap:8px;height:100%;padding-bottom:20px">${bars}</div>`;
 }
 
 // ── USERS ──
@@ -603,11 +755,12 @@ function renderSessionsTable({ sessions, total, page, pages }) {
       <td>${s.visto||'—'}</td>
       <td style="text-align:center"><div class="bar-track" style="width:80px"><div class="bar-fill" style="width:${s.prog||0}%"></div></div></td>
       <td>${upd}</td>
+      <td style="font-size:11px;color:var(--txt3)">${s.ip_address||'—'}</td>
     </tr>`;
   }).join('');
   document.getElementById('sessions-table-wrap').innerHTML = `
     <table>
-      <thead><tr><th>E-mail</th><th>Etapa</th><th>Visto</th><th>Progresso</th><th>Última atividade</th></tr></thead>
+      <thead><tr><th>E-mail</th><th>Etapa</th><th>Visto</th><th>Progresso</th><th>Última atividade</th><th>IP</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   const prev = page<=1?'disabled':'', next = page>=pages?'disabled':'';
