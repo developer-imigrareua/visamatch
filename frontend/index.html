@@ -1146,15 +1146,34 @@ async function doRegisterModal() {
       }).catch(e => console.warn('Erro ao salvar análise:', e));
     }
 
-    const ok = document.getElementById('reg-ok');
-    ok.textContent = '✓ Conta criada! Análise salva no seu portal.';
-    ok.style.display = 'block';
-    document.getElementById('reg-form-wrap').style.display = 'none';
+    // 2FA: envia código de confirmação por e-mail
+    btn.textContent = 'Enviando código...';
+    try {
+      await fetch(API_BASE + '/auth/send-code', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: S.email })
+      });
+    } catch(e) {}
 
+    // Mostra campo de código no modal
+    document.getElementById('reg-form-wrap').innerHTML =
+      '<div style="text-align:center;margin-bottom:14px">' +
+        '<div style="font-size:24px;margin-bottom:8px">📧</div>' +
+        '<div style="font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px">Confirme seu e-mail</div>' +
+        '<div style="font-size:12.5px;color:var(--txt2)">Enviamos um código de 6 dígitos para <strong>' + S.email + '</strong></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">' +
+        '<input id="rm-code" type="text" maxlength="6" placeholder="000000" autocomplete="one-time-code" ' +
+        'style="border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:Manrope,sans-serif;font-size:22px;font-weight:700;color:var(--blue);letter-spacing:8px;text-align:center;width:160px;outline:none"/>' +
+      '</div>' +
+      '<button onclick="doVerifyRegistration()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:12px;font-family:Inter Tight,sans-serif;font-size:14px;font-weight:700;cursor:pointer">Confirmar código</button>' +
+      '<div style="text-align:center;margin-top:8px"><button onclick="doResendCode()" style="background:none;border:none;font-size:12px;color:var(--blue);cursor:pointer;font-family:Inter Tight,sans-serif">Reenviar código</button></div>';
+    document.getElementById('reg-form-wrap').style.display = '';
+
+    // Guarda o token para usar após verificação
+    window._pendingRegToken = data.token;
+    window._pendingRegUser  = data.user;
     btn.disabled = false;
-    setTimeout(() => {
-      closeRegModal();
-    }, 2500);
 
   } catch(err) {
     const e = document.getElementById('reg-err');
@@ -1165,6 +1184,83 @@ async function doRegisterModal() {
 }
 
 document.getElementById('rm-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doRegisterModal(); });
+
+
+async function doVerifyRegistration() {
+  const code = (document.getElementById('rm-code') || {}).value || '';
+  if (!code || code.length < 6) return;
+  const btn = document.querySelector('#reg-form-wrap button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+
+  try {
+    const r = await fetch(API_BASE + '/auth/verify-code', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: S.email, code })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      const e = document.getElementById('reg-err');
+      e.textContent = d.error || 'Código incorreto. Tente novamente.';
+      e.style.display = 'block';
+      if (btn) { btn.disabled = false; btn.textContent = 'Confirmar código'; }
+      return;
+    }
+    // Usa token verificado (mais seguro)
+    const token = d.token || window._pendingRegToken;
+    localStorage.setItem('vm_user_token', token);
+    localStorage.setItem('vm_user', JSON.stringify(d.user || window._pendingRegUser));
+
+    // Salva análise
+    if (_pendingAnalysis && token) {
+      const best = _pendingAnalysis.melhor || _pendingAnalysis.resultados?.[0] || {};
+      const profileClean = { ...S.profile }; delete profileClean.foto;
+      await fetch(API_BASE + '/user/analyses', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Authorization':'Bearer ' + token},
+        body: JSON.stringify({
+          visto: best.visto || S.visto, score: best.score ?? 0,
+          aprovacao_pct: best.aprovacao_pct ?? 0, classificacao: best.classificacao || '',
+          profile: profileClean,
+          analysis_json: { isDual: _pendingAnalysis.isDual, melhor: best ? {
+            visto:best.visto,score:best.score,aprovacao_pct:best.aprovacao_pct,
+            classificacao:best.classificacao,scorecard:best.scorecard,
+            pontos_fortes:best.pontos_fortes,pontos_criticos:best.pontos_criticos,
+            veredicto:best.veredicto,criterios:best.criterios,plano_acao:best.plano_acao,
+            fundamento_legal:best.fundamento_legal,recomendacao_parceiro:best.recomendacao_parceiro
+          } : null }
+        })
+      }).catch(() => {});
+    }
+
+    const ok = document.getElementById('reg-ok');
+    ok.textContent = '✅ Conta criada e verificada! Análise salva.';
+    ok.style.display = 'block';
+    document.getElementById('reg-form-wrap').style.display = 'none';
+    setTimeout(() => {
+      closeRegModal();
+      const btn2 = document.getElementById('my-analyses-btn');
+      if (btn2) btn2.style.display = 'flex';
+    }, 2000);
+  } catch(err) {
+    const e = document.getElementById('reg-err');
+    e.textContent = err.message || 'Erro ao verificar código.';
+    e.style.display = 'block';
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirmar código'; }
+  }
+}
+
+async function doResendCode() {
+  try {
+    await fetch(API_BASE + '/auth/send-code', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: S.email })
+    });
+    const e = document.getElementById('reg-ok');
+    e.textContent = 'Código reenviado para ' + S.email;
+    e.style.display = 'block';
+    setTimeout(() => { e.style.display = 'none'; }, 3000);
+  } catch(err) {}
+}
 
 function resetAndRestart() {
   const savedEmail = S.email;
@@ -1673,11 +1769,12 @@ const flows = {
       const { hasAccount, hasLead, nome } = await res.json();
       if (hasAccount) {
         if (nome) S.nome = nome.split(' ')[0];
+        S.profile.nomeCompleto = nome || S.profile.nomeCompleto;
         const greet = nome ? ', <strong>' + nome.split(' ')[0] + '</strong>' : '';
-        await botMsg('Olá' + greet + '! Identificamos uma conta com este e-mail. Digite sua senha para continuar:');
+        await botMsg('Olá' + greet + '! Encontramos uma conta com este e-mail. Digite sua senha para continuar:');
         go('chat_login_password');
       } else if (hasLead) {
-        await botMsg('Bem-vindo de volta! Identificamos que você já realizou uma análise anteriormente. Vamos continuar com uma nova análise.');
+        await botMsg('Bem-vindo de volta! Identificamos que você já realizou uma análise anteriormente com este e-mail. Vamos continuar com uma nova análise.');
         go('contact_name');
       } else {
         go('contact_name');
@@ -1723,9 +1820,11 @@ const flows = {
           localStorage.setItem('vm_user_token', data.token);
           localStorage.setItem('vm_user', JSON.stringify(data.user));
           S.nome = (data.user.nome || '').split(' ')[0] || S.nome;
+          S.profile.nomeCompleto = data.user.nome || S.profile.nomeCompleto;
           userMsg('••••••••');
-          await botMsg('✅ Bem-vindo de volta, <strong>' + S.nome + '</strong>! Vamos continuar sua análise.');
-          go('contact_name');
+          await botMsg('✅ Bem-vindo de volta, <strong>' + S.nome + '</strong>!');
+          await pause(400);
+          go('chat_post_login');
         } else {
           userMsg('••••••••');
           await botMsg('⚠️ Senha incorreta. Tente novamente ou clique em "Esqueceu a senha?"');
@@ -1795,6 +1894,56 @@ const flows = {
     if (sendBtn) sendBtn.onclick = doVerify;
     const inEl = document.getElementById(inputId);
     if (inEl) { inEl.addEventListener('keydown', e => { if(e.key==='Enter') doVerify(); }); inEl.focus(); }
+  },
+
+
+  // ──────── PÓS-LOGIN: ESCOLHA DO USUÁRIO ────────
+  async chat_post_login() {
+    const nomeCompleto = S.profile.nomeCompleto || S.nome || '';
+    const email = S.email || '';
+
+    // Mostra dados confirmados
+    await botMsg(
+      'Seus dados registrados:<br>' +
+      '<span style="font-size:12px;color:var(--txt3);line-height:2;display:block;margin-top:4px">' +
+      '👤 <b>' + (nomeCompleto || S.nome || '—') + '</b><br>' +
+      '📧 ' + email +
+      '</span><br>O que deseja fazer?'
+    );
+    showOpts(['✨ Fazer nova análise', '📊 Ver minhas análises anteriores'], async val => {
+      userMsg(val);
+      if (val.includes('Ver minhas')) {
+        // Abre painel de análises
+        toggleAnalysesPanel();
+        await botMsg('Abri o painel com suas análises anteriores. Se quiser fazer uma nova, é só clicar em "Nova Análise" lá dentro ou voltar aqui.');
+      } else {
+        // Nova análise — confirma telefone pois pode ter mudado
+        go('chat_confirm_phone');
+      }
+    });
+  },
+
+  async chat_confirm_phone() {
+    await think(400);
+    const phoneAtual = S.phone || '';
+    if (phoneAtual) {
+      await botMsg('Para continuar, confirme seu <strong>WhatsApp</strong>. Ainda é o <strong>' + phoneAtual + '</strong>?');
+      showOpts(['Sim, confirmar', 'Não, quero atualizar'], async val => {
+        userMsg(val);
+        if (val.includes('Sim')) {
+          // Tudo confirmado — vai direto para triagem
+          await botMsg('Perfeito! Vamos iniciar sua nova análise, <strong>' + S.nome + '</strong>.');
+          go('path_select');
+        } else {
+          await botMsg('Qual é o seu <strong>WhatsApp</strong> atual? Selecione o país e digite o número:');
+          go('contact_phone');
+        }
+      });
+    } else {
+      // Não tem telefone salvo, pede
+      await botMsg('Para continuar, preciso do seu <strong>WhatsApp</strong>. Selecione o país e digite o número:');
+      go('contact_phone');
+    }
   },
 
   async contact_name() {
