@@ -128,6 +128,23 @@ router.post('/reset', async (req, res) => {
   }
 });
 
+// ── POST /auth/update-password ── atualiza senha (requer JWT válido)
+router.post('/update-password', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token obrigatório.' });
+  const { password } = req.body;
+  if (!password || password.length < 6) return res.status(400).json({ error: 'Senha muito curta.' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const password_hash = await bcrypt.hash(password, 10);
+    await supabase.from('users').update({ password_hash }).eq('id', decoded.userId);
+    res.json({ success: true });
+  } catch(err) {
+    console.error('Update password error:', err);
+    res.status(401).json({ error: 'Token inválido.' });
+  }
+});
+
 // ── POST /auth/check-email ── verifica se e-mail tem conta ou lead anterior
 router.post('/check-email', async (req, res) => {
   const { email } = req.body;

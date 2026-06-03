@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
 });
 
-const FROM = process.env.SMTP_FROM || 'Visa Match <contato@imigrareua.com>';
+const FROM = process.env.SMTP_FROM || 'Imigrar Visa Match <contato@imigrareua.com>';
 const APP_URL = process.env.APP_URL || 'https://visamatch.imigrareua.com';
 
 // ── Verificar conexão SMTP ──

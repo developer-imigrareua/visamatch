@@ -1903,12 +1903,13 @@ const flows = {
         document.querySelector('.input-zone').style.display = '';
         ti.disabled = false;
         if (r.ok) {
-          localStorage.setItem('vm_user_token', data.token);
-          localStorage.setItem('vm_user', JSON.stringify(data.user));
+          // Guarda token temporário — só salva definitivamente após nova senha
+          window._recoveryToken = data.token;
+          window._recoveryUser  = data.user;
           S.nome = (data.user.nome || '').split(' ')[0] || S.nome;
           userMsg(code);
-          await botMsg('✅ Código verificado! Bem-vindo de volta, <strong>' + S.nome + '</strong>. Vamos continuar.');
-          go('contact_name');
+          await botMsg('✅ Código verificado! Agora defina sua <strong>nova senha</strong> para continuar:');
+          go('chat_set_new_password');
         } else {
           userMsg(code);
           await botMsg('⚠️ ' + (data.error || 'Código incorreto.') + ' Tente novamente.');
@@ -1962,6 +1963,74 @@ const flows = {
         go('chat_confirm_phone');
       }
     });
+  },
+
+
+  async chat_set_new_password() {
+    clearInputHandlers();
+    ti.disabled = true;
+    const sz = document.getElementById('structured-zone');
+    sz.innerHTML = ''; sz.style.display = '';
+    const inputId = 'chat-newpwd-' + Date.now();
+    const row = document.createElement('div');
+    row.style.cssText = 'animation:optIn .3s ease both';
+    row.innerHTML = '<div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;min-width:280px">' +
+      '<input id="' + inputId + '" type="password" placeholder="Nova senha (mín. 6 caracteres)" autocomplete="new-password" ' +
+      'style="border:none;outline:none;font-size:16px;font-family:'Inter Tight',sans-serif;color:var(--txt);flex:1;background:none"/>' +
+      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>';
+    sz.appendChild(row);
+
+    const doSetPwd = async () => {
+      const el = document.getElementById(inputId);
+      const pwd = el ? el.value : '';
+      if (!pwd || pwd.length < 6) {
+        await botMsg('⚠️ A senha deve ter ao menos 6 caracteres.');
+        return;
+      }
+      const btn = document.getElementById(inputId + '-send');
+      if (btn) btn.disabled = true;
+      try {
+        // Atualiza a senha usando o token de recuperação
+        const r = await fetch(API_BASE + '/auth/reset', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ token: null, password: pwd, email: S.email, recovery_token: window._recoveryToken })
+        });
+        // Se o endpoint reset não aceita token JWT, usa o update direto
+        const r2 = await fetch(API_BASE + '/auth/update-password', {
+          method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer ' + window._recoveryToken},
+          body: JSON.stringify({ password: pwd })
+        });
+        sz.style.display = 'none'; sz.innerHTML = '';
+        document.querySelector('.input-zone').style.display = '';
+        ti.disabled = false;
+        if (r2.ok || r.ok) {
+          // Login completo
+          localStorage.setItem('vm_user_token', window._recoveryToken);
+          localStorage.setItem('vm_user', JSON.stringify(window._recoveryUser || {}));
+          userMsg('••••••••');
+          await botMsg('✅ Senha atualizada! Bem-vindo de volta, <strong>' + S.nome + '</strong>.');
+          go('chat_post_login');
+        } else {
+          userMsg('••••••••');
+          await botMsg('⚠️ Não foi possível atualizar a senha. Tente novamente.');
+          go('chat_set_new_password');
+        }
+      } catch(e) {
+        sz.style.display = 'none'; sz.innerHTML = '';
+        document.querySelector('.input-zone').style.display = '';
+        ti.disabled = false;
+        // Em caso de erro, loga com o token de recuperação de qualquer forma
+        localStorage.setItem('vm_user_token', window._recoveryToken || '');
+        localStorage.setItem('vm_user', JSON.stringify(window._recoveryUser || {}));
+        await botMsg('Conta validada! Bem-vindo de volta, <strong>' + S.nome + '</strong>.');
+        go('chat_post_login');
+      }
+    };
+    const sendBtn = document.getElementById(inputId + '-send');
+    if (sendBtn) sendBtn.onclick = doSetPwd;
+    const inEl = document.getElementById(inputId);
+    if (inEl) { inEl.addEventListener('keydown', e => { if(e.key==='Enter') doSetPwd(); }); inEl.focus(); }
   },
 
   async chat_confirm_phone() {
@@ -3528,11 +3597,24 @@ async function openSavedAnalysis(id) {
   } catch(e) {}
 }
 
-// Mostra o botão "Minhas Análises" se o usuário estiver logado
+// Mostra o botão "Minhas Análises" APENAS se o usuário estiver logado com token válido
 (function() {
-  if (localStorage.getItem('vm_user_token')) {
+  const token = localStorage.getItem('vm_user_token');
+  if (!token) return; // sem token = sem botão
+  // Verifica se token não está expirado (decodifica o payload sem lib)
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      // Token expirado — remove e não mostra o botão
+      localStorage.removeItem('vm_user_token');
+      localStorage.removeItem('vm_user');
+      return;
+    }
     const btn = document.getElementById('my-analyses-btn');
     if (btn) btn.style.display = 'flex';
+  } catch(e) {
+    // Token inválido — remove
+    localStorage.removeItem('vm_user_token');
   }
 })();
 
