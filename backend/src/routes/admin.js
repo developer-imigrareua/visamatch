@@ -138,4 +138,82 @@ router.get('/leads/:id', auth, async (req, res) => {
   res.json(data);
 });
 
+// ── GET /api/admin/users ──
+router.get('/users', auth, async (req, res) => {
+  const { page = 1, limit = 20, search } = req.query;
+  const offset = (page - 1) * limit;
+  try {
+    let query = supabase
+      .from('users')
+      .select('id, created_at, email, nome', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (search) query = query.or(`email.ilike.%${search}%,nome.ilike.%${search}%`);
+    const { data, count, error } = await query;
+    if (error) throw error;
+
+    // Enriquece com contagem de análises
+    const enriched = await Promise.all((data || []).map(async u => {
+      const { count: nAnalyses } = await supabase
+        .from('user_analyses').select('*', { count: 'exact', head: true }).eq('user_id', u.id);
+      return { ...u, n_analyses: nAnalyses || 0 };
+    }));
+
+    res.json({ users: enriched, total: count, page: +page, pages: Math.ceil(count / limit) });
+  } catch (err) {
+    console.error('Admin users error:', err);
+    res.status(500).json({ error: 'Erro ao buscar usuários.' });
+  }
+});
+
+// ── GET /api/admin/users/:id/analyses ──
+router.get('/users/:id/analyses', auth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('user_analyses')
+    .select('id, created_at, visto, score, aprovacao_pct, classificacao')
+    .eq('user_id', req.params.id)
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'Erro ao buscar análises.' });
+  res.json(data || []);
+});
+
+// ── GET /api/admin/sessions ── sessões ativas
+router.get('/sessions', auth, async (req, res) => {
+  const { page = 1, limit = 20 } = req.query;
+  const offset = (page - 1) * limit;
+  try {
+    const { data, count, error } = await supabase
+      .from('sessions')
+      .select('id, created_at, updated_at, email, state->step, state->prog, state->visto', { count: 'exact' })
+      .order('updated_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (error) throw error;
+    res.json({ sessions: data || [], total: count, page: +page, pages: Math.ceil(count / limit) });
+  } catch (err) {
+    console.error('Admin sessions error:', err);
+    res.status(500).json({ error: 'Erro ao buscar sessões.' });
+  }
+});
+
+// ── GET /api/admin/overview ── stats ampliado
+router.get('/overview', auth, async (req, res) => {
+  try {
+    const [
+      { count: totalLeads },
+      { count: totalUsers },
+      { count: totalAnalyses },
+      { count: activeSessions }
+    ] = await Promise.all([
+      supabase.from('leads').select('*', { count: 'exact', head: true }),
+      supabase.from('users').select('*', { count: 'exact', head: true }),
+      supabase.from('user_analyses').select('*', { count: 'exact', head: true }),
+      supabase.from('sessions').select('*', { count: 'exact', head: true })
+        .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+    ]);
+    res.json({ totalLeads, totalUsers, totalAnalyses, activeSessions });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar overview.' });
+  }
+});
+
 module.exports = router;

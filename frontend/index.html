@@ -2911,8 +2911,83 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('scroll', onViewportResize);
 }
 
+// ─── RETOMADA DE SESSÃO ───
+async function checkAndResumeSession() {
+  const savedId = localStorage.getItem('vm_session_id');
+  if (!savedId) { go('welcome'); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/session/${savedId}`);
+    if (!res.ok) { localStorage.removeItem('vm_session_id'); go('welcome'); return; }
+    const { state, updated_at } = await res.json();
+
+    // Só oferece retomada se a sessão tem menos de 7 dias e tem progresso real
+    const age = Date.now() - new Date(updated_at).getTime();
+    if (age > 7 * 24 * 60 * 60 * 1000 || !state?.email || state.prog < 10) {
+      localStorage.removeItem('vm_session_id');
+      go('welcome');
+      return;
+    }
+
+    // Mostra card de retomada
+    await pause(300);
+    const resumeRow = document.createElement('div');
+    resumeRow.className = 'row';
+    resumeRow.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+      <div class="msg-wrap" style="max-width:88%">
+        <div class="bubble bot-b">
+          👋 Olá! Você tem uma análise em andamento.<br>
+          <span style="font-size:12.5px;color:var(--txt3)">Etapa: <b style="color:var(--blue)">${state._etapa || state.step || 'em andamento'}</b> · Progresso: <b>${state.prog || 0}%</b></span>
+        </div>
+      </div>`;
+    chat.appendChild(resumeRow);
+
+    const optsRow = document.createElement('div');
+    optsRow.className = 'opts-wrap';
+    optsRow.style.cssText = 'padding-left:44px;gap:8px;margin-top:4px';
+
+    const btnContinue = document.createElement('button');
+    btnContinue.className = 'opt';
+    btnContinue.textContent = '▶ Continuar de onde parei';
+    btnContinue.onclick = () => {
+      optsRow.remove();
+      // Restaura estado
+      const saved = state;
+      S.email   = saved.email   || '';
+      S.nome    = saved.nome    || '';
+      S.phone   = saved.phone   || '';
+      S.visto   = saved.visto   || null;
+      S.vistos  = saved.vistos  || [];
+      S.profile = saved.profile || {};
+      S.prog    = saved.prog    || 0;
+      setSideStep(saved.sStep || 0);
+      setProgress(saved.prog || 0);
+      if (saved.visto) setSideVisto(saved.visto);
+      go(saved.step || 'welcome');
+    };
+
+    const btnNew = document.createElement('button');
+    btnNew.className = 'opt';
+    btnNew.textContent = '↺ Começar nova análise';
+    btnNew.onclick = () => {
+      optsRow.remove();
+      localStorage.removeItem('vm_session_id');
+      go('welcome');
+    };
+
+    optsRow.appendChild(btnContinue);
+    optsRow.appendChild(btnNew);
+    chat.appendChild(optsRow);
+    chat.scrollTop = 9999;
+
+  } catch(e) {
+    localStorage.removeItem('vm_session_id');
+    go('welcome');
+  }
+}
+
 // ─── START ───
-go('welcome');
+checkAndResumeSession();
 </script>
 </body>
 </html>

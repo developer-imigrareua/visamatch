@@ -162,6 +162,14 @@ td.nome{color:var(--txt);font-weight:500}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Leads
     </button>
+    <button class="nav-item" onclick="showPanel('users')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Usuários
+    </button>
+    <button class="nav-item" onclick="showPanel('sessions')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Sessões Ativas
+    </button>
   </nav>
   <div class="sb-footer">
     <button class="logout-btn" onclick="logout()">
@@ -237,6 +245,25 @@ td.nome{color:var(--txt);font-weight:500}
       <div id="leads-detail-view" style="display:none"></div>
     </div>
 
+    <!-- USERS PANEL -->
+    <div class="panel" id="panel-users">
+      <div class="table-toolbar">
+        <input class="search-in" id="users-search-in" placeholder="Buscar por nome ou e-mail..." oninput="debounceUsersSearch()"/>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="users-table-wrap"></div>
+      </div>
+      <div class="pagination" id="users-pagination"></div>
+    </div>
+
+    <!-- SESSIONS PANEL -->
+    <div class="panel" id="panel-sessions">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="sessions-table-wrap"></div>
+      </div>
+      <div class="pagination" id="sessions-pagination"></div>
+    </div>
+
   </div>
 </main>
 </div>
@@ -265,7 +292,12 @@ function logout() {
 }
 
 // ── NAVIGATION ──
-const panels = { overview: { title: 'Dashboard', sub: 'Visão geral da ferramenta Visa Match' }, leads: { title: 'Leads', sub: 'Todos os leads coletados pela ferramenta' } };
+const panels = {
+  overview:  { title: 'Dashboard',        sub: 'Visão geral da ferramenta Visa Match' },
+  leads:     { title: 'Leads',            sub: 'Todos os leads coletados' },
+  users:     { title: 'Usuários',         sub: 'Usuários cadastrados no portal' },
+  sessions:  { title: 'Sessões Ativas',   sub: 'Análises em andamento nas últimas 24h' },
+};
 
 function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -275,6 +307,8 @@ function showPanel(id) {
   document.getElementById('panel-title').textContent = panels[id].title;
   document.getElementById('panel-sub').textContent = panels[id].sub;
   if (id === 'leads') { document.getElementById('leads-detail-view').style.display = 'none'; document.getElementById('leads-list-view').style.display = ''; loadLeads(1); }
+  if (id === 'users') loadUsers(1);
+  if (id === 'sessions') loadSessions(1);
 }
 
 // ── LOAD ALL ──
@@ -283,7 +317,8 @@ function loadAll() { loadStats(); }
 // ── STATS ──
 async function loadStats() {
   document.getElementById('kpi-grid').innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
-  const data = await apiFetch('/stats');
+  const [data, overview] = await Promise.all([apiFetch('/stats'), apiFetch('/overview').catch(()=>({}))]);
+  Object.assign(data, overview);
   renderKPIs(data);
   renderVistoBars(data.porVisto);
   renderScoreDonut(data.porScore);
@@ -292,10 +327,10 @@ async function loadStats() {
 
 function renderKPIs(d) {
   const kpis = [
-    { label: 'Total de Leads', val: d.total || 0, sub: 'Todos os tempos', badge: null },
-    { label: 'Últimos 7 Dias', val: d.ultimos7dias || 0, sub: 'Leads recentes', badge: null },
-    { label: 'Score Alta', val: d.porScore?.alta || 0, sub: 'Pré-elegibilidade alta (70+)', badge: { cls: 'badge-green', txt: '≥70 pts' } },
-    { label: 'Pendentes HubSpot', val: d.pendentesHubspot || 0, sub: 'Aguardando sincronização', badge: d.pendentesHubspot > 0 ? { cls: 'badge-amber', txt: 'Pendente' } : { cls: 'badge-green', txt: 'Tudo ok' } },
+    { label: 'Total de Leads', val: d.total || 0, sub: 'Formulário iniciado', badge: null },
+    { label: 'Usuários Cadastrados', val: d.totalUsers || 0, sub: 'Portal ativo', badge: null },
+    { label: 'Análises Salvas', val: d.totalAnalyses || 0, sub: 'Via portal', badge: null },
+    { label: 'Sessões Hoje', val: d.activeSessions || 0, sub: 'Últimas 24h', badge: null },
   ];
   document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
     <div class="kpi">
@@ -481,6 +516,107 @@ function scoreClass(score) {
 function debounceSearch() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => loadLeads(1), 400);
+}
+
+// ── USERS ──
+let usersSearchTimer = null;
+function debounceUsersSearch() {
+  clearTimeout(usersSearchTimer);
+  usersSearchTimer = setTimeout(() => loadUsers(1), 400);
+}
+
+async function loadUsers(page = 1) {
+  const search = document.getElementById('users-search-in')?.value || '';
+  let qs = `?page=${page}&limit=15`;
+  if (search) qs += `&search=${encodeURIComponent(search)}`;
+  document.getElementById('users-table-wrap').innerHTML = '<div class="loading"><div class="spin"></div>Carregando usuários...</div>';
+  const data = await apiFetch('/users' + qs);
+  renderUsersTable(data);
+}
+
+function renderUsersTable({ users, total, page, pages }) {
+  if (!users?.length) {
+    document.getElementById('users-table-wrap').innerHTML = '<div class="empty">Nenhum usuário cadastrado ainda.</div>';
+    document.getElementById('users-pagination').innerHTML = '';
+    return;
+  }
+  const rows = users.map(u => {
+    const dt = new Date(u.created_at).toLocaleDateString('pt-BR');
+    return `<tr>
+      <td class="nome">${u.nome || '—'}</td>
+      <td>${u.email}</td>
+      <td style="text-align:center"><span class="score-pill sc-dev">${u.n_analyses || 0} análise(s)</span></td>
+      <td>${dt}</td>
+      <td><button class="view-btn" onclick="viewUserAnalyses('${u.id}','${u.nome||u.email}')">Ver análises</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('users-table-wrap').innerHTML = `
+    <table>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Análises</th><th>Cadastro</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  const prev = page<=1?'disabled':'', next = page>=pages?'disabled':'';
+  document.getElementById('users-pagination').innerHTML = `
+    <span class="pag-info">${total} usuário(s) · Página ${page} de ${pages||1}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" ${prev} onclick="loadUsers(${page-1})">← Anterior</button>
+      <button class="pag-btn" ${next} onclick="loadUsers(${page+1})">Próxima →</button>
+    </div>`;
+}
+
+async function viewUserAnalyses(userId, userName) {
+  document.getElementById('users-table-wrap').innerHTML = `
+    <div style="padding:16px">
+      <button class="view-btn" onclick="loadUsers(1)" style="margin-bottom:12px">← Voltar</button>
+      <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:12px">Análises de ${userName}</div>
+      <div id="user-analyses-wrap"><div class="loading"><div class="spin"></div>Carregando...</div></div>
+    </div>`;
+  const analyses = await apiFetch(`/users/${userId}/analyses`);
+  if (!analyses?.length) { document.getElementById('user-analyses-wrap').innerHTML = '<div class="empty">Nenhuma análise ainda.</div>'; return; }
+  const rows = analyses.map(a => {
+    const pct = a.aprovacao_pct ?? a.score ?? 0;
+    const dt  = new Date(a.created_at).toLocaleDateString('pt-BR');
+    const sc  = a.classificacao?.includes('Alta') ? 'sc-alta' : a.classificacao?.includes('Moderada') ? 'sc-mod' : a.classificacao?.includes('Incompat') ? 'sc-inc' : 'sc-dev';
+    return `<tr><td class="nome">${a.visto||'—'}</td><td><span class="score-pill ${sc}">${pct}%</span></td><td>${a.classificacao||'—'}</td><td>${dt}</td></tr>`;
+  }).join('');
+  document.getElementById('user-analyses-wrap').innerHTML = `<table><thead><tr><th>Visto</th><th>Score</th><th>Classificação</th><th>Data</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ── SESSIONS ──
+async function loadSessions(page = 1) {
+  document.getElementById('sessions-table-wrap').innerHTML = '<div class="loading"><div class="spin"></div>Carregando sessões...</div>';
+  const data = await apiFetch(`/sessions?page=${page}&limit=20`);
+  renderSessionsTable(data);
+}
+
+function renderSessionsTable({ sessions, total, page, pages }) {
+  if (!sessions?.length) {
+    document.getElementById('sessions-table-wrap').innerHTML = '<div class="empty">Nenhuma sessão ativa nas últimas 24h.</div>';
+    document.getElementById('sessions-pagination').innerHTML = '';
+    return;
+  }
+  const rows = sessions.map(s => {
+    const upd = new Date(s.updated_at).toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
+    return `<tr>
+      <td class="nome">${s.email||'Anônimo'}</td>
+      <td>${s.step||'—'}</td>
+      <td>${s.visto||'—'}</td>
+      <td style="text-align:center"><div class="bar-track" style="width:80px"><div class="bar-fill" style="width:${s.prog||0}%"></div></div></td>
+      <td>${upd}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('sessions-table-wrap').innerHTML = `
+    <table>
+      <thead><tr><th>E-mail</th><th>Etapa</th><th>Visto</th><th>Progresso</th><th>Última atividade</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  const prev = page<=1?'disabled':'', next = page>=pages?'disabled':'';
+  document.getElementById('sessions-pagination').innerHTML = `
+    <span class="pag-info">${total} sessão(ões) · Página ${page} de ${pages||1}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" ${prev} onclick="loadSessions(${page-1})">← Anterior</button>
+      <button class="pag-btn" ${next} onclick="loadSessions(${page+1})">Próxima →</button>
+    </div>`;
 }
 
 // ── INIT ──
