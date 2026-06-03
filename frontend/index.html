@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Visa Match · ImigrarEUA</title>
 <link rel="icon" type="image/jpeg" href="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -118,7 +118,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 .input-zone{padding:14px 36px 18px;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-top:1px solid var(--border);flex-shrink:0}
 .input-row{display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:16px;padding:6px 6px 6px 18px;transition:border-color .2s,box-shadow .2s}
 .input-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,83,208,.06)}
-.txt-in{flex:1;background:none;border:none;outline:none;font-family:'Inter Tight','Inter',sans-serif;font-size:14px;color:var(--txt);padding:7px 0;font-weight:400}
+.txt-in{flex:1;background:none;border:none;outline:none;font-family:'Inter Tight','Inter',sans-serif;font-size:16px;color:var(--txt);padding:7px 0;font-weight:400}
 .txt-in::placeholder{color:var(--txt3)}
 .in-btn{width:40px;height:40px;border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
 .send-b{background:linear-gradient(135deg,var(--blue),var(--pink))}
@@ -249,7 +249,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   .opts-wrap{padding-left:38px;gap:6px}
   .opt{font-size:12.5px;padding:8px 14px}
   .input-zone{padding:8px 12px 12px}
-  .txt-in{font-size:13px}
+  .txt-in{font-size:16px} /* iOS no-zoom */
   .in-hint{font-size:10px}
   .in-btn{width:36px;height:36px}
   .ai-full-card-body{grid-template-columns:1fr !important}
@@ -353,11 +353,11 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
     <div id="reg-form-wrap">
       <div style="margin-bottom:12px">
         <label style="display:block;font-size:11.5px;font-weight:600;color:var(--txt2);margin-bottom:5px;letter-spacing:.04em">E-MAIL</label>
-        <input id="rm-email" type="email" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:'Inter Tight',sans-serif;font-size:13.5px;outline:none;color:var(--txt)" readonly/>
+        <input id="rm-email" type="email" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:'Inter Tight',sans-serif;font-size:16px;outline:none;color:var(--txt)" readonly/>
       </div>
       <div style="margin-bottom:16px">
         <label style="display:block;font-size:11.5px;font-weight:600;color:var(--txt2);margin-bottom:5px;letter-spacing:.04em">DEFINA UMA SENHA</label>
-        <input id="rm-pwd" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:'Inter Tight',sans-serif;font-size:13.5px;outline:none;color:var(--txt)"/>
+        <input id="rm-pwd" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:'Inter Tight',sans-serif;font-size:16px;outline:none;color:var(--txt)"/>
       </div>
       <button id="rm-btn" onclick="doRegisterModal()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Inter Tight',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">Criar conta e salvar análise</button>
     </div>
@@ -749,7 +749,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   row.innerHTML = `
     <div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;transition:border-color .2s,box-shadow .2s" id="${wrapId}">
       <input id="${inputId}" type="text" maxlength="7" autocomplete="off" placeholder="MM/AAAA"
-        style="border:none;outline:none;font-size:15px;font-family:'Inter Tight',sans-serif;color:var(--txt);width:110px;background:none;letter-spacing:.04em"/>
+        style="border:none;outline:none;font-size:16px;font-family:'Inter Tight',sans-serif;color:var(--txt);width:110px;background:none;letter-spacing:.04em"/>
       ${currentBtn}
       <button id="${sendId}" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1844,7 +1844,7 @@ const flows = {
           ${countries.map(c => `<option value="${c.ddi}" ${c.code==='BR'?'selected':''}>${c.flag} ${c.ddi}</option>`).join('')}
         </select>
         <div style="width:1px;height:20px;background:rgba(11,25,41,.1)"></div>
-        <input id="phone-num" type="tel" autocomplete="off" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:14px;font-family:'Inter Tight',sans-serif;color:var(--blue4);flex:1;background:none"/>
+        <input id="phone-num" type="tel" autocomplete="off" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:16px;font-family:'Inter Tight',sans-serif;color:var(--blue4);flex:1;background:none"/>
         <button id="phone-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -2405,7 +2405,7 @@ const flows = {
     dateRow.innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 14px;max-width:260px;transition:border-color .2s" id="date-wrap">
         <input id="date-in" type="text" maxlength="10" autocomplete="off" placeholder="DD/MM/AAAA"
-          style="border:none;outline:none;font-size:15px;font-family:'Inter Tight',sans-serif;color:var(--blue4);width:130px;background:none;letter-spacing:.04em"/>
+          style="border:none;outline:none;font-size:16px;font-family:'Inter Tight',sans-serif;color:var(--blue4);width:130px;background:none;letter-spacing:.04em"/>
         <button id="date-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
