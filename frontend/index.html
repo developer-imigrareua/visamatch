@@ -262,6 +262,11 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 </style>
 </head>
 <body>
+<!-- Honeypot: impede o browser de detectar os campos como formulário de login/senha -->
+<form style="display:none" aria-hidden="true" autocomplete="off">
+  <input type="text" name="fake_user" tabindex="-1"/>
+  <input type="password" name="fake_pass" tabindex="-1"/>
+</form>
 <div class="app">
 
 <!-- SIDEBAR -->
@@ -312,7 +317,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   <div id="structured-zone" style="display:none;padding:14px 32px 14px;background:rgba(255,255,255,.95);border-top:1px solid rgba(194,198,216,.4)"></div>
   <div class="input-zone">
     <div class="input-row">
-      <input class="txt-in" id="ti" type="text" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="new-password" name="vm-answer"/>
+      <input class="txt-in" id="ti" type="search" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off" spellcheck="false"/>
       <button class="in-btn mic-b" id="mic-btn" title="Gravar áudio">
         <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
       </button>
@@ -3210,6 +3215,15 @@ async function checkAndResumeSession() {
     go('welcome');
   }
 }
+
+// ─── ANTI-AUTOFILL ───
+// Chrome tende a preencher campos type="search" mas limpa logo
+setTimeout(() => { if (ti) { ti.value = ''; ti.blur(); } }, 100);
+setTimeout(() => { if (ti) ti.value = ''; }, 500);
+// Impede o browser de marcar campos do structured-zone como credenciais
+document.addEventListener('animationstart', e => {
+  if (e.animationName === 'onAutoFillStart' && ti) ti.value = '';
+}, true);
 
 // ─── START ───
 checkAndResumeSession();
