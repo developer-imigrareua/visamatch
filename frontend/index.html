@@ -1991,40 +1991,37 @@ const flows = {
       const btn = document.getElementById(inputId + '-send');
       if (btn) btn.disabled = true;
       try {
-        // Atualiza a senha usando o token de recuperação
-        const r = await fetch(API_BASE + '/auth/reset', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ token: null, password: pwd, email: S.email, recovery_token: window._recoveryToken })
-        });
-        // Se o endpoint reset não aceita token JWT, usa o update direto
+        // Atualiza senha via update-password (JWT do recovery)
         const r2 = await fetch(API_BASE + '/auth/update-password', {
-          method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer ' + window._recoveryToken},
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer ' + window._recoveryToken},
           body: JSON.stringify({ password: pwd })
         });
+        const contentType = r2.headers.get('content-type') || '';
+        const d2 = contentType.includes('application/json') ? await r2.json() : {};
         sz.style.display = 'none'; sz.innerHTML = '';
         document.querySelector('.input-zone').style.display = '';
         ti.disabled = false;
-        if (r2.ok || r.ok) {
-          // Login completo
+        if (r2.ok) {
           localStorage.setItem('vm_user_token', window._recoveryToken);
           localStorage.setItem('vm_user', JSON.stringify(window._recoveryUser || {}));
           userMsg('••••••••');
-          await botMsg('✅ Senha atualizada! Bem-vindo de volta, <strong>' + S.nome + '</strong>.');
+          await botMsg('✅ Senha atualizada com sucesso! Bem-vindo de volta, <strong>' + S.nome + '</strong>.');
           go('chat_post_login');
         } else {
           userMsg('••••••••');
-          await botMsg('⚠️ Não foi possível atualizar a senha. Tente novamente.');
+          await botMsg('⚠️ ' + (d2.error || 'Não foi possível atualizar a senha.') + ' Tente novamente.');
+          if (btn) { btn.disabled = false; }
           go('chat_set_new_password');
         }
       } catch(e) {
+        console.error('Set password error:', e);
         sz.style.display = 'none'; sz.innerHTML = '';
         document.querySelector('.input-zone').style.display = '';
         ti.disabled = false;
-        // Em caso de erro, loga com o token de recuperação de qualquer forma
-        localStorage.setItem('vm_user_token', window._recoveryToken || '');
-        localStorage.setItem('vm_user', JSON.stringify(window._recoveryUser || {}));
-        await botMsg('Conta validada! Bem-vindo de volta, <strong>' + S.nome + '</strong>.');
-        go('chat_post_login');
+        await botMsg('⚠️ Erro de conexão ao salvar senha. Tente novamente.');
+        if (btn) btn.disabled = false;
+        go('chat_set_new_password');
       }
     };
     const sendBtn = document.getElementById(inputId + '-send');

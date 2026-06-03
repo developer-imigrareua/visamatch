@@ -137,7 +137,12 @@ router.post('/update-password', async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const password_hash = await bcrypt.hash(password, 10);
-    await supabase.from('users').update({ password_hash }).eq('id', decoded.userId);
+    const { error } = await supabase.from('users').update({ password_hash }).eq('id', decoded.userId);
+    if (error) {
+      console.error('Update password Supabase error:', error);
+      return res.status(500).json({ error: 'Erro ao salvar nova senha.' });
+    }
+    console.log('Password updated for userId:', decoded.userId);
     res.json({ success: true });
   } catch(err) {
     console.error('Update password error:', err);
