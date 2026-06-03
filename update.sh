@@ -1,9 +1,7 @@
 #!/bin/bash
 # update.sh — Visa Match · Atualização segura
-# Uso: bash update.sh
-#
 # SEGURO: opera APENAS em /var/www/visamatch
-# NÃO toca em: liv-ai, n8n, PM2, SSL existente
+# NÃO toca em: liv-ai, n8n, PM2, SSL existente do Certbot
 
 set -e
 
@@ -23,9 +21,26 @@ echo "⬇️  Puxando código do GitHub..."
 git pull origin $BRANCH
 echo ""
 
-# ── 2. Nginx ──
-echo "🌐 Atualizando Nginx (apenas visamatch)..."
-cp nginx/visamatch.conf /etc/nginx/sites-available/visamatch
+# ── 2. Nginx — atualiza APENAS as rotas, preserva SSL do Certbot ──
+echo "🌐 Atualizando rotas Nginx (preservando SSL do Certbot)..."
+python3 -c "
+import re, sys
+try:
+    with open('/etc/nginx/sites-enabled/visamatch', 'r') as f:
+        c = f.read()
+    # Garante que auth e user estão nas rotas
+    old = 'transcribe|lead|session|health|analyze'
+    new = 'transcribe|lead|session|health|analyze|auth|user'
+    if new not in c:
+        c = c.replace(old, new)
+        with open('/etc/nginx/sites-enabled/visamatch', 'w') as f:
+            f.write(c)
+        print('   Rotas atualizadas: auth|user adicionados')
+    else:
+        print('   Rotas ja estao corretas')
+except Exception as e:
+    print('   Aviso:', e)
+"
 nginx -t
 systemctl reload nginx
 echo "   ✅ Nginx recarregado"
@@ -41,7 +56,7 @@ echo "📊 Status final:"
 docker ps --filter "name=visamatch" --format "   Container: {{.Names}} | Status: {{.Status}} | Porta: {{.Ports}}"
 echo ""
 echo "✅ Update concluído!"
-echo "   Frontend: http://$(curl -s ifconfig.me 2>/dev/null || echo '69.62.95.58')"
-echo "   Admin:    http://$(curl -s ifconfig.me 2>/dev/null || echo '69.62.95.58')/admin"
+echo "   Frontend: https://visamatch.imigrareua.com"
+echo "   Admin:    https://visamatch.imigrareua.com/admin"
 echo "   Logs:     docker logs -f visamatch"
 echo ""
