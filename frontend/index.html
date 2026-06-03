@@ -3404,24 +3404,26 @@ if (window.visualViewport) {
 
 // ─── RETOMADA DE SESSÃO ───
 async function checkAndResumeSession() {
+  // Mantida por compatibilidade — usa checkSessionInBackground internamente
+  await checkSessionInBackground();
+}
+
+async function checkSessionInBackground() {
   const savedId = localStorage.getItem('vm_session_id');
-  if (!savedId) { go('welcome'); return; }
+  if (!savedId) return; // sem sessão — welcome já iniciou
 
   try {
-    // Timeout de 4s — se travar, inicia welcome mesmo assim
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch(`${API_BASE}/session/${savedId}`, { signal: controller.signal });
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(API_BASE + '/session/' + savedId, { signal: controller.signal });
     clearTimeout(timeout);
-    if (!res.ok) { localStorage.removeItem('vm_session_id'); go('welcome'); return; }
+    if (!res.ok) { localStorage.removeItem('vm_session_id'); return; }
     const { state, updated_at } = await res.json();
 
-    // Só oferece retomada se a sessão tem menos de 7 dias e tem progresso real
+    // Só oferece retomada se tem progresso real e é recente
     const age = Date.now() - new Date(updated_at).getTime();
     if (age > 7 * 24 * 60 * 60 * 1000 || !state?.email || state.prog < 10) {
-      localStorage.removeItem('vm_session_id');
-      go('welcome');
-      return;
+      localStorage.removeItem('vm_session_id'); return;
     }
 
     // Mostra card de retomada
@@ -3466,8 +3468,10 @@ async function checkAndResumeSession() {
     btnNew.textContent = '↺ Começar nova análise';
     btnNew.onclick = () => {
       optsRow.remove();
+      const resumeRow2 = document.getElementById('session-resume-row');
+      if (resumeRow2) resumeRow2.remove();
       localStorage.removeItem('vm_session_id');
-      go('welcome');
+      // welcome já está rodando em background, não precisa chamar de novo
     };
 
     optsRow.appendChild(btnContinue);
@@ -3490,15 +3494,11 @@ if (ti) {
 }
 
 // ─── START ───
-// Safety net: se o chat ainda estiver vazio após 3s, inicia o fluxo diretamente
-setTimeout(() => {
-  if (chat && chat.children.length === 0) {
-    console.warn('Safety net: iniciando welcome diretamente');
-    go('welcome');
-  }
-}, 3000);
+// Inicia IMEDIATAMENTE o fluxo — não espera nenhuma operação assíncrona
+go('welcome');
 
-checkAndResumeSession();
+// Depois verifica sessão em background e oferece retomada se necessário
+setTimeout(() => checkSessionInBackground(), 1500);
 </script>
 
 
