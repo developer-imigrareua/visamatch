@@ -307,7 +307,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   <div id="structured-zone" style="display:none;padding:14px 32px 14px;background:rgba(255,255,255,.95);border-top:1px solid rgba(194,198,216,.4)"></div>
   <div class="input-zone">
     <div class="input-row">
-      <input class="txt-in" id="ti" type="text" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off"/>
+      <input class="txt-in" id="ti" type="text" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="new-password" name="vm-answer"/>
       <button class="in-btn mic-b" id="mic-btn" title="Gravar áudio">
         <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
       </button>
@@ -738,7 +738,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
 
   row.innerHTML = `
     <div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;transition:border-color .2s,box-shadow .2s" id="${wrapId}">
-      <input id="${inputId}" type="text" maxlength="7" placeholder="MM/AAAA"
+      <input id="${inputId}" type="text" maxlength="7" autocomplete="off" placeholder="MM/AAAA"
         style="border:none;outline:none;font-size:15px;font-family:'Inter Tight',sans-serif;color:var(--txt);width:110px;background:none;letter-spacing:.04em"/>
       ${currentBtn}
       <button id="${sendId}" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -1056,6 +1056,11 @@ async function doRegisterModal() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: S.email, nome: S.profile.nomeCompleto || S.nome, password: pwd })
     });
+    // Verifica se resposta é JSON válido
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Serviço temporariamente indisponível. Tente novamente em instantes.');
+    }
     const data = await res.json();
 
     if (!res.ok) {
@@ -1370,7 +1375,7 @@ function singleFullCard(a) {
         <!-- Parceiro -->
         <div style="border-radius:10px;padding:14px;${a.recomendacao_parceiro==='liv'?'background:linear-gradient(135deg,#1A72F6,#002b70);border:1px solid rgba(255,255,255,.2)':'background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)'}">
           <div style="font-size:20px;margin-bottom:6px">${a.recomendacao_parceiro==='liv'?'⚖️':'🎓'}</div>
-          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Immigration Law · Parceiro Oficial':'Phoenix — Fortalecimento de Perfil'}</div>
+          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Immigration Law · Parceiro Oficial':'Phoenix · Fortalecimento de Perfil'}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Escritório licenciado nos EUA, especializado em ${a.visto}.`:'Especialista em melhoria de perfil para imigração.'}</div>
           ${a.recomendacao_parceiro==='liv' && (a.score||0) >= 40 ? `
   <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
@@ -1668,7 +1673,7 @@ const flows = {
           ${countries.map(c => `<option value="${c.ddi}" ${c.code==='BR'?'selected':''}>${c.flag} ${c.ddi}</option>`).join('')}
         </select>
         <div style="width:1px;height:20px;background:rgba(11,25,41,.1)"></div>
-        <input id="phone-num" type="tel" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:14px;font-family:'Inter Tight',sans-serif;color:var(--blue4);flex:1;background:none"/>
+        <input id="phone-num" type="tel" autocomplete="off" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:14px;font-family:'Inter Tight',sans-serif;color:var(--blue4);flex:1;background:none"/>
         <button id="phone-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -2228,7 +2233,7 @@ const flows = {
     dateRow.style.cssText = 'animation:optIn .3s ease both';
     dateRow.innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 14px;max-width:260px;transition:border-color .2s" id="date-wrap">
-        <input id="date-in" type="text" maxlength="10" placeholder="DD/MM/AAAA"
+        <input id="date-in" type="text" maxlength="10" autocomplete="off" placeholder="DD/MM/AAAA"
           style="border:none;outline:none;font-size:15px;font-family:'Inter Tight',sans-serif;color:var(--blue4);width:130px;background:none;letter-spacing:.04em"/>
         <button id="date-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -2841,7 +2846,7 @@ const flows = {
       { ico: '🔍', txt: `Analisando o perfil de <strong>${S.nome}</strong>...` },
       { ico: '⚖️', txt: 'Verificando critérios oficiais do USCIS...' },
       { ico: '📊', txt: `Calculando score de elegibilidade para <strong>${visto}</strong>...` },
-      { ico: '✍️', txt: 'Gerando análise personalizada com IA...' },
+      { ico: '✍️', txt: 'Gerando análise personalizada...' },
       { ico: '📄', txt: 'Preparando seu relatório completo...' },
     ];
 
@@ -2877,7 +2882,6 @@ const flows = {
       }));
 
       const bestScore = analysis.melhor?.score ?? 0;
-      setSideBar(bestScore);
       if (analysis.melhor?.visto) setSideVisto(analysis.melhor.visto);
 
       await pause(600);
@@ -2892,9 +2896,16 @@ const flows = {
       chat.appendChild(row);
       scrollBottom();
 
-      // Mostra modal de cadastro após 3s (se não estiver logado)
+      // Pergunta se quer salvar (botões no chat, sem modal automático)
       if (!localStorage.getItem('vm_user_token')) {
-        setTimeout(() => showRegModal(analysis), 3000);
+        await pause(1800);
+        await botMsg(`${S.nome}, deseja salvar esta análise para consultas futuras?`);
+        showOpts(['💾 Salvar para consultas futuras','Seguir sem salvar'], val => {
+          userMsg(val);
+          if (val.includes('Salvar')) {
+            showRegModal(analysis);
+          }
+        });
       }
 
     } catch (err) {
@@ -3112,21 +3123,18 @@ function _closeLGPD() {
 <!-- EXIT INTENT POPUP -->
 <div id="exit-overlay" style="display:none;position:fixed;inset:0;background:rgba(11,28,48,.55);z-index:8000;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:20px;padding:32px;max-width:400px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:popIn .3s cubic-bezier(.34,1.56,.64,1);text-align:center">
-    <div style="font-size:36px;margin-bottom:12px">⏸️</div>
-    <div style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:#0b1c30;margin-bottom:10px">Sua análise está em andamento</div>
+    <div style="font-size:36px;margin-bottom:12px">🎯</div>
+    <div style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:#0b1c30;margin-bottom:10px">Você está quase lá!</div>
     <p style="font-size:13.5px;color:#424655;line-height:1.7;margin-bottom:22px">
-      Você está a <strong id="exit-prog-txt">poucos passos</strong> de descobrir seu caminho para os EUA.<br>
-      Quer salvar seu progresso para continuar depois?
+      Você está a <strong id="exit-prog-txt">poucos passos</strong> de descobrir seu caminho para os EUA.
+      
     </p>
     <div style="display:flex;flex-direction:column;gap:9px">
-      <button onclick="exitSaveAndGo()" style="width:100%;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Inter Tight',sans-serif;font-size:14px;font-weight:700;cursor:pointer">
-        💾 Salvar e sair
-      </button>
-      <button onclick="exitContinue()" style="width:100%;background:#f0f4ff;color:#0053d0;border:none;border-radius:11px;padding:12px;font-family:'Inter Tight',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer">
+      <button onclick="exitContinue()" style="width:100%;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Inter Tight',sans-serif;font-size:14px;font-weight:700;cursor:pointer">
         ▶ Continuar a análise
       </button>
-      <button onclick="exitWithout()" style="width:100%;background:none;border:none;font-family:'Inter Tight',sans-serif;font-size:12.5px;color:#737687;cursor:pointer;padding:6px">
-        Sair sem salvar
+      <button onclick="exitWithout()" style="width:100%;background:none;border:1.5px solid rgba(194,198,216,.6);border-radius:11px;padding:11px;font-family:'Inter Tight',sans-serif;font-size:13px;color:#737687;cursor:pointer">
+        Sair
       </button>
     </div>
   </div>
