@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal — Visa Match ImigrarEUA</title>
+<link rel="icon" type="image/jpeg" href="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#0053d0;--blue2:#1A72F6;--blue3:#003fa3;--blue4:#002b70;
+  --pink:#ff4b82;--surface:#fff;--surface2:#f8faff;--surface3:#f0f4ff;
+  --txt:#0b1c30;--txt2:#424655;--txt3:#737687;
+  --border:rgba(194,198,216,.5);--green:#1d9e70;--red:#dc2626;
+}
+html,body{min-height:100%;font-family:'Inter Tight','Inter',sans-serif;background:linear-gradient(135deg,#1A72F6 0%,#002b70 100%);display:flex;align-items:center;justify-content:center;padding:24px}
+.card{background:#fff;border-radius:20px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.logo{text-align:center;margin-bottom:28px}
+.logo-ico{width:56px;height:56px;border-radius:50%;overflow:hidden;margin:0 auto 12px;border:2px solid rgba(0,83,208,.15)}
+.logo-ico img{width:100%;height:100%;object-fit:cover}
+.logo-title{font-family:'Manrope',sans-serif;font-size:22px;color:var(--txt);font-weight:700}
+.logo-sub{font-size:11px;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.tabs{display:flex;background:var(--surface2);border-radius:10px;padding:4px;gap:4px;margin-bottom:24px}
+.tab{flex:1;padding:9px;border:none;border-radius:8px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:none;color:var(--txt3);transition:all .2s}
+.tab.active{background:#fff;color:var(--blue);box-shadow:0 2px 8px rgba(0,83,208,.1)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:5px;letter-spacing:.04em}
+.field input{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'Inter Tight',sans-serif;font-size:14px;color:var(--txt);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,83,208,.08)}
+.btn{width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Inter Tight',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:default}
+.err{background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:9px;padding:10px 13px;font-size:12.5px;color:var(--red);margin-bottom:14px;display:none}
+.err.show{display:block}
+.ok{background:rgba(29,158,112,.07);border:1px solid rgba(29,158,112,.2);border-radius:9px;padding:10px 13px;font-size:12.5px;color:var(--green);margin-bottom:14px;display:none}
+.ok.show{display:block}
+.forgot{text-align:right;margin-bottom:16px}
+.forgot a{font-size:12px;color:var(--blue);text-decoration:none;cursor:pointer}
+.forgot a:hover{text-decoration:underline}
+.new-analysis{margin-top:20px;text-align:center;font-size:13px;color:var(--txt3)}
+.new-analysis a{color:var(--blue);text-decoration:none;font-weight:600}
+/* Reset form */
+#reset-panel{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-ico"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" alt="ImigrarEUA"/></div>
+    <div class="logo-title">Visa Match</div>
+    <div class="logo-sub">Portal do Usuário</div>
+  </div>
+
+  <!-- LOGIN / CADASTRO -->
+  <div id="auth-panel">
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="showTab('login')">Entrar</button>
+      <button class="tab" id="tab-reg" onclick="showTab('register')">Criar conta</button>
+    </div>
+
+    <div class="err" id="err"></div>
+    <div class="ok" id="ok"></div>
+
+    <!-- Login -->
+    <div id="login-form">
+      <div class="field"><label>E-MAIL</label><input type="email" id="l-email" placeholder="seu@email.com"/></div>
+      <div class="field"><label>SENHA</label><input type="password" id="l-pwd" placeholder="••••••"/></div>
+      <div class="forgot"><a onclick="showForgot()">Esqueci minha senha</a></div>
+      <button class="btn" id="l-btn" onclick="doLogin()">Entrar</button>
+    </div>
+
+    <!-- Cadastro -->
+    <div id="reg-form" style="display:none">
+      <div class="field"><label>NOME COMPLETO</label><input type="text" id="r-nome" placeholder="Seu nome"/></div>
+      <div class="field"><label>E-MAIL</label><input type="email" id="r-email" placeholder="seu@email.com"/></div>
+      <div class="field"><label>SENHA</label><input type="password" id="r-pwd" placeholder="Mínimo 6 caracteres"/></div>
+      <button class="btn" id="r-btn" onclick="doRegister()">Criar conta</button>
+    </div>
+
+    <div class="new-analysis">
+      <a href="/">← Fazer nova análise</a>
+    </div>
+  </div>
+
+  <!-- RESET DE SENHA -->
+  <div id="reset-panel">
+    <div class="err" id="reset-err"></div>
+    <div class="ok" id="reset-ok"></div>
+    <div id="forgot-form">
+      <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Digite seu e-mail para receber o link de redefinição:</p>
+      <div class="field"><label>E-MAIL</label><input type="email" id="f-email" placeholder="seu@email.com"/></div>
+      <button class="btn" id="f-btn" onclick="doForgot()">Enviar link</button>
+      <div class="new-analysis" style="margin-top:12px"><a onclick="showAuth()">← Voltar ao login</a></div>
+    </div>
+    <div id="new-pwd-form" style="display:none">
+      <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Digite sua nova senha:</p>
+      <div class="field"><label>NOVA SENHA</label><input type="password" id="np-pwd" placeholder="Mínimo 6 caracteres"/></div>
+      <button class="btn" id="np-btn" onclick="doReset()">Redefinir senha</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+
+// Verifica token na URL (reset de senha)
+const urlParams = new URLSearchParams(window.location.search);
+const resetToken = urlParams.get('reset');
+if (resetToken) {
+  document.getElementById('auth-panel').style.display = 'none';
+  document.getElementById('reset-panel').style.display = '';
+  document.getElementById('forgot-form').style.display = 'none';
+  document.getElementById('new-pwd-form').style.display = '';
+}
+
+// Verifica se já logado
+if (localStorage.getItem('vm_user_token')) {
+  window.location.href = '/portal/dashboard.html';
+}
+
+function showTab(t) {
+  document.getElementById('tab-login').className = 'tab' + (t==='login'?' active':'');
+  document.getElementById('tab-reg').className   = 'tab' + (t==='register'?' active':'');
+  document.getElementById('login-form').style.display = t==='login'?'':'none';
+  document.getElementById('reg-form').style.display   = t==='register'?'':'none';
+  clearMsg();
+}
+
+function showForgot() {
+  document.getElementById('auth-panel').style.display = 'none';
+  document.getElementById('reset-panel').style.display = '';
+}
+function showAuth() {
+  document.getElementById('auth-panel').style.display = '';
+  document.getElementById('reset-panel').style.display = 'none';
+}
+
+function showErr(id, msg) { const e = document.getElementById(id); e.textContent = msg; e.className = 'err show'; }
+function showOk(id, msg)  { const e = document.getElementById(id); e.textContent = msg; e.className = 'ok show'; }
+function clearMsg()       { ['err','ok','reset-err','reset-ok'].forEach(id => { const e = document.getElementById(id); if(e) e.className = e.className.replace(/ ?show/g,''); }); }
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pwd   = document.getElementById('l-pwd').value;
+  if (!email || !pwd) return showErr('err','Preencha e-mail e senha.');
+  const btn = document.getElementById('l-btn');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  clearMsg();
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pwd })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr('err', data.error || 'Erro ao entrar.'); btn.disabled=false; btn.textContent='Entrar'; return; }
+    localStorage.setItem('vm_user_token', data.token);
+    localStorage.setItem('vm_user', JSON.stringify(data.user));
+    window.location.href = '/portal/dashboard.html';
+  } catch { showErr('err','Erro de conexão.'); btn.disabled=false; btn.textContent='Entrar'; }
+}
+
+async function doRegister() {
+  const nome  = document.getElementById('r-nome').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const pwd   = document.getElementById('r-pwd').value;
+  if (!nome || !email || !pwd) return showErr('err','Preencha todos os campos.');
+  const btn = document.getElementById('r-btn');
+  btn.disabled = true; btn.textContent = 'Criando conta...';
+  clearMsg();
+  try {
+    const res = await fetch(`${API}/auth/register`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pwd, nome })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr('err', data.error || 'Erro ao criar conta.'); btn.disabled=false; btn.textContent='Criar conta'; return; }
+    localStorage.setItem('vm_user_token', data.token);
+    localStorage.setItem('vm_user', JSON.stringify(data.user));
+    window.location.href = '/portal/dashboard.html';
+  } catch { showErr('err','Erro de conexão.'); btn.disabled=false; btn.textContent='Criar conta'; }
+}
+
+async function doForgot() {
+  const email = document.getElementById('f-email').value.trim();
+  if (!email) return showErr('reset-err','Digite seu e-mail.');
+  const btn = document.getElementById('f-btn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  clearMsg();
+  try {
+    await fetch(`${API}/auth/forgot`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    showOk('reset-ok','Se este e-mail estiver cadastrado, você receberá as instruções em instantes.');
+    btn.textContent = 'Enviado ✓';
+  } catch { showErr('reset-err','Erro de conexão.'); btn.disabled=false; btn.textContent='Enviar link'; }
+}
+
+async function doReset() {
+  const pwd = document.getElementById('np-pwd').value;
+  if (!pwd || pwd.length < 6) return showErr('reset-err','Senha deve ter ao menos 6 caracteres.');
+  const btn = document.getElementById('np-btn');
+  btn.disabled = true; btn.textContent = 'Redefinindo...';
+  clearMsg();
+  try {
+    const res = await fetch(`${API}/auth/reset`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token: resetToken, password: pwd })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr('reset-err', data.error || 'Erro.'); btn.disabled=false; btn.textContent='Redefinir senha'; return; }
+    localStorage.setItem('vm_user_token', data.token);
+    showOk('reset-ok','Senha redefinida! Redirecionando...');
+    setTimeout(() => window.location.href = '/portal/dashboard.html', 1500);
+  } catch { showErr('reset-err','Erro de conexão.'); btn.disabled=false; btn.textContent='Redefinir senha'; }
+}
+
+// Enter para login
+document.addEventListener('keydown', e => { if (e.key === 'Enter') { if (document.getElementById('login-form').style.display !== 'none') doLogin(); else doRegister(); }});
+</script>
+</body>
+</html>

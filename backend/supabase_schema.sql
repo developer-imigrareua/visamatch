@@ -57,3 +57,29 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS classificacao   TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS completo        BOOLEAN DEFAULT false;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS etapa_abandono  TEXT;
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS email        TEXT;
+
+-- ── USERS (portal de usuários) ──────────────────────────────
+CREATE TABLE IF NOT EXISTS users (
+  id                   UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at           TIMESTAMPTZ DEFAULT now(),
+  email                TEXT NOT NULL UNIQUE,
+  nome                 TEXT,
+  password_hash        TEXT NOT NULL,
+  reset_token          TEXT,
+  reset_token_expires  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- ── USER ANALYSES (análises salvas do usuário) ──────────────
+CREATE TABLE IF NOT EXISTS user_analyses (
+  id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+  visto         TEXT,
+  score         INTEGER,
+  aprovacao_pct INTEGER,
+  classificacao TEXT,
+  profile       JSONB,
+  analysis_json JSONB
+);
+CREATE INDEX IF NOT EXISTS idx_user_analyses_user_id ON user_analyses(user_id);
