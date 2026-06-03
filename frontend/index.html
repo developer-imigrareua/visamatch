@@ -375,6 +375,18 @@ const chat = document.getElementById('chat');
 const ti = document.getElementById('ti');
 const sbBtn = document.getElementById('sb-btn');
 
+// Scroll inteligente: só rola para o fim se o usuário já está perto do fim
+function scrollBottom(force = false) {
+  const threshold = 120;
+  const nearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < threshold;
+  if (force || nearBottom) {
+    // Usa requestAnimationFrame para aguardar o reflow das animações CSS
+    requestAnimationFrame(() => {
+      chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+    });
+  }
+}
+
 // ─── SESSION SAVE (debounced, só salva se tem email) ───
 let _sessionId = localStorage.getItem('vm_session_id') || null;
 let _sessionTimer = null;
@@ -445,7 +457,7 @@ function addUndoBtn() {
     Corrigir resposta anterior
   </button>`;
   chat.appendChild(ur);
-  chat.scrollTop = 9999;
+  scrollBottom();
   document.getElementById('undo-btn').onclick = () => {
     if (S.history.length < 2) return;
     S.history.pop(); // remove current
@@ -503,7 +515,7 @@ document.getElementById('mic-btn').onclick = async () => {
           </div>
         </div>`;
       chat.appendChild(waveRow);
-      chat.scrollTop = 9999;
+      scrollBottom();
 
       // Anima o waveform
       const canvas  = document.getElementById('waveform-canvas');
@@ -593,7 +605,7 @@ async function botMsg(html, delay = 0) {
     row.className = 'row';
     row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="bubble bot-b">${html}</div><div class="ts">${ts()}</div></div>`;
-    chat.appendChild(row); chat.scrollTop = 9999; r();
+    chat.appendChild(row); scrollBottom(true); r();
   }, delay));
 }
 
@@ -603,7 +615,7 @@ function userMsg(txt) {
   row.className = 'row user';
   row.innerHTML = `<div class="ava ava-user">${ini}</div>
     <div class="msg-wrap"><div class="bubble user-b">${txt}</div><div class="ts">${ts()}</div></div>`;
-  chat.appendChild(row); chat.scrollTop = 9999;
+  chat.appendChild(row); scrollBottom(true);
 }
 
 function addUserMsg(txt) { userMsg(txt); }
@@ -613,7 +625,7 @@ function showTyping() {
   row.id = 'typ'; row.className = 'row';
   row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
     <div class="msg-wrap"><div class="typing-bub"><span></span><span></span><span></span></div></div>`;
-  chat.appendChild(row); chat.scrollTop = 9999; return row;
+  chat.appendChild(row); scrollBottom(true); return row;
 }
 function rmTyping() { const t = document.getElementById('typ'); if (t) t.remove(); }
 
@@ -623,7 +635,7 @@ function showFact(ico, body, delay = 200) {
     row.className = 'row';
     row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="fact-card"><span class="fact-ico">${ico}</span>${body}</div></div>`;
-    chat.appendChild(row); chat.scrollTop = 9999; r();
+    chat.appendChild(row); scrollBottom(true); r();
   }, delay));
 }
 
@@ -633,7 +645,7 @@ function showAlert(body, delay = 100) {
     row.className = 'row';
     row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="alert">${body}</div></div>`;
-    chat.appendChild(row); chat.scrollTop = 9999; r();
+    chat.appendChild(row); scrollBottom(true); r();
   }, delay));
 }
 
@@ -659,7 +671,7 @@ function showOpts(opts, handler) {
     };
     w.appendChild(b);
   });
-  chat.appendChild(w); chat.scrollTop = 9999;
+  chat.appendChild(w); scrollBottom(true);
   if (S.history.length > 2) setTimeout(addUndoBtn, 150);
 }
 
@@ -1047,9 +1059,32 @@ async function doRegisterModal() {
     localStorage.setItem('vm_user_token', data.token);
     localStorage.setItem('vm_user', JSON.stringify(data.user));
 
-    // Salva a análise vinculada ao usuário
+    // Salva a análise vinculada ao usuário (sanitiza dados grandes)
     if (_pendingAnalysis) {
       const best = _pendingAnalysis.melhor || _pendingAnalysis.resultados?.[0] || {};
+
+      // Remove foto base64 e campos HTML pesados do profile
+      const profileClean = { ...S.profile };
+      delete profileClean.foto; // pode ser MB em base64
+
+      // Versão resumida da análise (sem HTML gerado)
+      const analysisClean = {
+        isDual: _pendingAnalysis.isDual,
+        gerado_em: _pendingAnalysis.gerado_em,
+        melhor: best ? {
+          visto: best.visto, score: best.score, aprovacao_pct: best.aprovacao_pct,
+          classificacao: best.classificacao, scorecard: best.scorecard,
+          pontos_fortes: best.pontos_fortes, pontos_criticos: best.pontos_criticos,
+          veredicto: best.veredicto, criterios: best.criterios,
+          plano_acao: best.plano_acao, fundamento_legal: best.fundamento_legal,
+          recomendacao_parceiro: best.recomendacao_parceiro
+        } : null,
+        resultados: (_pendingAnalysis.resultados || []).map(r => r ? {
+          visto: r.visto, score: r.score, aprovacao_pct: r.aprovacao_pct,
+          classificacao: r.classificacao, scorecard: r.scorecard
+        } : null)
+      };
+
       await fetch(`${API_BASE}/user/analyses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.token}` },
@@ -1058,10 +1093,10 @@ async function doRegisterModal() {
           score: best.score ?? 0,
           aprovacao_pct: best.aprovacao_pct ?? 0,
           classificacao: best.classificacao || '',
-          profile: S.profile,
-          analysis_json: _pendingAnalysis
+          profile: profileClean,
+          analysis_json: analysisClean
         })
-      }).catch(() => {});
+      }).catch(e => console.warn('Erro ao salvar análise:', e));
     }
 
     const ok = document.getElementById('reg-ok');
@@ -2683,7 +2718,7 @@ const flows = {
     };
     w.appendChild(conf);
     chat.appendChild(w);
-    chat.scrollTop = 9999;
+    scrollBottom();
     document.querySelector('.input-zone').classList.add('dimmed');
     ti.disabled = true;
   },
@@ -2842,7 +2877,7 @@ const flows = {
       row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
         <div class="msg-wrap" style="max-width:96%">${buildFullAICard(analysis)}</div>`;
       chat.appendChild(row);
-      chat.scrollTop = 9999;
+      scrollBottom();
 
       // Mostra modal de cadastro após 3s (se não estiver logado)
       if (!localStorage.getItem('vm_user_token')) {
@@ -2861,7 +2896,7 @@ const flows = {
       row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
         <div class="msg-wrap" style="max-width:92%">${buildResult(visto, score, S.profile)}</div>`;
       chat.appendChild(row);
-      chat.scrollTop = 9999;
+      scrollBottom();
     }
   },
 
@@ -2978,7 +3013,7 @@ async function checkAndResumeSession() {
     optsRow.appendChild(btnContinue);
     optsRow.appendChild(btnNew);
     chat.appendChild(optsRow);
-    chat.scrollTop = 9999;
+    scrollBottom();
 
   } catch(e) {
     localStorage.removeItem('vm_session_id');
