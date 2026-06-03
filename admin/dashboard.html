@@ -750,17 +750,21 @@ function renderUsersTable({ users, total, page, pages }) {
   }
   const rows = users.map(u => {
     const dt = new Date(u.created_at).toLocaleDateString('pt-BR');
-    return `<tr>
-      <td class="nome">${u.nome || '—'}</td>
-      <td>${u.email}</td>
-      <td style="text-align:center"><span class="score-pill sc-dev">${u.n_analyses || 0} análise(s)</span></td>
+    return `<tr id="user-row-${u.id}">
+      <td class="nome" id="user-nome-${u.id}">${u.nome || '—'}</td>
+      <td id="user-email-${u.id}">${u.email}</td>
+      <td style="text-align:center"><span class="score-pill sc-dev">${u.n_analyses || 0}</span></td>
       <td>${dt}</td>
-      <td><button class="view-btn" onclick="viewUserAnalyses('${u.id}','${u.nome||u.email}')">Ver análises</button></td>
+      <td style="display:flex;gap:6px;flex-wrap:nowrap">
+        <button class="view-btn" onclick="viewUserAnalyses('${u.id}','${u.nome||u.email}')">Análises</button>
+        <button class="view-btn" style="border-color:var(--blue2);color:var(--blue)" onclick="editUserEmail('${u.id}','${u.email}','${u.nome||''}')">Editar</button>
+        <button class="view-btn" style="border-color:var(--red);color:var(--red)" onclick="deleteUser('${u.id}','${u.email}')">Remover</button>
+      </td>
     </tr>`;
   }).join('');
   document.getElementById('users-table-wrap').innerHTML = `
     <table>
-      <thead><tr><th>Nome</th><th>E-mail</th><th>Análises</th><th>Cadastro</th><th></th></tr></thead>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Análises</th><th>Cadastro</th><th>Ações</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   const prev = page<=1?'disabled':'', next = page>=pages?'disabled':'';
@@ -770,6 +774,36 @@ function renderUsersTable({ users, total, page, pages }) {
       <button class="pag-btn" ${prev} onclick="loadUsers(${page-1})">← Anterior</button>
       <button class="pag-btn" ${next} onclick="loadUsers(${page+1})">Próxima →</button>
     </div>`;
+}
+
+async function editUserEmail(userId, currentEmail, currentNome) {
+  const newEmail = prompt('Novo e-mail para este usuário:', currentEmail);
+  if (!newEmail || newEmail === currentEmail) return;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(newEmail)) { alert('E-mail inválido.'); return; }
+  const newNome  = prompt('Nome (deixe em branco para manter):', currentNome) || currentNome;
+  const res = await apiFetch('/users/' + userId, {
+    method: 'PATCH',
+    body: JSON.stringify({ email: newEmail, nome: newNome })
+  });
+  if (res.success) {
+    document.getElementById('user-email-' + userId).textContent = newEmail;
+    document.getElementById('user-nome-'  + userId).textContent = newNome || '—';
+    alert('✅ Usuário atualizado com sucesso.');
+  } else {
+    alert('Erro: ' + (res.error || 'Não foi possível atualizar.'));
+  }
+}
+
+async function deleteUser(userId, email) {
+  if (!confirm('Remover o usuário ' + email + '?\n\nTodas as análises salvas dele também serão excluídas. Esta ação não pode ser desfeita.')) return;
+  const res = await apiFetch('/users/' + userId, { method: 'DELETE' });
+  if (res.success) {
+    const row = document.getElementById('user-row-' + userId);
+    if (row) row.remove();
+    alert('✅ Usuário removido.');
+  } else {
+    alert('Erro: ' + (res.error || 'Não foi possível remover.'));
+  }
 }
 
 async function viewUserAnalyses(userId, userName) {

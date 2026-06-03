@@ -1620,12 +1620,19 @@ const flows = {
   async disclaimer_legal() {
     setSideStep(0); setProgress(5);
     await think(700);
-    await showPopup('⚖️', 'Antes de começar',
-      'Olá! Antes de iniciar sua análise, leia este aviso:<br><br>' +
-      '• Esta ferramenta realiza uma <b>análise de critérios de elegibilidade</b> com base nas suas respostas e não constitui aconselhamento jurídico.<br><br>' +
-      '• Ao concluir, você será conectado a <b>especialistas da ImigrarEUA</b>, que avaliam seu caso e, quando aplicável, encaminham para advogados licenciados nos EUA pela <b>LIV Immigration Law</b>.<br><br>' +
-      '• Esta análise <b>não configura relação advogado-cliente</b> e não substitui consulta jurídica formal.',
-      () => go('contact_email')
+    // Já aceitou LGPD antes? Pula popup
+    if (localStorage.getItem('vm_lgpd_consent') === 'accepted') { go('contact_email'); return; }
+    document.getElementById('pop-close').textContent = 'Aceitar e iniciar análise';
+    await showPopup('⚖️', 'Aviso e Privacidade',
+      '• Esta ferramenta realiza uma <b>análise de critérios de elegibilidade</b> com base nas suas respostas. Não constitui aconselhamento jurídico nem configura relação advogado-cliente.<br><br>' +
+      '• Ao concluir, você será conectado a <b>especialistas da ImigrarEUA</b>, que encaminham para advogados licenciados nos EUA pela <b>LIV Immigration Law</b> quando aplicável.<br><br>' +
+      '• <b>Privacidade (LGPD):</b> Coletamos apenas os dados fornecidos aqui para gerar sua análise. Nenhuma informação é compartilhada com terceiros sem consentimento. <a href="https://imigrareua.com/politica-de-privacidade/" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">Política de privacidade →</a>',
+      () => {
+        localStorage.setItem('vm_lgpd_consent', 'accepted');
+        localStorage.setItem('vm_lgpd_date', new Date().toISOString());
+        document.getElementById('pop-close').textContent = 'Entendido, continuar';
+        go('contact_email');
+      }
     );
   },
 
@@ -3208,76 +3215,6 @@ async function checkAndResumeSession() {
 checkAndResumeSession();
 </script>
 
-<!-- LGPD CONSENT -->
-<style>
-@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
-@keyframes fadeBlur{from{opacity:0;backdrop-filter:blur(0px)}to{opacity:1;backdrop-filter:blur(8px)}}
-#lgpd-overlay{animation:fadeBlur .4s ease forwards}
-#lgpd-card{animation:slideUp .45s cubic-bezier(.34,1.2,.64,1) .1s both}
-</style>
-
-<!-- Overlay desfocado -->
-<div id="lgpd-overlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(11,28,48,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)"></div>
-
-<!-- Card flutuante -->
-<div id="lgpd-card" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;width:min(560px,calc(100vw - 32px))">
-  <div style="background:rgba(255,255,255,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(194,198,216,.6);border-radius:20px;padding:22px 24px;box-shadow:0 20px 60px rgba(11,28,48,.18)">
-
-    <!-- Header -->
-    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px">
-      <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--blue2),var(--pink));border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔒</div>
-      <div style="flex:1">
-        <div style="font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;color:var(--txt);margin-bottom:3px">Sua privacidade importa</div>
-        <p style="font-size:12.5px;color:var(--txt2);line-height:1.6">
-          Usamos seus dados exclusivamente para gerar sua análise de elegibilidade e conectar você a especialistas da ImigrarEUA. Nenhuma informação é compartilhada com terceiros sem consentimento.
-          <a href="https://imigrareua.com/politica-de-privacidade/" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;text-decoration:none;white-space:nowrap"> Ver política de privacidade →</a>
-        </p>
-      </div>
-    </div>
-
-    <!-- Botões -->
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <button onclick="lgpdAccept()" style="flex:1;min-width:160px;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:11px 20px;font-family:'Inter Tight',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;transition:opacity .2s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-        Aceitar e continuar
-      </button>
-      <button onclick="lgpdDecline()" style="background:none;color:var(--txt3);border:1.5px solid var(--border);border-radius:11px;padding:10px 16px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap" onmouseover="this.style.borderColor='var(--txt3)';this.style.color='var(--txt2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt3)'">
-        Apenas essencial
-      </button>
-    </div>
-
-  </div>
-</div>
-
-<script>
-// LGPD
-(function() {
-  if (!localStorage.getItem('vm_lgpd_consent')) {
-    setTimeout(() => {
-      document.getElementById('lgpd-overlay').style.display = '';
-      document.getElementById('lgpd-card').style.display = '';
-    }, 1200);
-  }
-})();
-
-function lgpdAccept() {
-  localStorage.setItem('vm_lgpd_consent', 'accepted');
-  localStorage.setItem('vm_lgpd_date', new Date().toISOString());
-  _closeLGPD();
-}
-
-function lgpdDecline() {
-  localStorage.setItem('vm_lgpd_consent', 'essential');
-  _closeLGPD();
-  localStorage.removeItem('vm_session_id');
-}
-
-function _closeLGPD() {
-  const ov = document.getElementById('lgpd-overlay');
-  const cd = document.getElementById('lgpd-card');
-  if (ov) { ov.style.opacity='0'; ov.style.transition='opacity .3s'; setTimeout(()=>ov.style.display='none',300); }
-  if (cd) { cd.style.opacity='0'; cd.style.transition='opacity .3s'; setTimeout(()=>cd.style.display='none',300); }
-}
-</script>
 
 <!-- PAINEL MINHAS ANÁLISES -->
 <style>

@@ -166,6 +166,35 @@ router.get('/users', auth, async (req, res) => {
   }
 });
 
+// ── PATCH /api/admin/users/:id ── atualiza e-mail ou nome
+router.patch('/users/:id', auth, async (req, res) => {
+  const { email, nome } = req.body;
+  if (!email && !nome) return res.status(400).json({ error: 'Informe email ou nome.' });
+  try {
+    const updates = {};
+    if (email) updates.email = email.toLowerCase().trim();
+    if (nome)  updates.nome  = nome.trim();
+    const { error } = await supabase.from('users').update(updates).eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch(err) {
+    console.error('Admin update user error:', err);
+    res.status(500).json({ error: 'Erro ao atualizar usuário.' });
+  }
+});
+
+// ── DELETE /api/admin/users/:id ── remove usuário e suas análises
+router.delete('/users/:id', auth, async (req, res) => {
+  try {
+    const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch(err) {
+    console.error('Admin delete user error:', err);
+    res.status(500).json({ error: 'Erro ao remover usuário.' });
+  }
+});
+
 // ── GET /api/admin/users/:id/analyses ──
 router.get('/users/:id/analyses', auth, async (req, res) => {
   const { data, error } = await supabase
