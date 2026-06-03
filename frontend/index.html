@@ -297,8 +297,8 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 <main class="main">
   <div class="main-head">
     <div>
-      <div class="head-title">Análise de Pré-Elegibilidade</div>
-      <div class="head-sub">Triagem inteligente • Assistente IA</div>
+      <div class="head-title">Análise de Critérios</div>
+      <div class="head-sub">Avaliação de perfil • Assistente IA</div>
     </div>
     <div class="online-badge"><div class="green-dot"></div>Assistente Online</div>
   </div>
@@ -776,8 +776,8 @@ function calcScore(visto, p) {
 }
 
 function getClass(score) {
-  if (score >= 70) return { label: 'Pré-Elegibilidade Alta', cls: 'cls-forte', ico: '✓', partner: 'liv' };
-  if (score >= 40) return { label: 'Pré-Elegibilidade Moderada', cls: 'cls-mod', ico: '◑', partner: 'liv' };
+  if (score >= 70) return { label: 'Elegibilidade Alta', cls: 'cls-forte', ico: '✓', partner: 'liv' };
+  if (score >= 40) return { label: 'Elegibilidade Moderada', cls: 'cls-mod', ico: '◑', partner: 'liv' };
   if (score >= 0)  return { label: 'Perfil em Desenvolvimento', cls: 'cls-dev', ico: '○', partner: 'phoenix' };
   return { label: 'Perfil Incompatível', cls: 'cls-inc', ico: '✕', partner: 'phoenix' };
 }
@@ -852,7 +852,7 @@ function buildSingleCard(visto, score, p, showHeader = true) {
 
   const actionMap = {
     'EB-2 NIW':['Reunir cartas de recomendação de líderes da área','Compilar publicações, prêmios e certificações','Documentar projetos com impacto mensurável'],
-    'EB-1A':['Compilar dossiê completo de conquistas extraordinárias','Obter 3+ cartas de especialistas internacionais reconhecidos','Documentar reconhecimentos, prêmios e publicações sobre você'],
+    'EB-1A':['Compilar dossiê completo de realizações de destaque ou reconhecimento acima da média','Obter 3+ cartas de especialistas internacionais reconhecidos','Documentar reconhecimentos, prêmios e publicações sobre você'],
     'O-1':['Listar todos os prêmios e reconhecimentos da área','Obter cartas de especialistas e organizações setoriais','Fortalecer presença em mídia especializada'],
     'L-1':['Verificar existência ou plano de filial nos EUA','Documentar papel executivo e tempo de trabalho (mín. 1 ano)','Mapear organograma entre as empresas (Brasil e EUA)'],
     'E-2':['Definir modelo de negócio e plano de investimento nos EUA','Documentar origem e disponibilidade dos fundos','Identificar negócio ou franquia alvo nos EUA'],
@@ -863,7 +863,7 @@ function buildSingleCard(visto, score, p, showHeader = true) {
   const verMap = {
     'EB-2 NIW':'Com base no seu perfil, o <b>EB-2 NIW</b> representa um caminho promissor para a residência permanente nos EUA sem depender de patrocinador. Esse visto valoriza profissionais cuja expertise beneficia o interesse nacional americano.',
     'EB-1A':'Suas conquistas indicam potencial para o <b>EB-1A</b>, um dos caminhos mais prestigiosos de Green Card, reservado a profissionais no topo de suas áreas globalmente. Um dossiê robusto é essencial.',
-    'O-1':'O <b>visto O-1</b> é ideal para quem demonstra habilidades e conquistas excepcionais. É um visto de trabalho temporário com renovação possível, que permite atuar nos EUA e eventualmente transitar para a residência permanente.',
+    'O-1':'O <b>visto O-1</b> é ideal para quem demonstra realizações relevantes e reconhecidas na área. É um visto de trabalho temporário com renovação possível, que permite atuar nos EUA e eventualmente transitar para a residência permanente.',
     'L-1':'O <b>L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa. É um dos caminhos mais diretos e sem sorteio — e seu perfil dentro da empresa é um ativo central.',
     'E-2':'Com cidadania de país com tratado e capacidade de investimento, o <b>E-2</b> oferece um caminho ágil para gerenciar seu próprio negócio nos EUA. É renovável e cria base para outros caminhos futuros.',
     'Family Based':'O visto baseado em família oferece um caminho estruturado quando há vínculo direto com cidadão americano ou residente permanente.',
@@ -886,9 +886,9 @@ function buildSingleCard(visto, score, p, showHeader = true) {
 
   const header = showHeader ? `
     <div class="res-head">
-      <div class="res-tag">✦ Visa Match · Pré-Elegibilidade</div>
+      <div class="res-tag">✦ Visa Match · Elegibilidade</div>
       <div class="res-visto">${visto}</div>
-      <div class="res-nome">Análise de pré-elegibilidade — ${p.nomeCompleto || S.nome}</div>
+      <div class="res-nome">Análise de critérios — ${p.nomeCompleto || S.nome}</div>
       <div class="res-circle"><div class="res-pts">${pts}</div><div class="res-pts-lbl">pontos</div></div>
     </div>` : `
     <div style="background:linear-gradient(135deg,var(--blue4),var(--blue3));padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
@@ -919,7 +919,7 @@ function buildResult(visto, score, p) {
 
   // Legal disclaimer
   const legalHtml = `<div class="legal-disc">
-    ⚖️ <b>DISCLAIMER:</b> O conteúdo desta análise tem caráter estritamente informativo e não constitui aconselhamento jurídico. Receber este relatório não cria relação advogado-cliente. Para orientação jurídica específica, agende uma consulta com nossos especialistas.
+    ⚖️ <b>DISCLAIMER:</b> Esta análise conecta você a especialistas da ImigrarEUA para avaliação do seu caso. Não constitui aconselhamento jurídico nem configura relação advogado-cliente. Os casos qualificados são encaminhados a advogados licenciados nos EUA quando aplicável.
   </div>`;
 
   // Partner CTA
@@ -937,9 +937,9 @@ function buildResult(visto, score, p) {
     return `<div style="display:flex;flex-direction:column;gap:12px">
       <div class="res-card">
         <div class="res-head" style="padding-bottom:16px">
-          <div class="res-tag">✦ Visa Match · Pré-Elegibilidade — Análise Dupla</div>
+          <div class="res-tag">✦ Visa Match · Elegibilidade — Análise Dupla</div>
           <div class="res-visto">EB-2 NIW + EB-1A</div>
-          <div class="res-nome">Análise de pré-elegibilidade — ${p.nomeCompleto || S.nome}</div>
+          <div class="res-nome">Análise de critérios — ${p.nomeCompleto || S.nome}</div>
         </div>
         <div class="res-body">
           ${legalHtml}
@@ -967,6 +967,32 @@ function buildResult(visto, score, p) {
       </div>
     </div>`)}
   </div>`;
+}
+
+// ─── RESET AND RESTART ───
+function resetAndRestart() {
+  const savedEmail = S.email;
+  // Reset state
+  Object.assign(S, {
+    step:'welcome', sStep:0, prog:0,
+    nome:'', email:savedEmail, phone:'',
+    profile:{}, visto:null, vistos:[],
+    inputHandler:null, inputKeyHandler:null,
+    history:[], _afterO1:null
+  });
+  // Limpa chat
+  document.getElementById('chat').innerHTML = '';
+  // Reseta sidebar
+  setSideStep(0); setProgress(0);
+  document.getElementById('sb-visto').textContent = '';
+  document.getElementById('sb-bar').style.width = '0%';
+  // Restaura input
+  document.querySelector('.input-zone').style.display = '';
+  document.querySelector('.input-zone').classList.remove('dimmed');
+  document.getElementById('structured-zone').style.display = 'none';
+  ti.disabled = false; sbBtn.disabled = false;
+  clearInputHandlers();
+  go('welcome');
 }
 
 // ─── FULL AI CARD (estilo relatório inline) ───
@@ -1031,10 +1057,10 @@ function singleFullCard(a) {
 
   // Sobre este Visto
   const sobreMap = {
-    'EB-2 NIW': 'O <b>EB-2 NIW</b> (National Interest Waiver) é um Green Card de residência permanente que dispensa o requisito de oferta de emprego e de patrocinador. É voltado a profissionais com grau avançado ou habilidade excepcional cuja atuação beneficia o interesse nacional americano. O principal benefício é a independência: você mesmo peticiona, sem depender de uma empresa.',
-    'EB-1A': 'O <b>EB-1A</b> é o Green Card de categoria mais alta, reservado a profissionais com habilidade extraordinária reconhecida nacional ou internacionalmente. Não requer patrocinador e não passa por sorteio. Quem obtém o EB-1A está entre os poucos no topo de sua área globalmente — e o processo pode ser autopeticionar.',
-    'O-1': 'O <b>visto O-1</b> é um visto de trabalho temporário (renovável) para pessoas com habilidade extraordinária em ciências, artes, educação, negócios ou esportes. Requer um patrocinador nos EUA (empresa ou agente), mas é um caminho para atuar legalmente enquanto estrutura a residência permanente.',
-    'L-1': 'O <b>visto L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa internacional. Não passa por sorteio e não exige patrocinador externo. O L-1A (executivo/gerente) abre caminho direto para o Green Card EB-1C.',
+    'EB-2 NIW': 'O <b>EB-2 NIW</b> (National Interest Waiver) é um Green Card de residência permanente que dispensa o requisito de oferta de emprego e de patrocinador. É voltado a profissionais com grau avançado ou realizações relevantes e reconhecidas cuja atuação beneficia o interesse nacional americano. O principal benefício é a independência: você mesmo peticiona, sem depender de uma empresa.',
+    'EB-1A': 'O <b>EB-1A</b> é o Green Card de categoria mais alta, reservado a profissionais com realizações relevantes e reconhecidas nacional ou internacionalmente. Não requer patrocinador e não passa por sorteio. Quem obtém o EB-1A está entre os poucos no topo de sua área globalmente — e o processo pode ser autopeticionar.',
+    'O-1': 'O <b>visto O-1</b> é um visto de trabalho temporário (renovável) para pessoas com realizações relevantes e reconhecidas em ciências, artes, educação, negócios ou esportes. Requer um patrocinador nos EUA (empresa ou agente), mas é um caminho para atuar legalmente enquanto estrutura a residência permanente.',
+    'L-1': 'O <b>visto L-1</b> permite a transferência de executivos, gerentes e especialistas entre filiais da mesma empresa internacional. Não passa por sorteio e requer a empresa como sponsor. O L-1A (executivo/gerente) abre caminho direto para o Green Card EB-1C.',
     'E-2': 'O <b>visto E-2</b> é voltado a investidores de países com tratado comercial com os EUA. Permite gerir seu próprio negócio no país e é renovável indefinidamente. O principal benefício é a agilidade — sem sorteio, sem patrocinador — mas exige cidadania elegível e investimento substancial.',
     'Family Based': 'O <b>visto baseado em família</b> é um dos caminhos mais tradicionais para a residência permanente nos EUA. Depende de um vínculo familiar qualificado com cidadão americano ou residente permanente (Green Card holder), que peticionará em seu favor.',
     'H-1B': 'O <b>visto H-1B</b> é destinado a trabalhadores em ocupações especializadas, exigindo patrocínio de uma empresa americana e participação no sorteio anual. Embora popular, a aprovação depende de sorte no sorteio, o que torna o planejamento estratégico essencial.',
@@ -1183,25 +1209,36 @@ function singleFullCard(a) {
           <div style="font-size:20px;margin-bottom:6px">${a.recomendacao_parceiro==='liv'?'⚖️':'🎓'}</div>
           <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Law — Parceiro Oficial':'Phoenix — Fortalecimento de Perfil'}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Escritório licenciado nos EUA, especializado em ${a.visto}.`:'Especialista em melhoria de perfil para imigração.'}</div>
-          <button onclick="alert('Em produção: redirecionaria para o parceiro.')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'linear-gradient(135deg,var(--blue),var(--pink))':'rgba(255,255,255,.15)'};color:#fff;border:none;border-radius:7px;padding:8px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
-            ${a.recomendacao_parceiro==='liv'?'Agendar avaliação →':'Conhecer a Phoenix →'}
-          </button>
+          ${a.recomendacao_parceiro==='liv' && (a.score||0) >= 40 ? `
+  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
+    💬 Falar com nossos especialistas — sem custo
+  </button>
+  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 12px;font-family:'Inter Tight',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">
+    📅 Agendar consulta com advogado licenciado
+  </button>
+` : `
+  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'linear-gradient(135deg,var(--blue2),var(--pink))':'rgba(255,255,255,.15)'};color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+    ${a.recomendacao_parceiro==='liv'?'💬 Falar com especialistas →':'Conhecer a Phoenix →'}
+  </button>
+`}
         </div>
 
       </div>
     </div>
 
     <!-- FOOTER CTAs -->
-    <div style="padding:16px 24px;background:#fff;border-top:1px solid rgba(11,25,41,.06)">
-      <div style="display:flex;gap:10px;margin-bottom:8px">
-        <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="flex:1;background:var(--blue4);color:#fff;border:none;border-radius:11px;padding:13px 18px;font-family:'Inter Tight',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-          💬 Fale com Advogado Licenciado
+    <div style="padding:16px 24px;background:#fff;border-top:1px solid rgba(11,25,41,.06);display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:8px">
+        <button onclick="window.open('report.html','_blank','fullscreen=yes')" style="flex:1;background:linear-gradient(135deg,var(--blue2),var(--blue4));color:#fff;border:none;border-radius:11px;padding:12px 16px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px">
+          📄 Ver Relatório Completo
         </button>
-        <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')" style="white-space:nowrap">
-          📧 Receber por e-mail
+        <button onclick="alert('Em produção: relatório enviado para ${S.email}')" style="background:#fff;color:var(--txt2);border:1.5px solid var(--border);border-radius:11px;padding:12px 16px;font-family:'Inter Tight',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">
+          📧 E-mail
         </button>
       </div>
-      <div style="text-align:center;font-size:11.5px;color:var(--txt3);margin-top:8px">LIV Law — Escritório licenciado nos EUA, parceiro oficial da ImigrarEUA para diagnóstico completo do seu caso.</div>
+      <button onclick="resetAndRestart()" style="width:100%;background:var(--surface3);color:var(--blue);border:1.5px solid var(--border);border-radius:11px;padding:11px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;cursor:pointer">
+        🔄 Fazer nova análise
+      </button>
     </div>
   </div>`;
 }
@@ -1223,7 +1260,7 @@ function handleFotoUpload(input, avatarId) {
 }
 
 function getSubtituloVisto(v) {
-  return {'EB-2 NIW':'Green Card por Interesse Nacional','EB-1A':'Habilidade Extraordinária — Green Card','O-1':'Habilidade Extraordinária — Trabalho','L-1':'Transferência Intraempresarial','E-2':'Investidor por Tratado','Family Based':'Baseado em Família','H-1B':'Trabalhador Especializado'}[v]||'Análise de Pré-Elegibilidade';
+  return {'EB-2 NIW':'Green Card por Interesse Nacional','EB-1A':'Realizações de Destaque — Green Card','O-1':'Realizações de Destaque — Trabalho','L-1':'Transferência Intraempresarial','E-2':'Investidor por Tratado','Family Based':'Baseado em Família','H-1B':'Trabalhador Especializado'}[v]||'Análise de Critérios';
 }
 
 // ─── AI SUMMARY CARD ───
@@ -1271,7 +1308,7 @@ function buildAISummaryCard(analysis) {
       : `<div class="res-head">
           <div class="res-tag">✦ Visa Match · Análise IA</div>
           <div class="res-visto">${a.visto}</div>
-          <div class="res-nome">${S.nome} · Análise de Pré-Elegibilidade</div>
+          <div class="res-nome">${S.nome} · Análise de Critérios</div>
           <div class="res-circle">
             <div class="res-pts">${pct}%</div>
             <div class="res-pts-lbl">aprovação</div>
@@ -1302,7 +1339,7 @@ function buildAISummaryCard(analysis) {
         ${a.veredicto ? `<div class="verdict"><p style="font-style:italic">${a.veredicto}</p></div>` : ''}
 
         <div class="legal-disc">
-          ⚖️ <b>DISCLAIMER:</b> O conteúdo desta análise tem caráter estritamente informativo e não constitui aconselhamento jurídico. Receber este relatório não cria relação advogado-cliente. Para orientação jurídica específica, agende uma consulta com nossos especialistas.
+          ⚖️ <b>DISCLAIMER:</b> Esta análise conecta você a especialistas da ImigrarEUA para avaliação do seu caso. Não constitui aconselhamento jurídico nem configura relação advogado-cliente. Os casos qualificados são encaminhados a advogados licenciados nos EUA quando aplicável.
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -1371,8 +1408,8 @@ const flows = {
     await think(600);
     await botMsg('Olá! 👋 Bem-vindo ao <strong>Visa Match</strong> da ImigrarEUA.');
     await pause(400);
-    await botMsg('Sou seu assistente de <strong>triagem de pré-elegibilidade</strong> para vistos americanos. Em poucos minutos, identificamos o caminho mais promissor para o seu perfil e geramos uma análise personalizada. Pronto para começar?');
-    showOpts(['Sim, vamos! 🚀','Quero entender como funciona primeiro'], val => {
+    await botMsg('Sou seu assistente de <strong>avaliação de perfil</strong> para vistos americanos. Em poucos minutos, identificamos o caminho mais promissor para o seu perfil e geramos uma análise personalizada. Pronto para começar?');
+    showOpts(['Sim, vamos! 🚀','Como funciona a análise?'], val => {
       userMsg(val);
       if (val.includes('funciona')) go('explain');
       else go('disclaimer_legal');
@@ -1394,10 +1431,10 @@ const flows = {
     await think(700);
     await showPopup('⚖️', 'Aviso Jurídico Importante',
       '<b>DISCLAIMER</b><br><br>' +
-      '• O conteúdo desta ferramenta tem caráter <b>estritamente informativo</b> e não constitui aconselhamento jurídico.<br><br>' +
-      '• Utilizar esta ferramenta <b>não cria relação advogado-cliente</b>.<br><br>' +
-      '• Para orientação jurídica específica, agende uma consulta com nossos especialistas.<br><br>' +
-      '• A ImigrarEUA é um HUB de imigração e encaminha os casos qualificados ao escritório parceiro <b>LIV Law</b>, licenciado nos EUA.',
+      '• Esta ferramenta realiza uma <b>análise de critérios</b> com base nas informações fornecidas e não constitui aconselhamento jurídico.<br><br>' +
+      '• O resultado desta análise conecta você a <b>especialistas e consultores da ImigrarEUA</b>, que avaliam seu caso e, quando aplicável, encaminham para advogados licenciados nos EUA.<br><br>' +
+      '• <b>Não configura relação advogado-cliente</b> e não substitui consulta jurídica formal.<br><br>' +
+      '• A ImigrarEUA é um HUB de imigração. Os casos qualificados são encaminhados ao escritório parceiro <b>LIV Law</b>, licenciado nos EUA, para avaliação especializada.',
       () => go('contact_email')
     );
   },
@@ -1528,7 +1565,7 @@ const flows = {
     showOpts([
       'Através da minha profissão e formação acadêmica',
       'Através de familiares que são cidadãos americanos ou têm Green Card',
-      'Através do meu trabalho em empresa que atua nos EUA',
+      'Através de uma empresa que atua ou vai atuar nos EUA',
       'Através de investimento nos EUA',
       'Não sei ao certo / não me encaixo nos perfis acima'
     ], val => {
@@ -1536,7 +1573,7 @@ const flows = {
       S.profile.caminhoPrincipal = val;
       if (val.includes('profissão')) go('path_prof_formacao');
       else if (val.includes('familiares')) go('path_family');
-      else if (val.includes('trabalho em empresa')) go('path_work');
+      else if (val.includes('empresa que atua')) go('path_work');
       else if (val.includes('investimento')) go('path_e2_check');
       else go('path_diagnostico');
     });
@@ -1565,9 +1602,9 @@ const flows = {
 
   async path_sem_formacao() {
     await think(700);
-    await showFact('💡', 'Mesmo sem diploma superior, é possível qualificar para vistos como o <b>O-1</b> com base em conquistas extraordinárias na sua área.');
-    await botMsg('Você possui <strong>conquistas extraordinárias</strong> na sua área — como prêmios nacionais/internacionais, reconhecimento de destaque, publicações ou projetos de grande impacto?');
-    showOpts(['Sim, tenho realizações notáveis','Não tenho conquistas de destaque'], val => {
+    await showFact('💡', 'Mesmo sem diploma superior, é possível qualificar para vistos como o <b>O-1</b> com base em realizações de destaque na sua área.');
+    await botMsg('Você possui <strong>realizações de destaque ou reconhecimento acima da média</strong> na sua área — como prêmios nacionais/internacionais, reconhecimento de destaque, publicações ou projetos de grande impacto?');
+    showOpts(['Sim, tenho conquistas relevantes na sua carreira','Não tenho conquistas relevantes'], val => {
       userMsg(val);
       if (val.includes('Sim')) { setSideVisto('O-1'); go('path_work_o1'); }
       else go('path_offramp_sem_perfil');
@@ -1588,8 +1625,8 @@ const flows = {
   async path_prof_conquistas() {
     setProgress(24);
     await think(700);
-    await botMsg('Você possui <strong>conquistas, prêmios ou reconhecimento extraordinário</strong> na sua área — prêmios nacionais/internacionais, publicações acadêmicas de destaque, cargo de liderança em organização renomada?');
-    showOpts(['Sim, tenho conquistas notáveis acima da média','Tenho uma carreira sólida, mas sem destaque extraordinário'], val => {
+    await botMsg('Você possui <strong>conquistas, prêmios ou reconhecimento acima da média</strong> na sua área — prêmios nacionais/internacionais, publicações acadêmicas de destaque, cargo de liderança em organização renomada?');
+    showOpts(['Sim, tenho conquistas relevantes acima da média','Tenho uma carreira sólida, mas sem destaque acima da média'], val => {
       userMsg(val);
       S.profile.temConquistas = val;
       go('path_prazo_gc');
@@ -1737,19 +1774,21 @@ const flows = {
     await think(700);
     await botMsg(`${S.nome}, dentro dos vistos de trabalho, existem caminhos bem diferentes. Qual das opções abaixo <strong>melhor descreve sua situação</strong>?`);
     showOpts([
-      'Serei transferido pela empresa onde já trabalho (que tem ou abrirá filial nos EUA)',
-      'Possuo conquistas extraordinárias, prêmios ou reconhecimento acima da média na minha área'
+      'Trabalho em uma empresa e serei transferido para a filial nos EUA',
+      'Tenho uma empresa no Brasil e quero expandir para os EUA',
+      'Possuo realizações relevantes e reconhecidas na minha área'
     ], val => {
       userMsg(val);
-      if (val.includes('transferido')) go('path_l1_intro');
-      else if (val.includes('conquistas')) go('path_work_o1');
+      if (val.includes('transferido')) { S.profile.l1Contexto = 'transferencia'; go('path_l1_intro'); }
+      else if (val.includes('expandir')) { S.profile.l1Contexto = 'expansao'; go('path_l1_intro'); }
+      else if (val.includes('realizações')) go('path_work_o1');
     });
   },
 
   async path_l1_intro() {
     setSideVisto('L-1'); setProgress(20);
     await think(700);
-    await showFact('🏢', 'O <b>visto L-1</b> é ideal para executivos, gerentes e especialistas que são transferidos entre filiais da mesma empresa. Não passa por sorteio e não exige patrocinador externo.');
+    await showFact('🏢', 'O <b>visto L-1</b> é ideal para executivos, gerentes e especialistas transferidos entre filiais da mesma empresa. Exige uma empresa como sponsor — neste caso, a própria empresa onde você atua ou sua filial nos EUA. Não passa por sorteio.');
     await pause(300);
     await botMsg('Qual é a sua <strong>posição na empresa</strong>?');
     showOpts(['Fundador / Empreendedor','Sócio / Acionista','Executivo / Gerente','Funcionário com Conhecimento Especializado'], val => {
@@ -1800,7 +1839,7 @@ const flows = {
   async path_work_o1() {
     setSideVisto('O-1'); setProgress(20);
     await think(700);
-    await showFact('🌟', 'O <b>visto O-1</b> é reservado a indivíduos com habilidades extraordinárias em ciências, artes, educação, negócios ou esportes. Exige evidências concretas de reconhecimento acima da média.');
+    await showFact('🌟', 'O <b>visto O-1</b> é reservado a indivíduos com realizações relevantes e reconhecidas na sua área em ciências, artes, educação, negócios ou esportes. Exige evidências concretas de reconhecimento acima da média.');
     await pause(300);
     go('sc_o1_1');
   },
@@ -1866,7 +1905,7 @@ const flows = {
     showOpts(['Sim, já tenho negócio definido','Estou pesquisando opções','Ainda não sei'], val => {
       userMsg(val);
       S.profile.tipoNegocio = val;
-      go('gate_e2_complementar');
+      go('e2_gate_complementar');
     });
   },
 
@@ -1883,44 +1922,77 @@ const flows = {
   },
 
   // ──────── GATE E-2 COMPLEMENTAR ────────
-  async gate_e2_complementar() {
+  async e2_gate_complementar() {
     setProgress(32);
     await think(600);
-    await botMsg('Ótimo! Gostaria de uma <strong>avaliação completa</strong>? Posso também avaliar seu perfil para os vistos <strong>L-1</strong> e <strong>O-1</strong> em paralelo.');
+    await botMsg(`Além do E-2, muitos investidores também se qualificam para os vistos <strong>L-1</strong> (empresa com operação nos EUA) e <strong>O-1</strong> (profissionais com realizações de destaque). Gostaria de uma <strong>avaliação completa</strong> incluindo esses caminhos?`);
     showOpts(['Sim, quero avaliação completa','Não, apenas o E-2'], val => {
       userMsg(val);
-      if (val.includes('Sim')) go('gate_l1_posicao');
+      S.profile.avaliacaoComplementarE2 = val;
+      if (val.includes('Sim')) go('e2_l1_posicao');
       else go('resultado');
     });
   },
 
-  async gate_l1_posicao() {
+  async e2_l1_posicao() {
+    setSideVisto('L-1');
     await think(500);
-    await botMsg('Para avaliar o <strong>L-1</strong>, qual é a sua <strong>posição na empresa</strong>?');
+    await botMsg('Vamos avaliar o <strong>L-1</strong>. Qual é a sua posição na empresa?');
     showOpts(['Fundador / Empreendedor','Sócio / Acionista','Executivo / Gerente','Funcionário com Conhecimento Especializado'], val => {
-      userMsg(val); S.profile.posicao = val; go('gate_l1_func');
+      userMsg(val); S.profile.posicao = val; go('e2_l1_funcionarios');
     });
   },
 
-  async gate_l1_func() {
+  async e2_l1_funcionarios() {
     await think(400);
     await botMsg('Quantos <strong>funcionários</strong> tem a empresa?');
     showOpts(['Menos de 5 funcionários','Entre 5 e 10 funcionários','Entre 11 e 50 funcionários','Mais de 50 funcionários'], val => {
-      userMsg(val); S.profile.numFunc = val; go('gate_l1_fat');
+      userMsg(val); S.profile.numFunc = val; go('e2_l1_faturamento');
     });
   },
 
-  async gate_l1_fat() {
+  async e2_l1_faturamento() {
     await think(400);
     await botMsg('Qual é o <strong>faturamento anual</strong> da empresa?');
     showOpts(['Menos de R$ 1 milhão/ano','Entre R$ 1 e 2 milhões/ano','Entre R$ 2 e 5 milhões/ano','Acima de R$ 5 milhões/ano'], val => {
-      userMsg(val); S.profile.faturamento = val;
-      S._afterO1 = 'gate_o1_fim';
-      go('sc_o1_1');
+      userMsg(val); S.profile.faturamento = val; go('e2_o1_premios');
     });
   },
 
-  async gate_o1_fim() {
+  async e2_o1_premios() {
+    setSideVisto('O-1');
+    await think(500);
+    await botMsg('Agora o <strong>O-1</strong>. Você já recebeu prêmios ou reconhecimentos relevantes na sua área?');
+    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+      userMsg(val); S.profile.o1_premios = val; go('e2_o1_midia');
+    });
+  },
+
+  async e2_o1_midia() {
+    await think(400);
+    await botMsg('Existem publicações em mídia relevante sobre você ou seu trabalho?');
+    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+      userMsg(val); S.profile.o1_midia = val; go('e2_o1_contrib');
+    });
+  },
+
+  async e2_o1_contrib() {
+    await think(400);
+    await botMsg('Você possui contribuições originais reconhecidas na sua área?');
+    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+      userMsg(val); S.profile.o1_contrib = val; go('e2_o1_lideranca');
+    });
+  },
+
+  async e2_o1_lideranca() {
+    await think(400);
+    await botMsg('Você ocupa ou já ocupou papel de liderança em organizações de destaque?');
+    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+      userMsg(val); S.profile.o1_lideranca = val; go('e2_resultado_multiplo');
+    });
+  },
+
+  async e2_resultado_multiplo() {
     S.vistos = ['E-2','L-1','O-1'];
     setSideVisto('E-2 + L-1 + O-1');
     go('resultado');
@@ -2165,7 +2237,21 @@ const flows = {
       `2º semestre de ${ano + 2}`,
       `Ainda não sei`
     ];
-    showOpts(opts, val => { userMsg(val); S.profile.prazoMudanca = val; go('academic_start'); });
+    showOpts(opts, val => { userMsg(val); S.profile.prazoMudanca = val; go('pi_area_formacao'); });
+  },
+
+  async pi_area_formacao() {
+    await think(400);
+    await botMsg('Sua <strong>área de atuação profissional</strong> atual é a mesma da sua formação acadêmica?');
+    showOpts([
+      'Sim, atuo na minha área de formação',
+      'Não, atuo em uma área diferente',
+      'Parcialmente'
+    ], val => {
+      userMsg(val);
+      S.profile.areaAtuacaoFormacao = val;
+      go('academic_start');
+    });
   },
 
   // ──────── FORMAÇÃO ACADÊMICA ────────
@@ -2407,54 +2493,54 @@ const flows = {
   async sc_niw_1() {
     await think(500);
     await botMsg('Você tem ou conseguiria <strong>cartas de recomendação</strong> de pessoas com relevância ou destaque na sua área de atuação?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_cartas = val; go('sc_niw_2'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_cartas = val; go('sc_niw_2'); });
   },
   async sc_niw_2() {
     await think(400);
     await botMsg('Você possui <strong>certificados de palestras ministradas</strong> ou de participação na organização de eventos da sua área?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_palestras = val; go('sc_niw_3'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_palestras = val; go('sc_niw_3'); });
   },
   async sc_niw_3() {
     await think(400);
     await botMsg('Tem comprovação de participação como <strong>avaliador ou especialista em bancas</strong> acadêmicas ou profissionais?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_bancas = val; go('sc_niw_4'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_bancas = val; go('sc_niw_4'); });
   },
   async sc_niw_4() {
     await think(400);
     await botMsg('Possui comprovação de <strong>reportagens ou entrevistas</strong> em que foi citado como fonte de informação?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_reportagens = val; go('sc_niw_5'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_reportagens = val; go('sc_niw_5'); });
   },
   async sc_niw_5() {
     await think(400);
     await botMsg('Você já <strong>publicou artigos de sua autoria</strong> em revistas científicas ou na mídia em geral?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_artigos = val; go('sc_niw_6'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_artigos = val; go('sc_niw_6'); });
   },
   async sc_niw_6() {
     await think(400);
     await botMsg('Já teve <strong>participação em projetos de pesquisa</strong> na sua área?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_pesquisa = val; go('sc_niw_7'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_pesquisa = val; go('sc_niw_7'); });
   },
   async sc_niw_7() {
     await think(400);
     await botMsg('Tem comprovação de <strong>premiações e/ou reconhecimentos</strong> recebidos pelo seu trabalho?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_premios = val; go('sc_niw_8'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_premios = val; go('sc_niw_8'); });
   },
   async sc_niw_8() {
     await think(400);
     await botMsg('Possui <strong>certificados de cursos e/ou treinamentos</strong> na sua área?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_cursos = val; go('sc_niw_9'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_cursos = val; go('sc_niw_9'); });
   },
   async sc_niw_9() {
     await think(400);
     await botMsg('Possui <strong>licenças emitidas por Conselhos Profissionais</strong> ou certificações de organizações reconhecidas?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_licencas = val; go('sc_niw_hab'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_licencas = val; go('sc_niw_hab'); });
   },
   async sc_niw_hab() {
     setProgress(86);
     await think(500);
     await botMsg('Selecione os critérios abaixo que você acredita <strong>atender</strong> (pode escolher mais de um):');
     // Multi-select simulado com botões sequenciais
-    const hab = ['Registro acadêmico oficial (diploma ou certificado)','Cartas comprovando 10+ anos de experiência em tempo integral','Licença ou certificação para exercer a profissão','Evidência de salário/remuneração que demonstre capacidade excepcional','Filiação a associações profissionais','Reconhecimento por contribuições significativas à indústria'];
+    const hab = ['Registro acadêmico oficial (diploma ou certificado)','Cartas comprovando 10+ anos de experiência em tempo integral','Licença ou certificação para exercer a profissão','Evidência de salário/remuneração que demonstre realizações relevantes e reconhecidas','Filiação a associações profissionais','Reconhecimento por contribuições significativas à indústria'];
     const sel = new Set();
     const w = document.createElement('div');
     w.className = 'opts-wrap'; w.id = 'opts';
@@ -2491,7 +2577,7 @@ const flows = {
   async sc_eb1_intro() {
     setProgress(90);
     await think(600);
-    await showFact('⭐', 'Seu perfil indicou conquistas extraordinárias. Vou agora coletar os critérios do <b>EB-1A</b> — o caminho de Green Card mais avançado, para profissionais no topo da sua área globalmente.');
+    await showFact('⭐', 'Seu perfil indicou realizações de destaque ou reconhecimento acima da média. Vou agora coletar os critérios do <b>EB-1A</b> — o caminho de Green Card mais avançado, para profissionais no topo da sua área globalmente.');
     await pause(300);
     await botMsg('Responda com base nas suas realizações mais expressivas:');
     go('sc_eb1_1');
@@ -2501,42 +2587,42 @@ const flows = {
   async sc_eb1_1() {
     await think(400);
     await botMsg('Já foram publicadas <strong>reportagens ou artigos sobre você</strong> em revistas, jornais ou mídias de grande alcance nacional ou internacional?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_midia = val; go('sc_eb1_2'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_midia = val; go('sc_eb1_2'); });
   },
   async sc_eb1_2() {
     await think(400);
     await botMsg('Seu trabalho já foi <strong>exibido em exposições ou mostras importantes</strong> em âmbito nacional ou internacional?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_exposicoes = val; go('sc_eb1_3'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_exposicoes = val; go('sc_eb1_3'); });
   },
   async sc_eb1_3() {
     await think(400);
     await botMsg('Você já ocupou <strong>cargos de liderança ou papel crítico</strong> em alguma organização importante da sua área?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_lideranca = val; go('sc_eb1_4'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_lideranca = val; go('sc_eb1_4'); });
   },
   async sc_eb1_4() {
     await think(400);
     await botMsg('Seu <strong>salário ou remuneração</strong> está comprovadamente acima da média dos profissionais da sua área?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_salario = val; go('sc_eb1_5'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_salario = val; go('sc_eb1_5'); });
   },
   async sc_eb1_5() {
     await think(400);
     await botMsg('Você já recebeu <strong>prêmios de excelência</strong> reconhecidos nacional ou internacionalmente?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_premios = val; go('sc_eb1_6'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_premios = val; go('sc_eb1_6'); });
   },
   async sc_eb1_6() {
     await think(400);
-    await botMsg('Participa de <strong>associações que exigem realizações extraordinárias</strong> para admissão (acesso por convite ou mérito)?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_assoc = val; go('sc_eb1_7'); });
+    await botMsg('Participa de <strong>associações que exigem realizações de destaque</strong> para admissão (acesso por convite ou mérito)?');
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_assoc = val; go('sc_eb1_7'); });
   },
   async sc_eb1_7() {
     await think(400);
     await botMsg('Você já foi <strong>convidado a avaliar o trabalho de outras pessoas</strong>, individualmente ou como parte de um painel?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_avaliador = val; go('sc_eb1_8'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_avaliador = val; go('sc_eb1_8'); });
   },
   async sc_eb1_8() {
     await think(400);
     await botMsg('Tem evidências de <strong>contribuições originais de grande importância</strong> para o seu campo (científicas, artísticas, de negócios)?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.eb1_contrib = val; go('sc_eb1_decide'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_contrib = val; go('sc_eb1_decide'); });
   },
 
   async sc_eb1_decide() {
@@ -2555,27 +2641,27 @@ const flows = {
   async sc_o1_1() {
     await think(400);
     await botMsg('Você já recebeu <strong>prêmios ou reconhecimentos nacionais/internacionais</strong> na sua área?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_premios = val; go('sc_o1_2'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_premios = val; go('sc_o1_2'); });
   },
   async sc_o1_2() {
     await think(400);
     await botMsg('Existem <strong>publicações em mídia relevante</strong> sobre você ou seu trabalho?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_midia = val; go('sc_o1_3'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_midia = val; go('sc_o1_3'); });
   },
   async sc_o1_3() {
     await think(400);
     await botMsg('Você possui <strong>contribuições originais reconhecidas</strong> na sua área?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_contrib = val; go('sc_o1_4'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_contrib = val; go('sc_o1_4'); });
   },
   async sc_o1_4() {
     await think(400);
     await botMsg('Você ocupa ou já ocupou um <strong>papel de liderança em organizações de destaque</strong>?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_lideranca = val; go('sc_o1_5'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_lideranca = val; go('sc_o1_5'); });
   },
   async sc_o1_5() {
     await think(400);
     await botMsg('Sua remuneração está <strong>acima da média da sua área</strong>?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.o1_salario = val; go(S._afterO1 || 'resultado'); });
+    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_salario = val; go(S._afterO1 || 'resultado'); });
   },
 
   // ──────── RESULTADO ────────
