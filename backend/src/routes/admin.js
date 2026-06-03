@@ -234,10 +234,28 @@ router.get('/funnel', auth, async (req, res) => {
       em_andamento: stepMap[s.id] || 0,
     }));
 
+    // Dispositivos das sessões
+    const { data: sessionDevices } = await supabase
+      .from('sessions')
+      .select('state->_device');
+    const deviceMap = {};
+    (sessionDevices || []).forEach(r => {
+      const d = r._device || 'desktop';
+      deviceMap[d] = (deviceMap[d] || 0) + 1;
+    });
+
+    // Exit intent — etapas onde saíram
+    const { data: exitSessions } = await supabase
+      .from('sessions')
+      .select('state->_etapa')
+      .eq('state->_etapa', 'exit_intent');
+    // Também pega etapas de abandono como proxy de exit
+    const exitMap = { ...abandonMap };
+
     // Taxa de conversão geral
     const conversionRate = total > 0 ? Math.round(((completos || 0) / total) * 100) : 0;
 
-    res.json({ funnel, total, completos, conversionRate, abandonMap, stepMap });
+    res.json({ funnel, total, completos, conversionRate, abandonMap, stepMap, deviceMap, exitMap });
   } catch (err) {
     console.error('Funnel error:', err);
     res.status(500).json({ error: 'Erro ao calcular funil.' });
@@ -251,7 +269,7 @@ router.get('/sessions', auth, async (req, res) => {
   try {
     const { data, count, error } = await supabase
       .from('sessions')
-      .select('id, created_at, updated_at, email, ip_address, state->step, state->prog, state->visto, state->nome', { count: 'exact' })
+      .select('id, created_at, updated_at, email, ip_address, state->step, state->prog, state->visto, state->nome, state->_device', { count: 'exact' })
       .order('updated_at', { ascending: false })
       .range(offset, offset + limit - 1);
     if (error) throw error;

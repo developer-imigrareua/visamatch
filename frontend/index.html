@@ -387,6 +387,15 @@ function scrollBottom(force = false) {
   }
 }
 
+// ─── DEVICE DETECTION ───
+function getDeviceType() {
+  const ua = navigator.userAgent || '';
+  if (/tablet|ipad|playbook|silk/i.test(ua)) return 'tablet';
+  if (/mobile|android|iphone|ipod|blackberry|opera mini|windows phone/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+const _deviceType = getDeviceType();
+
 // ─── SESSION SAVE (debounced, só salva se tem email) ───
 let _sessionId = localStorage.getItem('vm_session_id') || null;
 let _sessionTimer = null;
@@ -396,7 +405,11 @@ function saveSession(etapa) {
   clearTimeout(_sessionTimer);
   _sessionTimer = setTimeout(async () => {
     try {
-      const body = { state: { ...S, _etapa: etapa }, session_id: _sessionId, email: S.email };
+      const body = {
+        state: { ...S, _etapa: etapa, _device: _deviceType },
+        session_id: _sessionId,
+        email: S.email
+      };
       const res = await fetch(`${API_BASE}/session`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -3081,6 +3094,75 @@ function showLGPDDetails(e) {
 // Wrapper para saveSession que respeita LGPD
 const _origSaveSession = typeof saveSession === 'function' ? saveSession : null;
 // A verificação de consentimento é feita na própria saveSession — se declined, não salva
+</script>
+
+<!-- EXIT INTENT POPUP -->
+<div id="exit-overlay" style="display:none;position:fixed;inset:0;background:rgba(11,28,48,.55);z-index:8000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:32px;max-width:400px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:popIn .3s cubic-bezier(.34,1.56,.64,1);text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">⏸️</div>
+    <div style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;color:#0b1c30;margin-bottom:10px">Sua análise está em andamento</div>
+    <p style="font-size:13.5px;color:#424655;line-height:1.7;margin-bottom:22px">
+      Você está a <strong id="exit-prog-txt">poucos passos</strong> de descobrir seu caminho para os EUA.<br>
+      Quer salvar seu progresso para continuar depois?
+    </p>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <button onclick="exitSaveAndGo()" style="width:100%;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Inter Tight',sans-serif;font-size:14px;font-weight:700;cursor:pointer">
+        💾 Salvar e sair
+      </button>
+      <button onclick="exitContinue()" style="width:100%;background:#f0f4ff;color:#0053d0;border:none;border-radius:11px;padding:12px;font-family:'Inter Tight',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer">
+        ▶ Continuar a análise
+      </button>
+      <button onclick="exitWithout()" style="width:100%;background:none;border:none;font-family:'Inter Tight',sans-serif;font-size:12.5px;color:#737687;cursor:pointer;padding:6px">
+        Sair sem salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// EXIT INTENT
+let _exitShown = false;
+let _exitEnabled = false;
+
+// Habilita após o usuário ter respondido pelo menos 2 perguntas
+setTimeout(() => { _exitEnabled = true; }, 8000);
+
+// Desktop: detecta mouse saindo pelo topo da janela
+document.addEventListener('mouseleave', e => {
+  if (!_exitEnabled || _exitShown) return;
+  if (e.clientY <= 5 && S.prog > 10) showExitPopup();
+});
+
+// Mobile: detecta quando a aba fica em background
+document.addEventListener('visibilitychange', () => {
+  if (!_exitEnabled || _exitShown) return;
+  if (document.hidden && S.prog > 10) showExitPopup();
+});
+
+function showExitPopup() {
+  _exitShown = true;
+  const prog = S.prog || 0;
+  const txt = prog >= 70 ? 'a 1 etapa do resultado final' :
+              prog >= 40 ? 'na metade da análise' :
+              'no início da análise';
+  document.getElementById('exit-prog-txt').textContent = txt;
+  document.getElementById('exit-overlay').style.display = 'flex';
+}
+
+function exitContinue() {
+  document.getElementById('exit-overlay').style.display = 'none';
+  _exitShown = false; // permite mostrar novamente
+}
+
+function exitSaveAndGo() {
+  // Salva sessão antes de sair
+  if (S.email && S.prog > 10) saveSession('exit_intent');
+  document.getElementById('exit-overlay').style.display = 'none';
+}
+
+function exitWithout() {
+  document.getElementById('exit-overlay').style.display = 'none';
+}
 </script>
 </body>
 </html>
