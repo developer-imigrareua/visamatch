@@ -3377,27 +3377,26 @@ if (window.visualViewport) {
   const mainEl    = document.querySelector('.main');
 
   function onViewportResize() {
+    // Só aplica no mobile
+    if (window.innerWidth > 760) return;
     const vv = window.visualViewport;
     const keyboardHeight = window.innerHeight - vv.height;
-    // Sempre fixa o input acima da barra do browser + teclado
-    inputZone.style.position = 'fixed';
-    inputZone.style.left     = '0';
-    inputZone.style.right    = '0';
-    inputZone.style.zIndex   = '100';
     if (keyboardHeight > 100) {
-      // Teclado aberto: posiciona acima do teclado
-      inputZone.style.bottom = keyboardHeight + 'px';
+      // Teclado aberto: fixa o input acima do teclado
+      inputZone.style.position = 'fixed';
+      inputZone.style.bottom   = keyboardHeight + 'px';
+      inputZone.style.left     = '0';
+      inputZone.style.right    = '0';
+      inputZone.style.zIndex   = '100';
     } else {
-      // Teclado fechado: fica no bottom mas com espaço para barra do browser
-      inputZone.style.bottom = '0px';
+      // Teclado fechado: volta ao fluxo normal (CSS cuida do padding)
+      inputZone.style.position = '';
+      inputZone.style.bottom   = '';
+      inputZone.style.left     = '';
+      inputZone.style.right    = '';
+      inputZone.style.zIndex   = '';
     }
-    // Garante que o chat tem espaço para o input fixo
-    const inputH = inputZone.offsetHeight || 90;
-    mainEl.style.paddingBottom = (inputH + keyboardHeight) + 'px';
   }
-
-  // Roda imediatamente para configurar o estado inicial
-  onViewportResize();
 
   window.visualViewport.addEventListener('resize', onViewportResize);
   window.visualViewport.addEventListener('scroll', onViewportResize);
@@ -3479,13 +3478,16 @@ async function checkAndResumeSession() {
 }
 
 // ─── ANTI-AUTOFILL ───
-// Chrome tende a preencher campos type="search" mas limpa logo
-setTimeout(() => { if (ti) { ti.value = ''; ti.blur(); } }, 100);
-setTimeout(() => { if (ti) ti.value = ''; }, 500);
-// Impede o browser de marcar campos do structured-zone como credenciais
-document.addEventListener('animationstart', e => {
-  if (e.animationName === 'onAutoFillStart' && ti) ti.value = '';
-}, true);
+function clearAutofill() { if (ti && ti.value && ti !== document.activeElement) ti.value = ''; }
+setTimeout(clearAutofill, 100);
+setTimeout(clearAutofill, 500);
+setTimeout(clearAutofill, 1000);
+// Detecta autofill via animação CSS (Chrome)
+document.addEventListener('animationstart', e => { if (e.animationName === 'onAutoFillStart') clearAutofill(); }, true);
+// Detecta input event vindo de autofill (não de digitação do usuário)
+ti.addEventListener('input', e => {
+  if (e.inputType === undefined && ti.value && ti !== document.activeElement) ti.value = '';
+});
 
 // ─── START ───
 checkAndResumeSession();
