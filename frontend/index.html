@@ -254,14 +254,14 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
   .head-title{font-size:17px}
   .head-sub{font-size:10px}
   .online-badge{font-size:10px;padding:5px 12px}
-  .chat{padding:14px 12px 8px;gap:14px;max-width:100%}
+  .chat{padding:14px 12px 8px;gap:14px;max-width:100%;padding-bottom:140px !important}
   .msg-wrap{max-width:86% !important}
   .bubble{font-size:13px;padding:11px 14px}
   .ava{width:30px;height:30px}
   .row{gap:8px}
   .opts-wrap{padding-left:38px;gap:6px}
   .opt{font-size:12.5px;padding:8px 14px}
-  .input-zone{padding:12px 14px calc(20px + env(safe-area-inset-bottom, 12px))}
+  .input-zone{padding:12px 14px calc(env(safe-area-inset-bottom, 0px) + 60px)}
   .txt-in{font-size:16px} /* iOS no-zoom */
   .in-hint{font-size:10px}
   .in-btn{width:36px;height:36px}
@@ -3379,22 +3379,25 @@ if (window.visualViewport) {
   function onViewportResize() {
     const vv = window.visualViewport;
     const keyboardHeight = window.innerHeight - vv.height;
+    // Sempre fixa o input acima da barra do browser + teclado
+    inputZone.style.position = 'fixed';
+    inputZone.style.left     = '0';
+    inputZone.style.right    = '0';
+    inputZone.style.zIndex   = '100';
     if (keyboardHeight > 100) {
-      // Teclado aberto: empurra input-zone para cima do teclado
-      inputZone.style.position   = 'fixed';
-      inputZone.style.bottom     = keyboardHeight + 'px';
-      inputZone.style.left       = '0';
-      inputZone.style.right      = '0';
-      inputZone.style.zIndex     = '100';
+      // Teclado aberto: posiciona acima do teclado
+      inputZone.style.bottom = keyboardHeight + 'px';
     } else {
-      // Teclado fechado: volta ao normal
-      inputZone.style.position = '';
-      inputZone.style.bottom   = '';
-      inputZone.style.left     = '';
-      inputZone.style.right    = '';
-      inputZone.style.zIndex   = '';
+      // Teclado fechado: fica no bottom mas com espaço para barra do browser
+      inputZone.style.bottom = '0px';
     }
+    // Garante que o chat tem espaço para o input fixo
+    const inputH = inputZone.offsetHeight || 90;
+    mainEl.style.paddingBottom = (inputH + keyboardHeight) + 'px';
   }
+
+  // Roda imediatamente para configurar o estado inicial
+  onViewportResize();
 
   window.visualViewport.addEventListener('resize', onViewportResize);
   window.visualViewport.addEventListener('scroll', onViewportResize);
