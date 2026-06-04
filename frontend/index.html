@@ -787,8 +787,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   const submit = (val) => {
     if (!val || val.length < 4) return;
     row.remove();
-    sz.style.display = 'none';
-    sz.innerHTML = '';
+    hideStructuredZone();
     document.querySelector('.input-zone').style.display = '';
     ti.disabled = false;
     S.profile[profileKey] = val;
@@ -1296,6 +1295,34 @@ async function saveUserProfile(nome, phone) {
     if (phone) stored.phone = phone;
     localStorage.setItem('vm_user', JSON.stringify(stored));
   } catch(e) { console.warn('saveUserProfile error:', e); }
+}
+
+
+// ─── SHOW/HIDE STRUCTURED ZONE ───
+const _sz = document.getElementById('structured-zone');
+function showStructuredZone() {
+  if (!_sz) return;
+  _sz.style.display = '';
+  if (window.innerWidth <= 760) {
+    // No mobile: fixa acima da barra do browser
+    _sz.style.position = 'fixed';
+    _sz.style.bottom   = '0px';
+    _sz.style.left     = '0';
+    _sz.style.right    = '0';
+    _sz.style.zIndex   = '200';
+    // Rola o chat para mostrar última mensagem
+    setTimeout(() => { if (chat) chat.scrollTop = chat.scrollHeight; }, 100);
+  }
+}
+function hideStructuredZone() {
+  if (!_sz) return;
+  _sz.style.display    = 'none';
+  _sz.style.position   = '';
+  _sz.style.bottom     = '';
+  _sz.style.left       = '';
+  _sz.style.right      = '';
+  _sz.style.zIndex     = '';
+  _sz.innerHTML        = '';
 }
 
 function resetAndRestart() {
