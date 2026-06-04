@@ -6,13 +6,13 @@ const router = express.Router();
 // POST /analyze
 // Body: { nome, email, phone, visto, vistos, profile }
 router.post('/', async (req, res) => {
-  const { nome, email, phone, visto, vistos, profile } = req.body;
+  const { nome, email, phone, visto, vistos, profile, localScores } = req.body;
 
   if (!profile) return res.status(400).json({ error: 'Profile obrigatório.' });
 
   try {
-    // 1. Roda os agentes IA
-    const analysis = await analyzeProfile({ nome, email, visto, vistos, profile });
+    // 1. Roda os agentes IA com scores locais pré-calculados
+    const analysis = await analyzeProfile({ nome, email, visto, vistos, profile, localScores });
 
     // 2. Salva lead completo no Supabase
     const bestScore    = analysis.melhor?.score ?? null;

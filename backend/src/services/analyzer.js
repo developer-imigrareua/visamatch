@@ -116,7 +116,7 @@ HISTÓRICO DE VIAGENS E VISTOS:
 }
 
 // ── Roda um agente para um visto específico ──
-async function runAgent(visto, profile, nome, email) {
+async function runAgent(visto, profile, nome, email, localScore) {
   const systemPrompt = AGENT_MAP[visto];
 
   // H-1B: análise simplificada sem agente
@@ -145,27 +145,45 @@ async function runAgent(visto, profile, nome, email) {
 
   const profileText = formatProfile(profile, nome, email);
 
+  // Score pré-calculado pelo sistema local — IA não deve alterá-lo
+  const scoreNote = localScore !== undefined
+    ? `\n\nIMPORTANTE: O score de pré-elegibilidade já foi calculado pelo sistema local e é ${localScore}. Use este valor EXATAMENTE como fornecido nos campos "score" e "aprovacao_pct". NÃO recalcule, NÃO modifique este valor. A classificacao deve derivar deste score: Alta (>=70), Moderada (>=40), Em Desenvolvimento (>=0), Incompatível (<0).`
+    : '';
+
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     temperature: 0.3,
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: systemPrompt + scoreNote },
       { role: 'user', content: `Analise o seguinte perfil para o visto ${visto}:\n\n${profileText}` },
     ],
   });
 
   const raw = response.choices[0].message.content;
-  return JSON.parse(raw);
+  const result = JSON.parse(raw);
+
+  // Sobrescreve score/classificacao com valores locais (fonte da verdade)
+  if (localScore !== undefined) {
+    result.score = localScore;
+    result.aprovacao_pct = Math.max(0, Math.min(100, localScore));
+    result.classificacao = localScore >= 70 ? 'Alta' : localScore >= 40 ? 'Moderada' : localScore >= 0 ? 'Em Desenvolvimento' : 'Incompatível';
+    result.recomendacao_parceiro = (result.classificacao === 'Alta' || result.classificacao === 'Moderada') ? 'liv' : 'phoenix';
+  }
+
+  return result;
 }
 
 // ── Orquestrador principal ──
-async function analyzeProfile({ nome, email, visto, vistos, profile }) {
+async function analyzeProfile({ nome, email, visto, vistos, profile, localScores }) {
   const targetVistos = vistos?.length ? vistos : [visto || 'EB-2 NIW'];
 
   // Roda agentes em paralelo quando há múltiplos vistos
   const results = await Promise.all(
-    targetVistos.map(v => runAgent(v, profile, nome, email))
+    targetVistos.map(v => {
+      const score = localScores ? localScores[v] : undefined;
+      return runAgent(v, profile, nome, email, score);
+    })
   );
 
   // Identifica o melhor resultado
