@@ -1021,7 +1021,7 @@ function buildResult(visto, score, p) {
   const partnerHtml = partnerCtaHtml(cl.partner, visto);
 
   // PDF button
-  const pdfBtn = `<button class="cta2" style="width:100%;margin-top:8px" onclick="alert('Relatório PDF enviado para ${S.email}')">📄 Receber relatório completo por e-mail</button>`;
+  const pdfBtn = `<button class="cta2" style="width:100%;margin-top:8px" onclick="sendReportEmail(this)">📄 Receber relatório completo por e-mail</button>`;
 
   if (isDual) {
     const score2 = calcScore('EB-2 NIW', p);
@@ -1335,6 +1335,56 @@ function hideStructuredZone() {
   _sz.innerHTML        = '';
 }
 
+
+// ─── ENVIAR RELATÓRIO POR E-MAIL ───
+async function sendReportEmail(btn) {
+  const analysis = JSON.parse(localStorage.getItem('visamatch_report') || '{}');
+  const best = analysis.melhor || analysis.resultados?.[0] || {};
+  const email = S.email || (JSON.parse(localStorage.getItem('vm_user') || '{}')).email || '';
+
+  if (!email) {
+    await botMsg('⚠️ Não encontramos seu e-mail. Complete o fluxo de análise para receber o relatório.');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+  try {
+    const res = await fetch(API_BASE + '/analyze/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        nome: S.profile?.nomeCompleto || S.nome || '',
+        visto: best.visto || S.visto || '',
+        score: best.score ?? 0,
+        aprovacao_pct: best.aprovacao_pct ?? best.score ?? 0,
+        classificacao: best.classificacao || ''
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // Feedback visual no estilo do chat
+      await botMsg(
+        '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="width:36px;height:36px;background:linear-gradient(135deg,var(--blue2),var(--pink));border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">📧</div>' +
+        '<div><div style="font-weight:700;color:var(--txt);margin-bottom:3px">Relatório enviado com sucesso!</div>' +
+        '<div style="font-size:12.5px;color:var(--txt2)">Verifique a caixa de entrada de <strong>' + email + '</strong>. Pode cair no spam.</div></div></div>'
+      );
+      if (btn) { btn.textContent = '✓ Enviado'; btn.style.background = 'rgba(29,158,112,.08)'; btn.style.color = 'var(--green)'; btn.style.borderColor = 'rgba(29,158,112,.2)'; }
+    } else {
+      await botMsg('⚠️ Não foi possível enviar o e-mail agora. Tente novamente em instantes. Erro: ' + (data.error || 'desconhecido'));
+      if (btn) { btn.disabled = false; btn.textContent = '📧 Tentar novamente'; }
+    }
+  } catch(err) {
+    console.error('Send report error:', err);
+    await botMsg('⚠️ Erro de conexão ao enviar e-mail. Verifique sua internet e tente novamente.');
+    if (btn) { btn.disabled = false; btn.textContent = '📧 Tentar novamente'; }
+  }
+}
+
 function resetAndRestart() {
   const savedEmail = S.email;
   // Reset state
@@ -1617,7 +1667,7 @@ function singleFullCard(a) {
         <button onclick="window.open('report.html','_blank','fullscreen=yes')" style="flex:1;background:linear-gradient(135deg,var(--blue2),var(--blue4));color:#fff;border:none;border-radius:11px;padding:12px 16px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px">
           📄 Ver Relatório Completo
         </button>
-        <button onclick="alert('Em produção: relatório enviado para ${S.email}')" style="background:#fff;color:var(--txt2);border:1.5px solid var(--border);border-radius:11px;padding:12px 16px;font-family:"Inter Tight",sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">
+        <button onclick="sendReportEmail(this)" style="background:#fff;color:var(--txt2);border:1.5px solid var(--border);border-radius:11px;padding:12px 16px;font-family:"Inter Tight",sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">
           📧 E-mail
         </button>
       </div>
@@ -1731,7 +1781,7 @@ function buildAISummaryCard(analysis) {
           <button class="cta1" onclick="window.open('report.html','_blank','fullscreen=yes')" style="display:flex;align-items:center;justify-content:center;gap:8px">
             📄 Ver Relatório Completo de Elegibilidade
           </button>
-          <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')">
+          <button class="cta2" onclick="sendReportEmail(this)">
             📧 Receber relatório por e-mail
           </button>
         </div>
@@ -1754,7 +1804,7 @@ function buildAISummaryCard(analysis) {
       <button class="cta1" onclick="window.open('report.html','_blank','fullscreen=yes')" style="display:flex;align-items:center;justify-content:center;gap:8px">
         📄 Ver Relatório Completo de Elegibilidade
       </button>
-      <button class="cta2" onclick="alert('Em produção: relatório enviado para ${S.email}')">
+      <button class="cta2" onclick="sendReportEmail(this)">
         📧 Receber relatório por e-mail
       </button>
     </div>

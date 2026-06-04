@@ -68,4 +68,27 @@ router.post('/', async (req, res) => {
   }
 });
 
+// POST /analyze/send-email — envia relatório por e-mail (sem auth obrigatória)
+router.post('/send-email', async (req, res) => {
+  const { email, nome, visto, score, aprovacao_pct, classificacao } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
+
+  try {
+    const { sendAnalysisReport } = require('../services/mailer');
+    const pct = aprovacao_pct ?? score ?? 0;
+    await sendAnalysisReport(
+      email,
+      nome || 'Usuário',
+      visto || '—',
+      pct,
+      classificacao || ''
+    );
+    console.log('Report email sent to:', email, 'visto:', visto, 'score:', pct);
+    res.json({ success: true, message: `Relatório enviado para ${email}` });
+  } catch(err) {
+    console.error('Send email error:', err.message);
+    res.status(500).json({ error: 'Erro ao enviar e-mail: ' + err.message });
+  }
+});
+
 module.exports = router;
