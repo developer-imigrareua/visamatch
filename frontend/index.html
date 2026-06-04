@@ -1378,6 +1378,11 @@ function switchFullTab(n) {
   document.getElementById('tab-full-2').className='dual-tab'+(n===2?' active':'');
 }
 
+function switchFbTab(n) {
+  document.querySelectorAll('[id^="tab-fb-"]').forEach((btn, i) => btn.className = 'dual-tab' + (i===n?' active':''));
+  document.querySelectorAll('[id^="fb-panel-"]').forEach((p, i) => p.style.display = i===n?'':'none');
+}
+
 function buildScoreDonut(pct, classificacao) {
   const clampedPct = Math.max(0, Math.min(100, pct));
   const color = clampedPct >= 70 ? '#1d9e70' : clampedPct >= 40 ? '#d97706' : clampedPct > 0 ? '#94a3b8' : '#dc2626';
@@ -1835,6 +1840,12 @@ const flows = {
         return;
       }
       S.email = val;
+      // Verifica localStorage por e-mail previamente analisado
+      const prevEmails = JSON.parse(localStorage.getItem('vm_analyzed_emails') || '[]');
+      if (!prevEmails.includes(val)) {
+        prevEmails.push(val);
+        localStorage.setItem('vm_analyzed_emails', JSON.stringify(prevEmails.slice(-10)));
+      }
       go('check_email_exists');
     });
   },
@@ -2270,6 +2281,7 @@ const flows = {
       userMsg(val);
       S.profile.grauFormacao = val;
       if (val.includes('Ensino Médio') || val.includes('Sem Formação')) go('path_sem_formacao');
+      else if (val.includes('menos de 5 anos')) go('path_redireciona_work_visa');
       else go('path_prof_experiencia');
     });
   },
@@ -2289,21 +2301,11 @@ const flows = {
     setProgress(20);
     await think(600);
     await botMsg('Há quanto tempo você atua na sua <strong>área de formação</strong>?');
-    showOpts(['Menos de 5 anos','Entre 5 e 15 anos','Entre 15 e 25 anos','Mais de 25 anos'], val => {
+    showOpts(['Menos de 3 anos (recém-formado)','Entre 3 e 5 anos','Entre 5 e 10 anos','Mais de 10 anos'], val => {
       userMsg(val);
       S.profile.tempoExp = val;
-      go('path_prof_conquistas');
-    });
-  },
-
-  async path_prof_conquistas() {
-    setProgress(24);
-    await think(700);
-    await botMsg('Você possui <strong>conquistas, prêmios ou reconhecimento acima da média</strong> na sua área — prêmios nacionais/internacionais, publicações acadêmicas de destaque, cargo de liderança em organização renomada?');
-    showOpts(['Sim, tenho conquistas relevantes acima da média','Tenho uma carreira sólida, mas sem destaque acima da média'], val => {
-      userMsg(val);
-      S.profile.temConquistas = val;
-      go('path_prazo_gc');
+      if (val.includes('recém-formado') || val.includes('3 e 5')) go('path_redireciona_work_visa');
+      else go('path_prazo_gc');
     });
   },
 
@@ -2343,9 +2345,8 @@ const flows = {
   async path_fundos_gc() {
     setProgress(30);
     await think(700);
-    const visoSugerido = S.profile.temConquistas && S.profile.temConquistas.includes('Sim') ? 'EB-2 NIW (com potencial para EB-1A)' : 'EB-2 NIW';
     setSideVisto('EB-2 NIW');
-    await botMsg(`Com base no seu perfil, o caminho mais adequado começa pelo <strong>EB-2 NIW</strong> Green Card por interesse nacional, sem precisar de empregador patrocinador. ${S.profile.temConquistas && S.profile.temConquistas.includes('Sim') ? 'Seu histórico de conquistas também pode abrir o caminho para o <strong>EB-1A</strong> em paralelo.' : ''}`);
+    await botMsg(`Com base no seu perfil, o caminho mais adequado começa pelo <strong>EB-2 NIW</strong> Green Card por interesse nacional, sem precisar de empregador patrocinador.`);
     await pause(300);
     await botMsg(`Você está <strong>financeiramente preparado</strong> para investir no processo? O investimento total para o EB-2 NIW ou EB-1A (honorários + documentação) é de aproximadamente <strong>R$ 85.000</strong>.`);
     showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
@@ -2494,7 +2495,7 @@ const flows = {
     showOpts(['Menos de R$ 1 milhão/ano','Entre R$ 1 e 2 milhões/ano','Entre R$ 2 e 5 milhões/ano','Acima de R$ 5 milhões/ano'], val => {
       userMsg(val);
       S.profile.faturamento = val;
-      go('resultado');
+      go('l1_gate_complementar');
     });
   },
 
@@ -2637,7 +2638,7 @@ const flows = {
     setSideVisto('O-1');
     await think(500);
     await botMsg('Agora o <strong>O-1</strong>. Você já recebeu prêmios ou reconhecimentos relevantes na sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => {
       userMsg(val); S.profile.o1_premios = val; go('e2_o1_midia');
     });
   },
@@ -2645,7 +2646,7 @@ const flows = {
   async e2_o1_midia() {
     await think(400);
     await botMsg('Existem publicações em mídia relevante sobre você ou seu trabalho?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => {
       userMsg(val); S.profile.o1_midia = val; go('e2_o1_contrib');
     });
   },
@@ -2653,7 +2654,7 @@ const flows = {
   async e2_o1_contrib() {
     await think(400);
     await botMsg('Você possui contribuições originais reconhecidas na sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => {
       userMsg(val); S.profile.o1_contrib = val; go('e2_o1_lideranca');
     });
   },
@@ -2661,7 +2662,7 @@ const flows = {
   async e2_o1_lideranca() {
     await think(400);
     await botMsg('Você ocupa ou já ocupou papel de liderança em organizações de destaque?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => {
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => {
       userMsg(val); S.profile.o1_lideranca = val; go('e2_resultado_multiplo');
     });
   },
@@ -2670,6 +2671,65 @@ const flows = {
     S.vistos = ['E-2','L-1','O-1'];
     setSideVisto('E-2 + L-1 + O-1');
     go('resultado');
+  },
+
+  // ──────── GATE L-1 COMPLEMENTAR ────────
+  async l1_gate_complementar() {
+    setProgress(32);
+    await think(600);
+    await botMsg('Além do L-1, seu perfil pode também se qualificar para os vistos <strong>E-2</strong> (investidor) e <strong>O-1</strong> (profissional de destaque). Gostaria de uma avaliação completa incluindo esses caminhos?');
+    showOpts(['Sim, quero avaliação completa', 'Não, apenas o L-1'], val => {
+      userMsg(val);
+      if (val.includes('Sim')) {
+        S.vistos = ['L-1'];
+        go('l1_gate_e2');
+      } else {
+        S.vistos = ['L-1'];
+        go('resultado');
+      }
+    });
+  },
+
+  async l1_gate_e2() {
+    await think(500);
+    await botMsg('Para o <strong>E-2</strong>: você possui cidadania de país com tratado com os EUA (Brasil, Portugal, Itália, Espanha, Canadá, Argentina)?');
+    showOpts(['Sim', 'Não'], val => {
+      userMsg(val); S.profile.tratado = val === 'Sim' ? 'Sim' : 'Não';
+      go('l1_gate_e2_inv');
+    });
+  },
+
+  async l1_gate_e2_inv() {
+    await think(400);
+    await botMsg('Qual é a faixa de investimento que pretende fazer nos EUA?');
+    showOpts(['Menos de US$ 25k', 'Entre US$ 26k e US$ 50k', 'Entre US$ 51k e US$ 100k', 'Acima de US$ 100 mil', 'Sem previsão de investimento'], val => {
+      userMsg(val); S.profile.investimento = val;
+      S._afterO1 = 'l1_gate_o1_fim';
+      go('sc_o1_1');
+    });
+  },
+
+  async l1_gate_o1_fim() {
+    S.vistos = ['L-1', 'E-2', 'O-1'];
+    setSideVisto('L-1 + E-2 + O-1');
+    go('resultado');
+  },
+
+  // ──────── REDIRECIONAMENTO VISTOS TRABALHO ────────
+  async path_redireciona_work_visa() {
+    await think(700);
+    await botMsg('Com o tempo de formação e experiência atual, o caminho do Green Card ainda não é o mais indicado para o seu perfil. Vamos explorar os vistos de trabalho temporário, que podem ser o passo certo agora.');
+    await pause(300);
+    showOpts([
+      'Trabalho em uma empresa e serei transferido para a filial nos EUA',
+      'Tenho uma empresa no Brasil e quero expandir para os EUA',
+      'Possuo realizações relevantes e reconhecidas na minha área'
+    ], val => {
+      userMsg(val);
+      if (val.includes('transferido')) { S.profile.l1Contexto = 'transferencia'; go('path_l1_intro'); }
+      else if (val.includes('expandir')) { S.profile.l1Contexto = 'expansao'; go('path_l1_intro'); }
+      else go('path_work_o1');
+    });
   },
 
   // ──────── DIAGNÓSTICO ────────
@@ -2707,7 +2767,11 @@ const flows = {
       body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_fundos', visto: S.visto, profile: S.profile })
     }).catch(()=>{});
     await botMsg(`Entendemos completamente, ${S.nome}. O processo de visto é um investimento importante. Nossa equipe pode explicar melhor as opções de pagamento e ajudar a planejar. Posso coletar seus dados para que um especialista entre em contato?`);
-    showOpts(['Sim, quero ser contatado'], () => { userMsg('Sim, quero ser contatado'); go('resultado_nurturing'); });
+    showOpts(['Sim, quero ser contatado', 'Recomeçar avaliação'], val => {
+      userMsg(val);
+      if (val.includes('Recomeçar')) { resetAndRestart(); }
+      else go('resultado_nurturing');
+    });
   },
 
   async path_offramp_sem_perfil() {
@@ -2719,7 +2783,11 @@ const flows = {
       body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile })
     }).catch(()=>{});
     await botMsg(`Com o perfil atual, o encaixe direto em uma categoria é desafiador, mas um especialista pode identificar caminhos que não são imediatamente óbvios. Gostaria que nossa equipe analisasse seu caso de forma personalizada?`);
-    showOpts(['Sim, quero análise personalizada'], () => { userMsg('Sim, quero análise personalizada'); go('resultado_nurturing'); });
+    showOpts(['Sim, quero análise personalizada', 'Recomeçar avaliação'], val => {
+      userMsg(val);
+      if (val.includes('Recomeçar')) { resetAndRestart(); }
+      else go('resultado_nurturing');
+    });
   },
 
   // ──────── PERFIL PESSOAL ────────
@@ -2835,7 +2903,7 @@ const flows = {
       userMsg(val);
       S.profile.casado = val;
       if (val === 'Sim') go('pi_filhos');
-      else { S.profile.filhos = 'Não'; go('hist_visto_anterior'); }
+      else { S.profile.filhos = 'Não'; go('pi_hist_1'); }
     });
   },
 
@@ -2845,58 +2913,49 @@ const flows = {
     showOpts(['Sim','Não'], val => {
       userMsg(val);
       S.profile.filhos = val;
-      if (val === 'Sim') go('pi_qtd_filhos');
+      if (val === 'Sim') go('pi_conjuge_visto');
       else go('pi_conjuge_visto');
     });
-  },
-
-  async pi_qtd_filhos() {
-    await think(300);
-    await botMsg('Quantos filhos?');
-    showOpts(['1','2','3 ou mais'], val => { userMsg(val); S.profile.qtdFilhos = val; go('pi_conjuge_visto'); });
   },
 
   async pi_conjuge_visto() {
     await think(350);
     await botMsg('Seu <strong>cônjuge e filhos</strong> também solicitarão visto americano?');
-    showOpts(['Sim','Não','Não se aplica'], val => { userMsg(val); S.profile.conjugeVisto = val; go('hist_visto_anterior'); });
+    showOpts(['Sim','Não','Não se aplica'], val => { userMsg(val); S.profile.conjugeVisto = val; go('pi_hist_1'); });
   },
 
-  // ──────── HISTÓRICO IMIGRATÓRIO ────────
-  async hist_visto_anterior() {
-    await think(400);
-    await botMsg('Você tem ou já teve algum <strong>visto americano</strong>?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.temVistoAnterior = val; go('hist_visto_negado'); });
-  },
-
-  async hist_visto_negado() {
+  async pi_hist_1() {
     await think(350);
-    await botMsg('Você já teve algum <strong>pedido de visto ou residência negado</strong> nos EUA?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.vistoNegado = val; go('hist_esteve_eua'); });
+    await botMsg('Você já solicitou algum visto ou residência para os EUA?');
+    showOpts(['Sim', 'Não'], val => { userMsg(val); S.profile.solicitouVisto = val; go('pi_hist_2'); });
   },
 
-  async hist_esteve_eua() {
+  async pi_hist_2() {
     await think(350);
-    await botMsg('Você já esteve <strong>legalmente nos Estados Unidos</strong>?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.esteveEUALegal = val; go('hist_em_solo'); });
+    await botMsg('Algum pedido seu de visto ou residência já foi negado?');
+    showOpts(['Sim', 'Não'], val => { userMsg(val); S.profile.vistoNegado = val; go('pi_hist_3'); });
   },
 
+  async pi_hist_3() {
+    await think(350);
+    await botMsg('Você já esteve nos Estados Unidos?');
+    showOpts([
+      'Sim, legalmente',
+      'Sim, mas fiquei fora de status (além do tempo permitido ou trabalhando sem autorização)',
+      'Sim, entrei sem inspeção (pela fronteira, sem passar pela imigração)',
+      'Não, nunca estive nos EUA'
+    ], val => {
+      userMsg(val);
+      S.profile.historicoPermanenciaEUA = val;
+      go('prazo_mudanca');
+    });
+  },
+
+  // ──────── HISTÓRICO IMIGRATÓRIO (legado, mantido para compatibilidade de roteamento) ────────
   async hist_em_solo() {
     await think(350);
     await botMsg('Atualmente você está em <strong>solo americano</strong>?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.emSoloAmericano = val; go('hist_fora_status'); });
-  },
-
-  async hist_fora_status() {
-    await think(350);
-    await botMsg('Você está ou já esteve <strong>fora de status</strong> (sem documentação regular) nos EUA?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.foraDeSatus = val; go('hist_entrada_inspecao'); });
-  },
-
-  async hist_entrada_inspecao() {
-    await think(350);
-    await botMsg('Você já entrou em território americano <strong>sem inspeção</strong> — por exemplo, atravessando a fronteira sem se identificar à fiscalização imigratória?');
-    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.entradaSemInspecao = val; go('prazo_mudanca'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.emSoloAmericano = val; go('prazo_mudanca'); });
   },
 
   async prazo_mudanca() {
@@ -2963,17 +3022,7 @@ const flows = {
   async ac_conclusao() {
     await think(350);
     await botMsg('Qual foi a <strong>data de conclusão</strong>?');
-    showMonthYearWidget('acConclusao1', 'ac_posgrad');
-  },
-
-  async ac_posgrad() {
-    await think(350);
-    await botMsg('Essa formação inclui pós-graduação?');
-    showOpts(['Sim — Lato Sensu (especialização/MBA)','Sim — Stricto Sensu (mestrado/doutorado)','Não'], val => {
-      userMsg(val);
-      S.profile.acPosgrad1 = val;
-      go('ac_segunda');
-    });
+    showMonthYearWidget('acConclusao1', 'ac_segunda');
   },
 
   async ac_segunda() {
@@ -3167,47 +3216,47 @@ const flows = {
   async sc_niw_1() {
     await think(500);
     await botMsg('Você tem ou conseguiria <strong>cartas de recomendação</strong> de pessoas com relevância ou destaque na sua área de atuação?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_cartas = val; go('sc_niw_2'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_cartas = val; go('sc_niw_2'); });
   },
   async sc_niw_2() {
     await think(400);
     await botMsg('Você possui <strong>certificados de palestras ministradas</strong> ou de participação na organização de eventos da sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_palestras = val; go('sc_niw_3'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_palestras = val; go('sc_niw_3'); });
   },
   async sc_niw_3() {
     await think(400);
     await botMsg('Tem comprovação de participação como <strong>avaliador ou especialista em bancas</strong> acadêmicas ou profissionais?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_bancas = val; go('sc_niw_4'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_bancas = val; go('sc_niw_4'); });
   },
   async sc_niw_4() {
     await think(400);
     await botMsg('Possui comprovação de <strong>reportagens ou entrevistas</strong> em que foi citado como fonte de informação?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_reportagens = val; go('sc_niw_5'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_reportagens = val; go('sc_niw_5'); });
   },
   async sc_niw_5() {
     await think(400);
     await botMsg('Você já <strong>publicou artigos de sua autoria</strong> em revistas científicas ou na mídia em geral?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_artigos = val; go('sc_niw_6'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_artigos = val; go('sc_niw_6'); });
   },
   async sc_niw_6() {
     await think(400);
     await botMsg('Já teve <strong>participação em projetos de pesquisa</strong> na sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_pesquisa = val; go('sc_niw_7'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_pesquisa = val; go('sc_niw_7'); });
   },
   async sc_niw_7() {
     await think(400);
     await botMsg('Tem comprovação de <strong>premiações e/ou reconhecimentos</strong> recebidos pelo seu trabalho?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_premios = val; go('sc_niw_8'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_premios = val; go('sc_niw_8'); });
   },
   async sc_niw_8() {
     await think(400);
     await botMsg('Possui <strong>certificados de cursos e/ou treinamentos</strong> na sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_cursos = val; go('sc_niw_9'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_cursos = val; go('sc_niw_9'); });
   },
   async sc_niw_9() {
     await think(400);
     await botMsg('Possui <strong>licenças emitidas por Conselhos Profissionais</strong> ou certificações de organizações reconhecidas?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.niw_licencas = val; go('sc_niw_hab'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_licencas = val; go('sc_niw_hab'); });
   },
   async sc_niw_hab() {
     setProgress(86);
@@ -3238,8 +3287,7 @@ const flows = {
       ti.disabled = false;
       const selecionados = hab.filter((_,i) => sel.has(i));
       userMsg(selecionados.length ? selecionados.join(', ') : 'Nenhum critério selecionado');
-      if (S.profile.temConquistas && S.profile.temConquistas.includes('Sim')) go('sc_eb1_intro');
-      else go('resultado');
+      go('resultado');
     };
     w.appendChild(conf);
     chat.appendChild(w);
@@ -3261,42 +3309,42 @@ const flows = {
   async sc_eb1_1() {
     await think(400);
     await botMsg('Já foram publicadas <strong>reportagens ou artigos sobre você</strong> em revistas, jornais ou mídias de grande alcance nacional ou internacional?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_midia = val; go('sc_eb1_2'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_midia = val; go('sc_eb1_2'); });
   },
   async sc_eb1_2() {
     await think(400);
     await botMsg('Seu trabalho já foi <strong>exibido em exposições ou mostras importantes</strong> em âmbito nacional ou internacional?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_exposicoes = val; go('sc_eb1_3'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_exposicoes = val; go('sc_eb1_3'); });
   },
   async sc_eb1_3() {
     await think(400);
     await botMsg('Você já ocupou <strong>cargos de liderança ou papel crítico</strong> em alguma organização importante da sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_lideranca = val; go('sc_eb1_4'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_lideranca = val; go('sc_eb1_4'); });
   },
   async sc_eb1_4() {
     await think(400);
     await botMsg('Seu <strong>salário ou remuneração</strong> está comprovadamente acima da média dos profissionais da sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_salario = val; go('sc_eb1_5'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_salario = val; go('sc_eb1_5'); });
   },
   async sc_eb1_5() {
     await think(400);
     await botMsg('Você já recebeu <strong>prêmios de excelência</strong> reconhecidos nacional ou internacionalmente?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_premios = val; go('sc_eb1_6'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_premios = val; go('sc_eb1_6'); });
   },
   async sc_eb1_6() {
     await think(400);
     await botMsg('Participa de <strong>associações que exigem realizações de destaque</strong> para admissão (acesso por convite ou mérito)?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_assoc = val; go('sc_eb1_7'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_assoc = val; go('sc_eb1_7'); });
   },
   async sc_eb1_7() {
     await think(400);
     await botMsg('Você já foi <strong>convidado a avaliar o trabalho de outras pessoas</strong>, individualmente ou como parte de um painel?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_avaliador = val; go('sc_eb1_8'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_avaliador = val; go('sc_eb1_8'); });
   },
   async sc_eb1_8() {
     await think(400);
     await botMsg('Tem evidências de <strong>contribuições originais de grande importância</strong> para o seu campo (científicas, artísticas, de negócios)?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.eb1_contrib = val; go('sc_eb1_decide'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_contrib = val; go('sc_eb1_decide'); });
   },
 
   async sc_eb1_decide() {
@@ -3315,27 +3363,27 @@ const flows = {
   async sc_o1_1() {
     await think(400);
     await botMsg('Você já recebeu <strong>prêmios ou reconhecimentos nacionais/internacionais</strong> na sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_premios = val; go('sc_o1_2'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_premios = val; go('sc_o1_2'); });
   },
   async sc_o1_2() {
     await think(400);
     await botMsg('Existem <strong>publicações em mídia relevante</strong> sobre você ou seu trabalho?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_midia = val; go('sc_o1_3'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_midia = val; go('sc_o1_3'); });
   },
   async sc_o1_3() {
     await think(400);
     await botMsg('Você possui <strong>contribuições originais reconhecidas</strong> na sua área?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_contrib = val; go('sc_o1_4'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_contrib = val; go('sc_o1_4'); });
   },
   async sc_o1_4() {
     await think(400);
     await botMsg('Você ocupa ou já ocupou um <strong>papel de liderança em organizações de destaque</strong>?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_lideranca = val; go('sc_o1_5'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_lideranca = val; go('sc_o1_5'); });
   },
   async sc_o1_5() {
     await think(400);
     await botMsg('Sua remuneração está <strong>acima da média da sua área</strong>?');
-    showOpts(['Sim','Não','Possibilidade de obter'], val => { userMsg(val); S.profile.o1_salario = val; go(S._afterO1 || 'resultado'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_salario = val; go(S._afterO1 || 'resultado'); });
   },
 
   // ──────── RESULTADO ────────
@@ -3417,15 +3465,29 @@ const flows = {
 
     } catch (err) {
       console.warn('Análise IA indisponível, usando scoring local:', err);
-      const score = calcScore(visto, S.profile);
-      setSideBar(score);
+      const targetVistos = (S.vistos && S.vistos.length > 0) ? S.vistos : [visto];
+      const scores = targetVistos.map(v => ({ visto: v, score: calcScore(v, S.profile) }));
+      const best = scores.reduce((a, b) => a.score > b.score ? a : b);
+      setSideBar(best.score);
       const typRow2 = showTyping(); await pause(900); rmTyping();
       await botMsg(`Análise concluída! Aqui está o resultado para <strong>${S.nome}</strong>:`);
       await pause(400);
       const row = document.createElement('div');
       row.className = 'row';
-      row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
-        <div class="msg-wrap" style="max-width:92%">${buildResult(visto, score, S.profile)}</div>`;
+      let resultHtml;
+      if (scores.length > 1) {
+        const tabs = scores.map((s, i) =>
+          `<button class="dual-tab ${i===0?'active':''}" id="tab-fb-${i}" onclick="switchFbTab(${i})">${s.visto} · ${s.score} pts</button>`
+        ).join('');
+        const panels = scores.map((s, i) =>
+          `<div id="fb-panel-${i}" ${i>0?'style="display:none"':''}>${buildResult(s.visto, s.score, S.profile)}</div>`
+        ).join('');
+        resultHtml = `<div><div class="dual-tab-row">${tabs}</div>${panels}</div>`;
+      } else {
+        resultHtml = buildResult(best.visto, best.score, S.profile);
+      }
+      row.innerHTML = '<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>' +
+        '<div class="msg-wrap" style="max-width:92%">' + resultHtml + '</div>';
       chat.appendChild(row);
       scrollBottom();
     }
@@ -3777,8 +3839,7 @@ localStorage.setItem = function(key, val) {
     <div style="font-size:36px;margin-bottom:12px">🎯</div>
     <div style="font-family:"Manrope",sans-serif;font-size:20px;font-weight:700;color:#0b1c30;margin-bottom:10px">Você está quase lá!</div>
     <p style="font-size:13.5px;color:#424655;line-height:1.7;margin-bottom:22px">
-      Você está a <strong id="exit-prog-txt">poucos passos</strong> de descobrir seu caminho para os EUA.
-      
+      Você está a <strong id="exit-prog-txt">poucos passos</strong>. Continue para descobrir seu caminho para os EUA.
     </p>
     <div style="display:flex;flex-direction:column;gap:9px">
       <button onclick="exitContinue()" style="width:100%;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;border:none;border-radius:11px;padding:13px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer">
@@ -3816,7 +3877,7 @@ function showExitPopup() {
   const prog = S.prog || 0;
   const txt = prog >= 70 ? 'a 1 etapa do resultado final' :
               prog >= 40 ? 'na metade da análise' :
-              'no início da análise';
+              'na direção certa para a sua análise';
   document.getElementById('exit-prog-txt').textContent = txt;
   document.getElementById('exit-overlay').style.display = 'flex';
 }
