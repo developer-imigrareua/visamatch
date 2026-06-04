@@ -1275,6 +1275,29 @@ async function doResendCode() {
   } catch(err) {}
 }
 
+
+// ─── SALVAR PERFIL DO USUÁRIO ───
+async function saveUserProfile(nome, phone) {
+  const token = localStorage.getItem('vm_user_token');
+  if (!token) return;
+  try {
+    const body = {};
+    if (nome)  body.nome  = nome;
+    if (phone) body.phone = phone;
+    if (!Object.keys(body).length) return;
+    await fetch(API_BASE + '/user/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body)
+    });
+    // Atualiza localStorage com novo nome
+    const stored = JSON.parse(localStorage.getItem('vm_user') || '{}');
+    if (nome)  stored.nome  = nome;
+    if (phone) stored.phone = phone;
+    localStorage.setItem('vm_user', JSON.stringify(stored));
+  } catch(e) { console.warn('saveUserProfile error:', e); }
+}
+
 function resetAndRestart() {
   const savedEmail = S.email;
   // Reset state
@@ -1783,6 +1806,11 @@ const flows = {
       const { hasAccount, hasLead, nome } = await res.json();
       if (hasAccount) {
         if (nome) { S.nome = nome.split(' ')[0]; S.profile.nomeCompleto = nome; }
+        // Busca telefone salvo
+        try {
+          const uRes = await fetch(API_BASE + '/user/me', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('vm_user_token') } });
+          if (uRes.ok) { const uData = await uRes.json(); if (uData.phone) S.phone = uData.phone; if (uData.nome) { S.nome = uData.nome.split(' ')[0]; S.profile.nomeCompleto = uData.nome; } }
+        } catch(e) {}
         const primeiroNome = nome ? nome.split(' ')[0] : '';
         await botMsg('Olá' + (primeiroNome ? ', <strong>' + primeiroNome + '</strong>' : '') + '! Encontramos uma conta com o e-mail <strong>' + S.email + '</strong>.');
         await pause(300);
@@ -1852,6 +1880,11 @@ const flows = {
           localStorage.setItem('vm_user', JSON.stringify(data.user));
           S.nome = (data.user.nome || '').split(' ')[0] || S.nome;
           S.profile.nomeCompleto = data.user.nome || S.profile.nomeCompleto;
+          // Busca telefone salvo
+          try {
+            const uRes = await fetch(API_BASE + '/user/me', { headers: { 'Authorization': 'Bearer ' + data.token } });
+            if (uRes.ok) { const uData = await uRes.json(); if (uData.phone) S.phone = uData.phone; }
+          } catch(e) {}
           userMsg('••••••••');
           await botMsg('✅ Bem-vindo de volta, <strong>' + S.nome + '</strong>!');
           await pause(400);
@@ -1951,11 +1984,12 @@ const flows = {
       } else if (val.includes('Corrigir')) {
         // Deixa corrigir nome e telefone
         await botMsg('Qual é o seu <strong>nome completo</strong> atualizado?');
-        waitInput(v => {
+        waitInput(async v => {
           const partes = v.trim().split(/\s+/).filter(p => p.length >= 2);
-          if (partes.length < 2) { userMsg(v); botMsg('⚠️ Informe nome e sobrenome.'); waitInput(v2 => { S.nome = v2.split(' ')[0]; S.profile.nomeCompleto = v2; go('contact_phone'); }); return; }
+          if (partes.length < 2) { userMsg(v); await botMsg('⚠️ Informe nome e sobrenome.'); waitInput(async v2 => { S.nome = v2.split(' ')[0]; S.profile.nomeCompleto = v2; await saveUserProfile(v2, null); go('contact_phone'); }); return; }
           S.nome = partes[0]; S.profile.nomeCompleto = v;
           userMsg(v);
+          await saveUserProfile(v, null);
           go('contact_phone');
         });
       } else {
@@ -2040,6 +2074,7 @@ const flows = {
         if (val.includes('Sim')) {
           // Tudo confirmado — vai direto para triagem
           await botMsg('Perfeito! Vamos iniciar sua nova análise, <strong>' + S.nome + '</strong>.');
+          await saveUserProfile(S.profile.nomeCompleto || S.nome, S.phone);
           go('path_select');
         } else {
           await botMsg('Qual é o seu <strong>WhatsApp</strong> atual? Selecione o país e digite o número:');

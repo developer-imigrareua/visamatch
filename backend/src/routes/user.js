@@ -21,9 +21,21 @@ function authUser(req, res, next) {
 // ── GET /user/me ──
 router.get('/me', authUser, async (req, res) => {
   const { data } = await supabase.from('users')
-    .select('id,email,nome,created_at').eq('id', req.user.userId).single();
+    .select('id,email,nome,phone,created_at').eq('id', req.user.userId).single();
   if (!data) return res.status(404).json({ error: 'Usuário não encontrado.' });
   res.json(data);
+});
+
+// ── PATCH /user/profile ── atualiza nome e telefone
+router.patch('/profile', authUser, async (req, res) => {
+  const { nome, phone } = req.body;
+  if (!nome && !phone) return res.status(400).json({ error: 'Informe nome ou telefone.' });
+  const updates = {};
+  if (nome)  updates.nome  = nome.trim();
+  if (phone) updates.phone = phone.trim();
+  const { error } = await supabase.from('users').update(updates).eq('id', req.user.userId);
+  if (error) { console.error('Update profile error:', error); return res.status(500).json({ error: 'Erro ao atualizar.' }); }
+  res.json({ success: true });
 });
 
 // ── GET /user/analyses ── lista análises do usuário
