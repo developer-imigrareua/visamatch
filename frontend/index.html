@@ -330,7 +330,7 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
   <div id="structured-zone" style="display:none;padding:14px 32px calc(14px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.95);border-top:1px solid rgba(194,198,216,.4)"></div>
   <div class="input-zone">
     <div class="input-row">
-      <input class="txt-in" id="ti" type="search" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off" spellcheck="false"/>
+      <input class="txt-in" id="ti" type="search" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"/>
       <button class="in-btn mic-b" id="mic-btn" title="Gravar áudio">
         <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
       </button>
@@ -3369,35 +3369,64 @@ const flows = {
 
 // ─── MOBILE KEYBOARD FIX ───
 // Quando o teclado virtual abre no iOS/Android, reposiciona o input-zone
-if (window.visualViewport) {
-  const inputZone = document.querySelector('.input-zone');
-  const mainEl    = document.querySelector('.main');
+// ── iOS KEYBOARD FIX ──
+// Detecta abertura/fechamento do teclado via visualViewport E focusin/focusout
+(function() {
+  if (window.innerWidth > 900) return; // só mobile/tablet
 
-  function onViewportResize() {
-    // Só aplica no mobile
-    if (window.innerWidth > 760) return;
-    const vv = window.visualViewport;
-    const keyboardHeight = window.innerHeight - vv.height;
-    if (keyboardHeight > 100) {
-      // Teclado aberto: fixa o input acima do teclado
-      inputZone.style.position = 'fixed';
-      inputZone.style.bottom   = keyboardHeight + 'px';
-      inputZone.style.left     = '0';
-      inputZone.style.right    = '0';
-      inputZone.style.zIndex   = '100';
+  const inputZone = document.querySelector('.input-zone');
+  const structZone = document.getElementById('structured-zone');
+
+  function applyKeyboardOffset(keyboardH) {
+    const zones = [inputZone, structZone].filter(Boolean);
+    if (keyboardH > 80) {
+      zones.forEach(z => {
+        z.style.position = 'fixed';
+        z.style.bottom   = keyboardH + 'px';
+        z.style.left     = '0';
+        z.style.right    = '0';
+        z.style.zIndex   = '200';
+      });
+      // Rola o chat para mostrar a última mensagem
+      setTimeout(() => { if (chat) chat.scrollTop = chat.scrollHeight; }, 100);
     } else {
-      // Teclado fechado: volta ao fluxo normal (CSS cuida do padding)
-      inputZone.style.position = '';
-      inputZone.style.bottom   = '';
-      inputZone.style.left     = '';
-      inputZone.style.right    = '';
-      inputZone.style.zIndex   = '';
+      zones.forEach(z => {
+        z.style.position = '';
+        z.style.bottom   = '';
+        z.style.left     = '';
+        z.style.right    = '';
+        z.style.zIndex   = '';
+      });
     }
   }
 
-  window.visualViewport.addEventListener('resize', onViewportResize);
-  window.visualViewport.addEventListener('scroll', onViewportResize);
-}
+  // Método 1: visualViewport (mais preciso)
+  if (window.visualViewport) {
+    const onVV = () => {
+      const kH = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+      applyKeyboardOffset(Math.max(0, kH));
+    };
+    window.visualViewport.addEventListener('resize', onVV);
+    window.visualViewport.addEventListener('scroll', onVV);
+  }
+
+  // Método 2: focusin/focusout como fallback para iOS Safari
+  let _kbTimer = null;
+  document.addEventListener('focusin', e => {
+    if (!['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+    clearTimeout(_kbTimer);
+    _kbTimer = setTimeout(() => {
+      if (!window.visualViewport) return;
+      const kH = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+      applyKeyboardOffset(Math.max(0, kH));
+    }, 350); // espera o teclado abrir completamente
+  });
+
+  document.addEventListener('focusout', () => {
+    clearTimeout(_kbTimer);
+    _kbTimer = setTimeout(() => applyKeyboardOffset(0), 200);
+  });
+})();
 
 // ─── RETOMADA DE SESSÃO ───
 async function checkAndResumeSession() {
@@ -3483,11 +3512,33 @@ async function checkSessionInBackground() {
 }
 
 // ─── ANTI-AUTOFILL ───
-// Usa readonly trick: campo fica readonly por 300ms, depois libera para digitação
-// Isso impede o browser de preencher automaticamente no carregamento
+let _vmUserTyped = false;
 if (ti) {
-  ti.setAttribute('readonly', true);
-  setTimeout(() => { if (ti) { ti.removeAttribute('readonly'); ti.value = ''; } }, 300);
+  // Marca quando o usuário digitou algo
+  ti.addEventListener('keydown', () => { _vmUserTyped = true; });
+  
+  // Readonly trick
+  ti.setAttribute('readonly', 'readonly');
+  setTimeout(() => {
+    if (ti) { ti.removeAttribute('readonly'); ti.value = ''; }
+  }, 400);
+  
+  // Limpa se tiver valor mas usuário não digitou (autofill)
+  const _clearAutofill = () => {
+    if (ti && ti.value && !_vmUserTyped && ti !== document.activeElement) {
+      ti.value = '';
+    }
+    // Reseta flag quando campo está vazio (pronto para nova entrada)
+    if (ti && !ti.value) _vmUserTyped = false;
+  };
+  setTimeout(_clearAutofill, 500);
+  setTimeout(_clearAutofill, 1000);
+  setTimeout(_clearAutofill, 2000);
+  
+  // Limpa no focus se não foi o usuário que preencheu
+  ti.addEventListener('focus', () => {
+    if (ti.value && !_vmUserTyped) ti.value = '';
+  });
 }
 
 // ─── START ───
