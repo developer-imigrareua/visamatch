@@ -243,7 +243,11 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
   .ai-full-card-criteria table{font-size:11.5px !important}
   .ai-full-card-criteria td{padding:8px 6px !important}
   .ai-full-card-visto{font-size:20px !important}
-  .msg-wrap{max-width:98% !important}
+  .msg-wrap{max-width:98% !important;width:100% !important;overflow:hidden}
+  .ai-full-card-body table{table-layout:fixed;width:100%}
+  .ai-full-card-body td{word-break:break-word;overflow-wrap:break-word}
+  .ai-full-card-criteria{overflow-x:hidden !important}
+  .ai-full-card-criteria > div{overflow:hidden}
 
   .app{grid-template-columns:1fr}
   .sidebar{display:none}
@@ -1374,6 +1378,24 @@ function switchFullTab(n) {
   document.getElementById('tab-full-2').className='dual-tab'+(n===2?' active':'');
 }
 
+function buildScoreDonut(pct, classificacao) {
+  const clampedPct = Math.max(0, Math.min(100, pct));
+  const color = clampedPct >= 70 ? '#1d9e70' : clampedPct >= 40 ? '#d97706' : clampedPct > 0 ? '#94a3b8' : '#dc2626';
+  const r = 34, cx = 44, cy = 44;
+  const circ = 2 * Math.PI * r;
+  const dash = (clampedPct / 100) * circ;
+  const shortCls = (classificacao || '').split(' ')[0];
+  return '<svg width="88" height="88" viewBox="0 0 88 88" style="flex-shrink:0">' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="7"/>' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="7"' +
+    ' stroke-dasharray="' + dash.toFixed(1) + ' ' + (circ - dash).toFixed(1) + '"' +
+    ' stroke-dashoffset="' + (circ / 4).toFixed(1) + '"' +
+    ' transform="rotate(-90 ' + cx + ' ' + cy + ')" stroke-linecap="round"/>' +
+    '<text x="' + cx + '" y="' + (cy - 4) + '" text-anchor="middle" font-size="15" font-family="Manrope,sans-serif" fill="white" font-weight="800">' + clampedPct + '%</text>' +
+    '<text x="' + cx + '" y="' + (cy + 11) + '" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.55)" font-weight="600">' + shortCls + '</text>' +
+    '</svg>';
+}
+
 function singleFullCard(a) {
   if (!a) return '';
   const pct  = a.aprovacao_pct ?? a.score ?? 0;
@@ -1427,13 +1449,13 @@ function singleFullCard(a) {
     const stMap = { atendido:['✓','#065f46','rgba(29,158,112,.08)','rgba(29,158,112,.2)'], fortalecer:['⚡','#78350f','rgba(217,119,6,.08)','rgba(217,119,6,.2)'], construir:['◯','#7f1d1d','rgba(220,38,38,.06)','rgba(220,38,38,.18)'] };
     const [ico,cor,bg,brd] = stMap[c.status]||stMap.construir;
     const stars = Array.from({length:5},(_,i)=>`<span style="color:${i<(c.estrelas||0)?'var(--pink)':'rgba(11,25,41,.12)'}">★</span>`).join('');
-    const evids = (c.evidencias||[]).map(e=>`<div style="font-size:11.5px;color:var(--txt2);padding-left:10px;position:relative">· ${e}</div>`).join('');
+    const evids = (c.evidencias||[]).map(e=>`<div style="font-size:11.5px;color:var(--txt2);padding-left:10px;position:relative;overflow-wrap:break-word;word-break:break-word">· ${e}</div>`).join('');
     return `<tr style="border-bottom:1px solid rgba(11,25,41,.05)">
       <td style="padding:10px 8px;width:28px;vertical-align:top">
         <div style="width:26px;height:26px;border-radius:50%;background:${bg};border:1px solid ${brd};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${cor}">${c.numero||''}</div>
       </td>
       <td style="padding:10px 8px;vertical-align:top">
-        <div style="font-size:12.5px;font-weight:600;color:var(--blue4);margin-bottom:3px">${c.nome}</div>
+        <div style="font-size:12.5px;font-weight:600;color:var(--blue4);margin-bottom:3px;overflow-wrap:break-word;word-break:break-word">${c.nome}</div>
         ${evids}
       </td>
       <td style="padding:10px 8px;vertical-align:top;text-align:center;white-space:nowrap">
@@ -1455,7 +1477,7 @@ function singleFullCard(a) {
   const acoes = (a.plano_acao||a.proximos_passos||[]).map((ac,i)=>
     `<div style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;background:var(--surface3);border:1px solid var(--border);border-radius:8px">
       <div style="width:20px;height:20px;background:var(--blue4);color:var(--pink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${i+1}</div>
-      <div style="font-size:12.5px;color:var(--txt);line-height:1.5">${ac}</div>
+      <div style="font-size:12.5px;color:var(--txt);line-height:1.5;overflow-wrap:break-word;word-break:break-word">${ac}</div>
     </div>`
   ).join('');
 
@@ -1469,7 +1491,7 @@ function singleFullCard(a) {
   return `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(11,25,41,.1)">
 
     <!-- HEADER -->
-    <div class="ai-full-card-header" style="background:linear-gradient(135deg,#1A72F6 0%,#002b70 100%);padding:22px 24px;display:flex;align-items:center;gap:16px;position:relative">
+    <div class="ai-full-card-header" style="background:linear-gradient(135deg,#1A72F6 0%,#002b70 100%);padding:20px 18px;display:flex;align-items:flex-start;gap:12px;position:relative;flex-wrap:wrap">
       <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);border-radius:50%"></div>
       <div style="flex-shrink:0;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.3)">${avatar}</div>
       <div style="flex:1">
@@ -1479,11 +1501,7 @@ function singleFullCard(a) {
         <div style="font-family:"Manrope",sans-serif;font-size:17px;color:#fff">${nome}</div>
         <div style="font-size:11.5px;color:rgba(255,255,255,.4)">${prof}</div>
       </div>
-      <div style="text-align:center;flex-shrink:0">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">Análise de Aprovação</div>
-        <div class="ai-full-card-score" style="font-family:"Manrope",sans-serif;font-size:48px;color:#fff;line-height:1;font-weight:700">${pct}%</div>
-        <div style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);margin-top:5px">${cls.ico} ${a.classificacao}</div>
-      </div>
+      <div style="flex-shrink:0">${buildScoreDonut(pct, a.classificacao)}</div>
     </div>
 
     <!-- DESTAQUES -->
@@ -1491,7 +1509,7 @@ function singleFullCard(a) {
 
     <!-- SOBRE ESTE VISTO -->
     ${sobreTxt ? `<div style="padding:16px 24px;background:var(--surface3);border-bottom:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:7px">Sobre este Visto</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue2);margin-bottom:7px">Sobre este Visto</div>
       <div style="font-size:13px;color:var(--txt2);line-height:1.7">${sobreTxt}</div>
     </div>` : ''}
 
