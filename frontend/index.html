@@ -235,19 +235,23 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
   /* Card diagnóstico — mobile */
   .ai-full-card-header{flex-direction:column !important;gap:12px !important;padding:18px 16px !important}
   .ai-full-card-header > div:last-child{width:100% !important;display:flex;align-items:center;gap:12px;text-align:left !important}
-  .ai-full-card-header > div:last-child > div:first-child{font-size:11px !important}
-  .ai-full-card-header > div:last-child > div:nth-child(2){font-size:36px !important;line-height:1}
   .ai-full-card-score{font-size:36px !important}
   .ai-full-card-body{grid-template-columns:1fr !important}
   .ai-full-card-side{border-right:none !important;border-top:1px solid var(--border) !important}
   .ai-full-card-criteria table{font-size:11.5px !important}
   .ai-full-card-criteria td{padding:8px 6px !important}
   .ai-full-card-visto{font-size:20px !important}
-  .msg-wrap{max-width:98% !important;width:100% !important;overflow:hidden}
+  /* card full-width no mobile: sem avatar à esquerda */
+  .row.result-row{flex-direction:column !important}
+  .row.result-row > .ava{display:none !important}
+  .row.result-row > .msg-wrap{max-width:100% !important;width:100% !important;margin:0 !important;padding:0 4px !important}
   .ai-full-card-body table{table-layout:fixed;width:100%}
   .ai-full-card-body td{word-break:break-word;overflow-wrap:break-word}
   .ai-full-card-criteria{overflow-x:hidden !important}
   .ai-full-card-criteria > div{overflow:hidden}
+  /* diagnóstico: label não quebra */
+  .diag-item{flex-wrap:nowrap !important}
+  .diag-label{white-space:nowrap !important;flex-shrink:0 !important}
 
   .app{grid-template-columns:1fr}
   .sidebar{display:none}
@@ -1572,9 +1576,9 @@ function singleFullCard(a) {
       `<div style="font-size:11.5px;color:var(--txt2);margin-top:3px;padding-left:10px">· ${e}</div>`
     ).join('');
     return `<div style="padding:10px 13px;border-radius:10px;background:${bg};border:1px solid ${cor}22">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${evid?'4px':'0'}">
-        <span style="font-size:13px;font-weight:600;color:var(--txt)">${c.nome}</span>
-        <span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:${bg};color:${cor};border:1px solid ${cor}44;flex-shrink:0;margin-left:8px">${lbl}</span>
+      <div class="diag-item" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:${evid?'4px':'0'}">
+        <span style="font-size:13px;font-weight:600;color:var(--txt);min-width:0;overflow-wrap:break-word;word-break:break-word">${c.nome}</span>
+        <span class="diag-label" style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:${bg};color:${cor};border:1px solid ${cor}44;white-space:nowrap;flex-shrink:0">${lbl}</span>
       </div>
       ${evid}
     </div>`;
@@ -1609,9 +1613,7 @@ function singleFullCard(a) {
         <div style="font-family:Manrope,sans-serif;font-size:17px;color:#fff">${nome}</div>
         <div style="font-size:11.5px;color:rgba(255,255,255,.4)">${prof}</div>
       </div>
-      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center">${buildScoreDonut(pct, a.classificacao)}
-        <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.55);line-height:1.5;max-width:180px;text-align:center">Este score reflete o que foi declarado. Seu desafio é materializar e documentar o que já construiu.</div>
-      </div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center">${buildScoreDonut(pct, a.classificacao)}</div>
     </div>
 
     <!-- DESTAQUES -->
@@ -3760,7 +3762,7 @@ const flows = {
       await pause(500);
 
       const row = document.createElement('div');
-      row.className = 'row';
+      row.className = 'row result-row';
       row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
         <div class="msg-wrap" style="max-width:96%">${buildFullAICard(analysis)}</div>`;
       chat.appendChild(row);
