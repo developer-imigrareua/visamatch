@@ -1,104 +1,100 @@
 #!/bin/bash
-# deploy.sh — Visa Match · VPS Hostinger
+# deploy.sh — Visa Match · EasyPanel + Docker Swarm
 #
-# SEGURO: opera apenas em /var/www/visamatch
-# NÃO toca em: liv-ai, n8n, nginx existente, PM2, SSL existente
+# SEGURO: opera apenas em /etc/easypanel/projects/monitoring/visamatch
+# NÃO toca em: outros projetos, Traefik, configurações do EasyPanel
 #
 # Uso:
-#   bash deploy.sh --setup   → primeira vez (instala nginx conf + sobe container)
-#   bash deploy.sh           → atualiza (pull + rebuild + restart)
+#   bash deploy.sh           → atualiza (clone → build → service update)
+#   bash deploy.sh --help    → mostra este help
 
 set -e
 
-APP_DIR="/var/www/visamatch"
 REPO="https://github.com/developer-imigrareua/visamatch.git"
 BRANCH="main"
-CONTAINER="visamatch"
-NGINX_CONF="/etc/nginx/sites-available/visamatch"
-NGINX_LINK="/etc/nginx/sites-enabled/visamatch"
+CODE_DIR="/etc/easypanel/projects/monitoring/visamatch/code"
+SERVICE="monitoring_visamatch"
+TMP_DIR="/tmp/visamatch-deploy-$$"
+TAG="easypanel/monitoring/visamatch:$(date +%s)"
 
 echo ""
-echo "🚀 Visa Match — Deploy"
-echo "─────────────────────────────────────"
+echo "🚀 Visa Match — Deploy (EasyPanel)"
+echo "────────────────────────────────────────"
 
-# Garante que não está mexendo em outros projetos
-if [ "$(pwd)" != "$APP_DIR" ] && [ "$1" != "--setup" ]; then
-  cd $APP_DIR 2>/dev/null || { echo "❌ Diretório $APP_DIR não encontrado. Rode com --setup primeiro."; exit 1; }
-fi
-
-# ── SETUP INICIAL ──────────────────────────────────────────────
-if [ "$1" == "--setup" ]; then
-  echo "📁 Clonando repositório em $APP_DIR..."
-  if [ -d "$APP_DIR/.git" ]; then
-    echo "   Repositório já existe, atualizando..."
-    cd $APP_DIR && git pull origin $BRANCH
-  else
-    git clone $REPO $APP_DIR
-    cd $APP_DIR
-  fi
-
+if [ "$1" == "--help" ]; then
+  echo "Uso: bash deploy.sh"
   echo ""
-  echo "🔑 Configurando .env..."
-  if [ ! -f "$APP_DIR/backend/.env" ]; then
-    cp $APP_DIR/backend/.env.example $APP_DIR/backend/.env
-    echo "   ⚠️  ATENÇÃO: Preencha as chaves em $APP_DIR/backend/.env antes de continuar!"
-    echo "   Comando: nano $APP_DIR/backend/.env"
-    echo ""
-    read -p "   Pressione ENTER após preencher o .env para continuar..."
-  else
-    echo "   .env já existe, mantendo."
-  fi
-
+  echo "  Clona o repositório, copia arquivos para $CODE_DIR,"
+  echo "  constrói nova imagem Docker e atualiza o serviço Swarm."
   echo ""
-  echo "🌐 Configurando Nginx (APENAS novo arquivo, sem tocar nos existentes)..."
-  if [ ! -f "$NGINX_CONF" ]; then
-    cp $APP_DIR/nginx/visamatch.conf $NGINX_CONF
-    ln -sf $NGINX_CONF $NGINX_LINK
-    echo "   ✅ Novo site adicionado: visamatch"
-  else
-    echo "   Config Nginx já existe, atualizando..."
-    cp $APP_DIR/nginx/visamatch.conf $NGINX_CONF
-  fi
-
-  echo "   Validando Nginx (sem reiniciar serviços existentes)..."
-  nginx -t
-  systemctl reload nginx
-  echo "   ✅ Nginx recarregado com sucesso"
-
-  echo ""
-  echo "🐳 Subindo container Docker isolado..."
-  cd $APP_DIR
-  docker compose up -d --build
-
-  echo ""
-  echo "🔒 SSL — Para ativar HTTPS (não afeta certificados existentes):"
-  echo "   certbot --nginx -d visamatch.imigrareua.com"
-
-  echo ""
-  echo "✅ Setup concluído!"
-  echo "   Frontend: https://visamatch.imigrareua.com"
-  echo "   Admin:    https://visamatch.imigrareua.com/admin"
-  echo "   API:      https://visamatch.imigrareua.com/api/health"
+  echo "  Requer:"
+  echo "    - Acesso ao GitHub (token configurado ou repo público)"
+  echo "    - Docker Swarm ativo com serviço '$SERVICE'"
   exit 0
 fi
 
-# ── DEPLOY PADRÃO (atualizações) ───────────────────────────────
-echo "⬇️  Atualizando código..."
-cd $APP_DIR
-git pull origin $BRANCH
+# ── 1. Clonar código mais recente ──────────────────────────────
+echo "⬇️  Clonando código mais recente..."
+rm -rf "$TMP_DIR"
+git clone --depth 1 --branch "$BRANCH" "$REPO" "$TMP_DIR"
+echo "   ✅ Clone concluído"
+
+# ── 2. Copiar arquivos para pasta do EasyPanel ─────────────────
+echo ""
+echo "📁 Copiando arquivos..."
+
+mkdir -p "$CODE_DIR/backend/src"
+mkdir -p "$CODE_DIR/frontend"
+mkdir -p "$CODE_DIR/admin"
+
+cp -r "$TMP_DIR/backend/"   "$CODE_DIR/"
+cp -r "$TMP_DIR/frontend/"  "$CODE_DIR/"
+[ -d "$TMP_DIR/admin" ] && cp -r "$TMP_DIR/admin/" "$CODE_DIR/" || true
+cp    "$TMP_DIR/Dockerfile" "$CODE_DIR/"
+
+echo "   ✅ Arquivos copiados"
+
+# ── 3. Limpar clone temporário ─────────────────────────────────
+rm -rf "$TMP_DIR"
+
+# ── 4. Build da imagem Docker ──────────────────────────────────
+echo ""
+echo "🐳 Construindo imagem: $TAG"
+cd "$CODE_DIR"
+docker build -t "$TAG" .
+echo "   ✅ Build concluído"
+
+# ── 5. Atualizar serviço Docker Swarm ─────────────────────────
+echo ""
+echo "🔄 Atualizando serviço $SERVICE..."
+docker service update \
+  --image "$TAG" \
+  --force \
+  "$SERVICE"
+echo "   ✅ Serviço atualizado"
+
+# ── 6. Verificar status ────────────────────────────────────────
+echo ""
+echo "⏳ Aguardando container estabilizar..."
+sleep 6
 
 echo ""
-echo "🐳 Rebuild e restart do container..."
-docker compose up -d --build
+echo "📊 Status do serviço:"
+docker service ps "$SERVICE" --no-trunc \
+  --format "{{.Name}} | {{.CurrentState}} | {{.Image}}" | head -5
 
 echo ""
-echo "⏳ Aguardando container ficar saudável..."
-sleep 5
-
-echo ""
-echo "📊 Status:"
-docker compose ps
+echo "🌐 Verificando resposta HTTP..."
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://visamatch.imigrareua.com/ 2>/dev/null || echo "erro")
+if [ "$HTTP_CODE" == "200" ]; then
+  echo "   ✅ Site respondendo: HTTP $HTTP_CODE"
+else
+  echo "   ⚠️  HTTP $HTTP_CODE — verifique: docker service logs $SERVICE --tail 50"
+fi
 
 echo ""
 echo "✅ Deploy concluído!"
-echo "   Logs: docker logs -f $CONTAINER"
+echo "   Tag: $TAG"
+echo "   URL: https://visamatch.imigrareua.com"
+echo "   Logs: docker service logs $SERVICE --tail 50 -f"
+echo ""
