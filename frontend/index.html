@@ -1163,12 +1163,20 @@ async function doRegisterModal() {
     const data = await res.json();
 
     if (!res.ok) {
-      // Pode já ter conta — tenta login
+      // Já tem conta — mostra login inline para salvar análise
       if (data.error && data.error.includes('já possui cadastro')) {
-        const e = document.getElementById('reg-err');
-        e.textContent = 'E-mail já cadastrado. Acesse o portal para fazer login.';
-        e.style.display = 'block';
         btn.disabled = false; btn.textContent = 'Criar conta e salvar análise';
+        document.getElementById('reg-form-wrap').innerHTML =
+          '<div style="text-align:center;margin-bottom:14px">' +
+            '<div style="font-size:22px;margin-bottom:6px">🔒</div>' +
+            '<div style="font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px">Você já tem conta!</div>' +
+            '<div style="font-size:12.5px;color:var(--txt2)">Digite sua senha para entrar e salvar esta análise.</div>' +
+          '</div>' +
+          '<input id="rm-login-pwd" type="password" placeholder="Sua senha" autocomplete="current-password" ' +
+            'style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:Manrope,sans-serif;font-size:15px;outline:none;margin-bottom:10px"/>' +
+          '<button onclick="doLoginModal()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:12px;font-family:\'Inter Tight\',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Entrar e salvar análise</button>';
+        document.getElementById('reg-form-wrap').style.display = '';
+        setTimeout(() => document.getElementById('rm-login-pwd')?.focus(), 100);
         return;
       }
       throw new Error(data.error);
@@ -1177,51 +1185,8 @@ async function doRegisterModal() {
     localStorage.setItem('vm_user_token', data.token);
     localStorage.setItem('vm_user', JSON.stringify(data.user));
 
-    // Salva a análise vinculada ao usuário (sanitiza dados grandes)
-    if (_pendingAnalysis) {
-      const best = _pendingAnalysis.melhor || _pendingAnalysis.resultados?.[0] || {};
-
-      // Remove foto base64 e campos HTML pesados do profile
-      const profileClean = { ...S.profile };
-      delete profileClean.foto; // pode ser MB em base64
-
-      // Versão resumida da análise (sem HTML gerado)
-      const analysisClean = {
-        isDual: _pendingAnalysis.isDual,
-        gerado_em: _pendingAnalysis.gerado_em,
-        melhor: best ? {
-          visto: best.visto, score: best.score, aprovacao_pct: best.aprovacao_pct,
-          classificacao: best.classificacao, scorecard: best.scorecard,
-          pontos_fortes: best.pontos_fortes, pontos_criticos: best.pontos_criticos,
-          veredicto: best.veredicto, criterios: best.criterios,
-          plano_acao: best.plano_acao, fundamento_legal: best.fundamento_legal,
-          recomendacao_parceiro: best.recomendacao_parceiro
-        } : null,
-        resultados: (_pendingAnalysis.resultados || []).map(r => r ? {
-          visto: r.visto, score: r.score, aprovacao_pct: r.aprovacao_pct,
-          classificacao: r.classificacao, scorecard: r.scorecard
-        } : null)
-      };
-
-      // Verifica se análise já não foi salva (evita duplicação)
-      const _saveKey = 'vm_saved_' + (best.visto || S.visto) + '_' + Date.now().toString().slice(0,-3);
-      if (!sessionStorage.getItem(_saveKey)) {
-        sessionStorage.setItem(_saveKey, '1');
-        await fetch(`${API_BASE}/user/analyses`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.token}` },
-          body: JSON.stringify({
-            visto: best.visto || S.visto,
-            score: best.score ?? 0,
-            aprovacao_pct: best.aprovacao_pct ?? 0,
-            classificacao: best.classificacao || '',
-            profile: profileClean,
-            analysis_json: analysisClean
-          })
-        }).catch(e => console.warn('Erro ao salvar análise:', e));
-        _panelLoaded = false; // força reload do painel
-      }
-    }
+    // NÃO salva aqui — aguarda verificação do e-mail em doVerifyRegistration()
+    // Isso evita duplicação: salvar antes + depois do código 2FA
 
     // 2FA: envia código de confirmação por e-mail
     btn.textContent = 'Enviando código...';
@@ -1287,27 +1252,8 @@ async function doVerifyRegistration() {
     localStorage.setItem('vm_user_token', token);
     localStorage.setItem('vm_user', JSON.stringify(d.user || window._pendingRegUser));
 
-    // Salva análise
-    if (_pendingAnalysis && token) {
-      const best = _pendingAnalysis.melhor || _pendingAnalysis.resultados?.[0] || {};
-      const profileClean = { ...S.profile }; delete profileClean.foto;
-      await fetch(API_BASE + '/user/analyses', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','Authorization':'Bearer ' + token},
-        body: JSON.stringify({
-          visto: best.visto || S.visto, score: best.score ?? 0,
-          aprovacao_pct: best.aprovacao_pct ?? 0, classificacao: best.classificacao || '',
-          profile: profileClean,
-          analysis_json: { isDual: _pendingAnalysis.isDual, melhor: best ? {
-            visto:best.visto,score:best.score,aprovacao_pct:best.aprovacao_pct,
-            classificacao:best.classificacao,scorecard:best.scorecard,
-            pontos_fortes:best.pontos_fortes,pontos_criticos:best.pontos_criticos,
-            veredicto:best.veredicto,criterios:best.criterios,plano_acao:best.plano_acao,
-            fundamento_legal:best.fundamento_legal,recomendacao_parceiro:best.recomendacao_parceiro
-          } : null }
-        })
-      }).catch(() => {});
-    }
+    // Salva análise (único ponto de save para novos cadastros)
+    await _saveAnalysisToAccount(token);
 
     const ok = document.getElementById('reg-ok');
     ok.textContent = '✅ Conta criada e verificada! Análise salva.';
@@ -1339,6 +1285,85 @@ async function doResendCode() {
   } catch(err) {}
 }
 
+
+// ── Login inline no modal (usuário já tem conta) ──
+async function doLoginModal() {
+  const pwd = (document.getElementById('rm-login-pwd') || {}).value || '';
+  if (!pwd) return;
+  const btn = document.querySelector('#reg-form-wrap button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
+  try {
+    const r = await fetch(API_BASE + '/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: S.email, password: pwd })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      const e = document.getElementById('reg-err');
+      e.textContent = d.error || 'Senha incorreta. Tente novamente.';
+      e.style.display = 'block';
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar e salvar análise'; }
+      return;
+    }
+    const token = d.token;
+    localStorage.setItem('vm_user_token', token);
+    localStorage.setItem('vm_user', JSON.stringify(d.user));
+
+    // Salva análise pendente
+    if (_pendingAnalysis && token) {
+      await _saveAnalysisToAccount(token);
+    }
+
+    const ok = document.getElementById('reg-ok');
+    ok.textContent = '✅ Login realizado! Análise salva com sucesso.';
+    ok.style.display = 'block';
+    document.getElementById('reg-form-wrap').style.display = 'none';
+    setTimeout(() => {
+      closeRegModal();
+      const btn2 = document.getElementById('my-analyses-btn');
+      if (btn2) btn2.style.display = 'flex';
+    }, 2000);
+  } catch(err) {
+    const e = document.getElementById('reg-err');
+    e.textContent = err.message || 'Erro ao fazer login.';
+    e.style.display = 'block';
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar e salvar análise'; }
+  }
+}
+
+// ── Salva análise em conta (função compartilhada) ──
+async function _saveAnalysisToAccount(token) {
+  if (!_pendingAnalysis || !token) return;
+  const best = _pendingAnalysis.melhor || _pendingAnalysis.resultados?.[0] || {};
+  const profileClean = { ...S.profile }; delete profileClean.foto;
+  await fetch(API_BASE + '/user/analyses', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','Authorization':'Bearer ' + token},
+    body: JSON.stringify({
+      visto: best.visto || S.visto,
+      score: best.score ?? 0,
+      aprovacao_pct: best.aprovacao_pct ?? 0,
+      classificacao: best.classificacao || '',
+      profile: profileClean,
+      analysis_json: {
+        isDual: _pendingAnalysis.isDual,
+        melhor: best ? {
+          visto:best.visto, score:best.score, aprovacao_pct:best.aprovacao_pct,
+          classificacao:best.classificacao, scorecard:best.scorecard,
+          pontos_fortes:best.pontos_fortes, pontos_criticos:best.pontos_criticos,
+          veredicto:best.veredicto, criterios:best.criterios,
+          plano_acao:best.plano_acao, fundamento_legal:best.fundamento_legal,
+          recomendacao_parceiro:best.recomendacao_parceiro
+        } : null,
+        resultados: (_pendingAnalysis.resultados || []).map(r => r ? {
+          visto:r.visto, score:r.score, aprovacao_pct:r.aprovacao_pct,
+          classificacao:r.classificacao, scorecard:r.scorecard
+        } : null)
+      }
+    })
+  }).catch(e => console.warn('Erro ao salvar análise:', e));
+  _panelLoaded = false;
+}
 
 // ─── SALVAR PERFIL DO USUÁRIO ───
 async function saveUserProfile(nome, phone) {
