@@ -138,7 +138,6 @@ td.nome{color:var(--txt);font-weight:500}
 .empty{text-align:center;padding:48px;color:var(--txt3);font-size:13.5px}
 /* ── FUNNEL ── */
 .funnel-list{display:flex;flex-direction:column;gap:8px}
-.funnel-item{display:grid;grid-template-columns:180px 1fr 80px 80px;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:10px}
 .funnel-label{font-size:13px;font-weight:500;color:var(--txt);display:flex;align-items:center;gap:7px}
 .funnel-bar-wrap{height:10px;background:rgba(11,25,41,.05);border-radius:5px;overflow:hidden}
 .funnel-bar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--blue2),var(--pink));transition:width .6s ease}
@@ -150,10 +149,24 @@ td.nome{color:var(--txt);font-weight:500}
 .stat-val{font-family:'Manrope',sans-serif;font-size:28px;color:var(--txt);font-weight:700;line-height:1}
 .stat-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
 .stat-sub{font-size:12px;color:var(--txt2);margin-top:2px}
-/* ── HEATMAP HOURS ── */
-.hours-grid{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-top:8px}
-.hour-cell{height:24px;border-radius:3px;background:rgba(11,25,41,.05);position:relative;cursor:default}
-.hour-cell:hover::after{content:attr(data-tip);position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0b1c30;color:#fff;font-size:10px;padding:3px 7px;border-radius:5px;white-space:nowrap;z-index:10}
+/* ── UTM TABS ── */
+.utm-tab{background:none;border:1.5px solid var(--border);border-radius:7px;padding:4px 12px;font-size:11.5px;font-family:'Inter Tight',sans-serif;color:var(--txt3);cursor:pointer;transition:all .15s}
+.utm-tab:hover{border-color:var(--blue2);color:var(--txt)}
+.utm-tab.active{background:var(--blue2);border-color:var(--blue2);color:#fff}
+/* ── KPI CHANGE ── */
+.kpi-change{font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:8px;display:inline-flex;align-items:center;gap:3px;margin-top:6px}
+.change-up{background:rgba(29,158,112,.09);color:var(--green)}
+.change-dn{background:rgba(220,38,38,.07);color:var(--red)}
+.change-flat{background:rgba(11,25,41,.05);color:var(--txt3)}
+/* ── FUNNEL v2 ── */
+.funnel-item{display:grid;grid-template-columns:160px 1fr 70px 70px 80px;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:10px}
+/* ── ABANDON STEPS ── */
+.ab-step{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;background:var(--surface3);margin-bottom:5px}
+.ab-step-name{font-size:12.5px;color:var(--txt);font-weight:500;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ab-step-bar{flex:1;height:7px;background:rgba(11,25,41,.08);border-radius:4px;overflow:hidden;min-width:60px}
+.ab-step-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--amber),#f59e0b)}
+.ab-step-num{font-size:12px;font-weight:700;color:var(--amber);min-width:30px;text-align:right}
+.ab-step-pct{font-size:11px;color:var(--txt3);min-width:36px;text-align:right}
 </style>
 </head>
 <body>
@@ -208,10 +221,27 @@ td.nome{color:var(--txt);font-weight:500}
       <div class="topbar-title" id="panel-title">Dashboard</div>
       <div class="topbar-sub" id="panel-sub">Visão geral da ferramenta Visa Match</div>
     </div>
-    <button class="refresh-btn" onclick="loadAll()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-      Atualizar
-    </button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <!-- Date range picker -->
+      <div style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:5px 10px" id="date-range-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--txt3)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <select class="filter-sel" id="preset-range" onchange="applyPreset()" style="border:none;background:transparent;font-size:12.5px;padding:0;outline:none">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="custom">Personalizado</option>
+        </select>
+        <span id="custom-dates" style="display:none;align-items:center;gap:4px">
+          <input type="date" id="date-from" class="filter-sel" style="padding:2px 6px;font-size:12px;border:none;background:transparent" onchange="loadAll()"/>
+          <span style="font-size:11px;color:var(--txt3)">até</span>
+          <input type="date" id="date-to" class="filter-sel" style="padding:2px 6px;font-size:12px;border:none;background:transparent" onchange="loadAll()"/>
+        </span>
+      </div>
+      <button class="refresh-btn" onclick="loadAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        Atualizar
+      </button>
+    </div>
   </div>
   <div class="content">
 
@@ -222,23 +252,41 @@ td.nome{color:var(--txt);font-weight:500}
       </div>
       <div class="grid2">
         <div class="card">
-          <div class="card-title">Leads por Visto</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:0">Leads por Visto</div>
+            <span id="visto-total" style="font-size:11px;color:var(--txt3)"></span>
+          </div>
           <div class="bar-list" id="visto-bars"></div>
         </div>
         <div class="card">
-          <div class="card-title">Classificação de Score</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:0">Classificação de Score</div>
+            <span id="score-total" style="font-size:11px;color:var(--txt3)"></span>
+          </div>
           <div class="donut-wrap" id="score-donut"></div>
         </div>
       </div>
-      <div class="grid2" style="margin-bottom:24px">
-        <div class="card">
-          <div class="card-title">Evolução de Leads — Últimos 30 dias</div>
-          <div class="timeline-bars" id="timeline"></div>
+      <div class="card" style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">Evolução de Leads no Período</div>
+          <div style="display:flex;gap:12px">
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt3)"><span style="width:10px;height:10px;border-radius:2px;background:var(--blue2);display:inline-block"></span>Iniciados</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt3)"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span>Completos</span>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-title">Top Sources (UTM)</div>
-          <div id="utm-sources"></div>
+        <div id="timeline-wrap" style="position:relative"></div>
+      </div>
+      <!-- UTM expandido com abas -->
+      <div class="card" style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:0">Origens de Tráfego (UTM)</div>
+          <div style="display:flex;gap:4px" id="utm-tabs">
+            <button class="utm-tab active" onclick="switchUtmTab('source',this)">Source</button>
+            <button class="utm-tab" onclick="switchUtmTab('medium',this)">Medium</button>
+            <button class="utm-tab" onclick="switchUtmTab('campaign',this)">Campaign</button>
+          </div>
         </div>
+        <div id="utm-content"></div>
       </div>
     </div>
 
@@ -249,13 +297,8 @@ td.nome{color:var(--txt);font-weight:500}
           <input class="search-in" id="search-in" placeholder="Buscar por nome ou e-mail..." oninput="debounceSearch()"/>
           <select class="filter-sel" id="filter-visto" onchange="loadLeads(1)">
             <option value="">Todos os vistos</option>
-            <option>EB-2 NIW</option>
-            <option>EB-1A</option>
-            <option>O-1</option>
-            <option>L-1</option>
-            <option>E-2</option>
-            <option>Family Based</option>
-            <option>H-1B</option>
+            <option>EB-2 NIW</option><option>EB-1A</option><option>O-1</option>
+            <option>L-1</option><option>E-2</option><option>Family Based</option><option>H-1B</option>
           </select>
           <select class="filter-sel" id="filter-score" onchange="loadLeads(1)">
             <option value="">Todos os scores</option>
@@ -263,6 +306,9 @@ td.nome{color:var(--txt);font-weight:500}
             <option value="40,69">Moderada (40–69)</option>
             <option value="0,39">Em Desenvolvimento (0–39)</option>
             <option value="-100,-1">Incompatível</option>
+          </select>
+          <select class="filter-sel" id="filter-source" onchange="loadLeads(1)">
+            <option value="">Todos os sources</option>
           </select>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
@@ -294,35 +340,34 @@ td.nome{color:var(--txt);font-weight:500}
 
     <!-- ANALYTICS PANEL -->
     <div class="panel" id="panel-analytics">
-      <!-- Stats resumo -->
       <div class="stat-row" id="analytics-stats">
         <div class="loading"><div class="spin"></div></div>
       </div>
-      <!-- Funil -->
+      <!-- Funil principal -->
       <div class="card" style="margin-bottom:20px">
-        <div class="card-title">🔽 Funil de Conversão — Onde os usuários param</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="card-title" style="margin-bottom:0">🔽 Funil de Conversão — Onde os usuários param</div>
+          <span style="font-size:11px;color:var(--txt3)" id="funnel-period"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:160px 1fr 70px 70px 80px;gap:8px;padding:4px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">
+          <span>Etapa</span><span>Distribuição</span><span style="text-align:right">Usuários</span><span style="text-align:right">%</span><span style="text-align:right">Abandono</span>
+        </div>
         <div class="funnel-list" id="funnel-list"><div class="loading"><div class="spin"></div>Carregando funil...</div></div>
       </div>
-      <!-- Grid 2 colunas -->
-      <div class="grid2">
-        <div class="card">
-          <div class="card-title">📊 Abandono por Etapa</div>
-          <div id="abandon-chart" style="height:200px;position:relative;margin-top:8px"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">🕐 Sessões em Andamento (por etapa)</div>
-          <div id="step-chart" style="height:200px;position:relative;margin-top:8px"></div>
-        </div>
+      <!-- Abandono granular (step a step) -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">🔍 Abandono por Step Específico</div>
+        <div id="abandon-steps" style="margin-top:4px"></div>
       </div>
-      <!-- Dispositivos -->
-      <div class="grid3" style="margin-top:0">
+      <!-- Grid 2 colunas -->
+      <div class="grid2" style="margin-bottom:20px">
         <div class="card">
-          <div class="card-title">📱 Dispositivos (sessões)</div>
-          <div id="device-chart" style="margin-top:8px"></div>
+          <div class="card-title">🕐 Sessões Ativas (por etapa)</div>
+          <div id="step-chart" style="margin-top:8px"></div>
         </div>
-        <div class="card" style="grid-column:span 2">
-          <div class="card-title">🚪 Etapas com Exit Intent</div>
-          <div id="exit-chart" style="margin-top:8px"></div>
+        <div class="card">
+          <div class="card-title">📱 Dispositivos</div>
+          <div id="device-chart" style="margin-top:8px"></div>
         </div>
       </div>
     </div>
@@ -338,6 +383,37 @@ if (!token) window.location.href = '/admin/';
 
 let searchTimer = null;
 let currentPage = 1;
+let _utmData = {};
+
+// ── DATE RANGE ──
+function getDateRange() {
+  const preset = document.getElementById('preset-range')?.value || '30';
+  if (preset === 'custom') {
+    return {
+      from: document.getElementById('date-from')?.value || '',
+      to:   document.getElementById('date-to')?.value   || '',
+    };
+  }
+  const days = parseInt(preset);
+  const to = new Date();
+  const from = new Date(to - days * 24 * 60 * 60 * 1000);
+  return {
+    from: from.toISOString().slice(0, 10),
+    to:   to.toISOString().slice(0, 10),
+  };
+}
+
+function applyPreset() {
+  const val = document.getElementById('preset-range').value;
+  const cd = document.getElementById('custom-dates');
+  cd.style.display = val === 'custom' ? 'flex' : 'none';
+  if (val !== 'custom') loadAll();
+}
+
+function dateQs() {
+  const { from, to } = getDateRange();
+  return from && to ? `&from=${from}&to=${to}` : '';
+}
 
 // ── AUTH ──
 async function apiFetch(path, opts = {}) {
@@ -382,56 +458,95 @@ function loadAll() { loadStats(); }
 // ── STATS ──
 async function loadStats() {
   document.getElementById('kpi-grid').innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
-  const [data, overview] = await Promise.all([apiFetch('/stats'), apiFetch('/overview').catch(()=>({}))]);
+  const qs = dateQs();
+  const [data, overview] = await Promise.all([
+    apiFetch('/stats?' + qs.slice(1)),
+    apiFetch('/overview').catch(() => ({}))
+  ]);
   Object.assign(data, overview);
+  _utmData = { source: data.porUtmSource || {}, medium: data.porUtmMedium || {}, campaign: data.porUtmCampaign || {} };
   renderKPIs(data);
-  renderVistoBars(data.porVisto);
+  renderVistoBars(data.porVisto, data.total);
   renderScoreDonut(data.porScore);
-  renderTimeline(data.timeline);
-  renderUtmSources(data.porUtmSource);
+  renderTimeline(data.timeline, data.timelineCompletos);
+  renderUtmTab('source');
+  populateSourceFilter(data.porUtmSource);
+}
+
+function changePct(val) {
+  if (val === null || val === undefined || isNaN(val)) return '';
+  if (val > 0) return `<span class="kpi-change change-up">↑ ${val}%</span>`;
+  if (val < 0) return `<span class="kpi-change change-dn">↓ ${Math.abs(val)}%</span>`;
+  return `<span class="kpi-change change-flat">— 0%</span>`;
 }
 
 function renderKPIs(d) {
+  const conv = d.conversionRate || 0;
+  const convPrev = d.conversionRatePrev || 0;
+  const convChange = convPrev === 0 ? (conv > 0 ? 100 : 0) : Math.round(((conv - convPrev) / convPrev) * 100);
   const kpis = [
-    { label: 'Total de Leads', val: d.total || 0, sub: 'Formulário iniciado', badge: null },
-    { label: 'Usuários Cadastrados', val: d.totalUsers || 0, sub: 'Portal ativo', badge: null },
-    { label: 'Análises Salvas', val: d.totalAnalyses || 0, sub: 'Via portal', badge: null },
-    { label: 'Sessões Hoje', val: d.activeSessions || 0, sub: 'Últimas 24h', badge: null },
+    { label: 'Leads no Período', val: d.total || 0, sub: `vs ${d.totalPrev||0} período anterior`, change: d.totalChange },
+    { label: 'Análises Completas', val: d.completos || 0, sub: `vs ${d.completosPrev||0} período anterior`, change: d.completosChange },
+    { label: 'Taxa de Conversão', val: conv + '%', sub: `Completos / Iniciados`, change: convChange },
+    { label: 'Sessões (24h)', val: d.activeSessions || 0, sub: `Pendentes HubSpot: ${d.pendentesHubspot||0}`, change: null },
   ];
   document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
     <div class="kpi">
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-val">${k.val}</div>
       <div class="kpi-sub">${k.sub}</div>
-      ${k.badge ? `<div class="kpi-badge ${k.badge.cls}">${k.badge.txt}</div>` : ''}
+      ${k.change !== null ? changePct(k.change) : ''}
     </div>
   `).join('');
 }
 
-function renderVistoBars(porVisto) {
+function renderVistoBars(porVisto, totalLeads) {
   const el = document.getElementById('visto-bars');
+  const tot = totalLeads || 1;
   if (!porVisto || !Object.keys(porVisto).length) { el.innerHTML = '<div class="empty">Nenhum dado ainda</div>'; return; }
-  const max = Math.max(...Object.values(porVisto));
-  el.innerHTML = Object.entries(porVisto)
-    .sort((a, b) => b[1] - a[1])
-    .map(([v, n]) => `
-      <div class="bar-item">
-        <span class="bar-label" title="${v}">${v}</span>
-        <div class="bar-track"><div class="bar-fill" style="width:${(n/max*100).toFixed(1)}%"></div></div>
-        <span class="bar-num">${n}</span>
-      </div>
-    `).join('');
+  const sorted = Object.entries(porVisto).sort((a, b) => b[1] - a[1]);
+  const max = sorted[0][1];
+  document.getElementById('visto-total').textContent = `Total: ${totalLeads || 0}`;
+  el.innerHTML = sorted.map(([v, n]) => {
+    const pct = Math.round((n / tot) * 100);
+    return `<div class="bar-item">
+      <span class="bar-label" title="${v}">${v}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(n/max*100).toFixed(1)}%"></div></div>
+      <span class="bar-num">${n}</span>
+      <span style="font-size:11px;color:var(--txt3);min-width:32px;text-align:right">${pct}%</span>
+    </div>`;
+  }).join('');
 }
 
-function renderUtmSources(porUtmSource) {
-  const el = document.getElementById('utm-sources');
-  if (!el) return;
-  if (!porUtmSource || !Object.keys(porUtmSource).length) { el.innerHTML = '<div class="empty">Nenhum UTM registrado ainda</div>'; return; }
-  const sorted = Object.entries(porUtmSource).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
-    <thead><tr><th style="text-align:left;font-size:10.5px;color:var(--txt3);padding:4px 8px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">Source</th><th style="text-align:right;font-size:10.5px;color:var(--txt3);padding:4px 8px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">Leads</th></tr></thead>
-    <tbody>${sorted.map(([src, n]) => `<tr><td style="padding:6px 8px;font-size:13px;color:var(--txt)">${src}</td><td style="padding:6px 8px;font-size:13px;color:var(--txt2);text-align:right;font-weight:600">${n}</td></tr>`).join('')}</tbody>
-  </table>`;
+function switchUtmTab(tab, btn) {
+  document.querySelectorAll('.utm-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderUtmTab(tab);
+}
+
+function renderUtmTab(tab) {
+  const data = _utmData[tab] || {};
+  const el = document.getElementById('utm-content');
+  if (!Object.keys(data).length) { el.innerHTML = '<div class="empty" style="padding:12px 0">Nenhum dado de ' + tab + ' ainda</div>'; return; }
+  const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  const total = sorted.reduce((s, [,n]) => s + n, 0);
+  const max = sorted[0][1];
+  el.innerHTML = `<div class="bar-list">${sorted.slice(0, 10).map(([v, n]) => {
+    const pct = Math.round((n / total) * 100);
+    return `<div class="bar-item">
+      <span class="bar-label" title="${v}" style="width:180px">${v || '(vazio)'}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(n/max*100).toFixed(1)}%"></div></div>
+      <span class="bar-num">${n}</span>
+      <span style="font-size:11px;color:var(--txt3);min-width:36px;text-align:right">${pct}%</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function populateSourceFilter(porSource) {
+  const sel = document.getElementById('filter-source');
+  if (!sel) return;
+  const sources = Object.keys(porSource || {}).sort();
+  sel.innerHTML = '<option value="">Todos os sources</option>' + sources.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 function renderScoreDonut(s) {
@@ -445,8 +560,8 @@ function renderScoreDonut(s) {
   ].filter(c => c.val > 0);
 
   if (!total) { document.getElementById('score-donut').innerHTML = '<div class="empty">Nenhum dado ainda</div>'; return; }
+  document.getElementById('score-total').textContent = `Total: ${total}`;
 
-  // Simple SVG donut
   let offset = 0;
   const r = 36, cx = 44, cy = 44, circ = 2 * Math.PI * r;
   const segs = cats.map(c => {
@@ -458,37 +573,50 @@ function renderScoreDonut(s) {
   });
 
   const svg = `<svg class="donut-svg" width="88" height="88" viewBox="0 0 88 88">
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f2ede4" stroke-width="10"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(11,25,41,.06)" stroke-width="10"/>
     ${segs.map(s => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="10"
       stroke-dasharray="${s.dash} ${circ - s.dash}"
       stroke-dashoffset="${-(s.offset - circ / 4)}"
       transform="rotate(-90 ${cx} ${cy})"/>`).join('')}
-    <text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="16" font-family="Manrope" fill="#0b1929" font-weight="600">${total}</text>
+    <text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="15" font-family="Manrope" fill="#0b1929" font-weight="700">${total}</text>
   </svg>`;
 
-  const legend = `<div class="donut-legend">${cats.map(c => `
-    <div class="leg-item">
+  const legend = `<div class="donut-legend">${cats.map(c => {
+    const pct = Math.round((c.val / total) * 100);
+    return `<div class="leg-item">
       <div class="leg-dot" style="background:${c.color}"></div>
-      <span>${c.label}: <b>${c.val}</b></span>
-    </div>
-  `).join('')}</div>`;
+      <span style="flex:1">${c.label}</span>
+      <b style="color:var(--txt)">${c.val}</b>
+      <span style="color:var(--txt3);font-size:11px;min-width:34px;text-align:right">${pct}%</span>
+    </div>`;
+  }).join('')}</div>`;
 
   document.getElementById('score-donut').innerHTML = svg + legend;
 }
 
-function renderTimeline(timeline) {
-  const el = document.getElementById('timeline');
-  if (!timeline || !Object.keys(timeline).length) { el.innerHTML = '<div class="empty" style="flex:1">Nenhum dado ainda</div>'; return; }
-  const entries = Object.entries(timeline).slice(-30);
-  const max = Math.max(...entries.map(e => e[1]));
-  el.innerHTML = entries.map(([dia, n]) => {
-    const h = Math.max(4, Math.round((n / max) * 72));
+function renderTimeline(timeline, timelineCompletos) {
+  const el = document.getElementById('timeline-wrap');
+  if (!timeline || !Object.keys(timeline).length) {
+    el.innerHTML = '<div class="empty">Nenhum dado ainda</div>'; return;
+  }
+  const entries = Object.entries(timeline).sort((a, b) => a[0].localeCompare(b[0]));
+  const max = Math.max(...entries.map(e => e[1]), 1);
+  const bars = entries.map(([dia, n]) => {
+    const nc = (timelineCompletos || {})[dia] || 0;
+    const h = Math.max(4, Math.round((n / max) * 80));
+    const hc = Math.max(0, Math.round((nc / max) * 80));
     const label = dia.slice(5); // MM-DD
-    return `<div class="tl-col">
-      <div class="tl-bar" style="height:${h}px" title="${dia}: ${n} lead(s)"></div>
+    const conv = n > 0 ? Math.round((nc / n) * 100) : 0;
+    return `<div class="tl-col" style="position:relative" title="${dia} — ${n} iniciados, ${nc} completos (${conv}% conv.)">
+      <span style="font-size:8px;color:var(--txt3);margin-bottom:2px">${n}</span>
+      <div style="position:relative;width:100%;height:${h}px">
+        <div style="position:absolute;bottom:0;left:0;right:0;height:${h}px;background:rgba(26,114,246,.18);border-radius:3px 3px 0 0"></div>
+        ${hc > 0 ? `<div style="position:absolute;bottom:0;left:0;right:0;height:${hc}px;background:var(--green);border-radius:3px 3px 0 0;opacity:.85"></div>` : ''}
+      </div>
       <span class="tl-label">${label}</span>
     </div>`;
   }).join('');
+  el.innerHTML = `<div class="timeline-bars" style="height:110px;align-items:flex-end">${bars}</div>`;
 }
 
 // ── LEADS ──
@@ -497,10 +625,12 @@ async function loadLeads(page = 1) {
   const search = document.getElementById('search-in')?.value || '';
   const visto = document.getElementById('filter-visto')?.value || '';
   const scoreRange = document.getElementById('filter-score')?.value || '';
+  const source = document.getElementById('filter-source')?.value || '';
   let qs = `?page=${page}&limit=15`;
   if (search) qs += `&search=${encodeURIComponent(search)}`;
   if (visto) qs += `&visto=${encodeURIComponent(visto)}`;
   if (scoreRange) { const [mn, mx] = scoreRange.split(','); qs += `&score_min=${mn}&score_max=${mx}`; }
+  if (source) qs += `&utm_source=${encodeURIComponent(source)}`;
 
   document.getElementById('leads-table-wrap').innerHTML = '<div class="loading"><div class="spin"></div>Carregando leads...</div>';
   const data = await apiFetch('/leads' + qs);
@@ -617,147 +747,138 @@ async function loadAnalytics() {
   document.getElementById('analytics-stats').innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
   document.getElementById('funnel-list').innerHTML = '<div class="loading"><div class="spin"></div></div>';
 
+  const qs = dateQs();
   const [funnelData, statsData] = await Promise.all([
-    apiFetch('/funnel').catch(() => ({})),
-    apiFetch('/stats').catch(() => ({}))
+    apiFetch('/funnel?' + qs.slice(1)).catch(() => ({})),
+    apiFetch('/stats?' + qs.slice(1)).catch(() => ({}))
   ]);
 
   renderAnalyticsStats(funnelData, statsData);
   renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0);
-  renderAbandonChart(funnelData.abandonMap || {});
+  renderAbandonSteps(funnelData.topAbandonSteps || [], funnelData.total || 0);
   renderStepChart(funnelData.stepMap || {});
   renderDeviceChart(funnelData.deviceMap || {});
-  renderExitChart(funnelData.exitMap || {});
 }
 
 function renderAnalyticsStats(f, s) {
   const conv = f.conversionRate || 0;
   const total = f.total || 0;
   const completos = f.completos || 0;
+  const totalAbandono = total - completos;
+  const topStep = (f.topAbandonSteps || [])[0];
   document.getElementById('analytics-stats').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">Taxa de Conversão</div>
       <div class="stat-val" style="color:${conv>=30?'var(--green)':conv>=15?'var(--amber)':'var(--red)'}">${conv}%</div>
-      <div class="stat-sub">${completos} análises completas de ${total} iniciadas</div>
+      <div class="stat-sub">${completos} completos de ${total} iniciados</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Leads Totais</div>
-      <div class="stat-val">${total}</div>
-      <div class="stat-sub">Todos os tempos</div>
+      <div class="stat-label">Abandono Total</div>
+      <div class="stat-val" style="color:var(--amber)">${totalAbandono}</div>
+      <div class="stat-sub">${total > 0 ? Math.round((totalAbandono/total)*100) : 0}% dos iniciados</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Maior Abandono</div>
-      <div class="stat-val" style="font-size:18px;color:var(--amber)">${getTopAbandono(f.abandonMap)}</div>
-      <div class="stat-sub">Etapa com mais saídas</div>
+      <div class="stat-label">Maior Ponto de Fuga</div>
+      <div class="stat-val" style="font-size:16px;color:var(--red);word-break:break-all">${topStep ? topStep.step : '—'}</div>
+      <div class="stat-sub">${topStep ? topStep.count + ' abandonos neste step' : 'Sem dados ainda'}</div>
     </div>`;
-}
-
-function getTopAbandono(map) {
-  if (!map || !Object.keys(map).length) return '—';
-  const top = Object.entries(map).sort((a,b) => b[1]-a[1])[0];
-  const labels = { abandono_fundos:'Sem fundos', abandono_sem_perfil:'Sem perfil', nurturing_contato:'Nurturing', contato:'Contato' };
-  return labels[top[0]] || top[0];
 }
 
 function renderFunnel(funnel, total, completos) {
   if (!funnel.length) { document.getElementById('funnel-list').innerHTML = '<div class="empty">Sem dados ainda.</div>'; return; }
   const maxVal = Math.max(...funnel.map(f => f.abandons + f.em_andamento), completos, 1);
-  const rows = funnel.map(f => {
-    const val = f.id === 'completo' ? completos : (f.abandons + f.em_andamento);
+  let chegaram = total;
+  const rows = funnel.map((f, i) => {
+    const isLast = f.id === 'resultado';
+    const val = isLast ? completos : (f.abandons + f.em_andamento);
     const pct = total > 0 ? Math.round((val / total) * 100) : 0;
     const barW = Math.round((val / maxVal) * 100);
-    const color = f.id === 'completo' ? 'background:linear-gradient(90deg,var(--green),#1d9e70)' :
-                  f.abandons > 0 ? 'background:linear-gradient(90deg,var(--amber),#d97706)' :
-                  'background:linear-gradient(90deg,var(--blue2),var(--pink))';
-    return `<div class="funnel-item">
+    const dropoff = chegaram > 0 && f.abandons > 0 ? Math.round((f.abandons / chegaram) * 100) : 0;
+    const dropColor = dropoff >= 40 ? 'var(--red)' : dropoff >= 20 ? 'var(--amber)' : 'var(--txt3)';
+    const barColor = isLast ? 'background:linear-gradient(90deg,var(--green),#1d9e70)' :
+                    f.abandons > 0 ? 'background:linear-gradient(90deg,var(--blue2),var(--pink))' :
+                    'background:linear-gradient(90deg,var(--blue2),var(--blue4))';
+    if (i > 0) chegaram = Math.max(0, chegaram - funnel[i-1].abandons);
+    return `<div class="funnel-item" style="${isLast?'border-color:rgba(29,158,112,.3);background:rgba(29,158,112,.03)':''}">
       <div class="funnel-label">${f.icon} ${f.label}</div>
-      <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${barW}%;${color}"></div></div>
+      <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${barW}%;${barColor}"></div></div>
       <div class="funnel-num">${val}</div>
-      <div class="funnel-pct">${pct}%</div>
+      <div class="funnel-pct" style="color:var(--txt)">${pct}%</div>
+      <div style="text-align:right;font-size:11.5px;font-weight:700;color:${f.abandons>0?dropColor:'var(--txt3)'}">
+        ${f.abandons > 0 ? `↗ ${f.abandons} (${dropoff}%)` : '—'}
+      </div>
     </div>`;
   }).join('');
   document.getElementById('funnel-list').innerHTML = `
-    <div style="display:grid;grid-template-columns:180px 1fr 80px 80px;gap:12px;padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">
-      <span>Etapa</span><span>Distribuição</span><span style="text-align:right">Usuários</span><span style="text-align:right">%</span>
+    <div style="display:grid;grid-template-columns:180px 1fr 80px 60px 90px;gap:12px;padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">
+      <span>Etapa</span><span>Distribuição</span><span style="text-align:right">Usuários</span><span style="text-align:right">%</span><span style="text-align:right">Abandono</span>
     </div>
     ${rows}`;
 }
 
-function renderAbandonChart(map) {
-  const el = document.getElementById('abandon-chart');
-  if (!map || !Object.keys(map).length) { el.innerHTML = '<div class="empty">Sem dados de abandono.</div>'; return; }
-  const labels = { abandono_fundos:'Fundos', abandono_sem_perfil:'Sem perfil', nurturing_contato:'Nurturing', contato:'Contato' };
-  const entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,6);
-  const max = Math.max(...entries.map(e=>e[1]), 1);
-  const bars = entries.map(([k,v]) => {
-    const h = Math.round((v/max)*160);
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-      <span style="font-size:11px;font-weight:700;color:var(--amber)">${v}</span>
-      <div style="width:100%;height:${h}px;background:linear-gradient(180deg,var(--amber),#d97706);border-radius:4px 4px 0 0;min-height:4px"></div>
-      <span style="font-size:9.5px;color:var(--txt3);text-align:center;line-height:1.2">${labels[k]||k}</span>
+function renderAbandonSteps(steps, total) {
+  const el = document.getElementById('abandon-steps');
+  if (!el) return;
+  if (!steps.length) { el.innerHTML = '<div class="empty" style="padding:12px 0">Nenhum dado de abandono ainda.</div>'; return; }
+  const max = steps[0]?.count || 1;
+  el.innerHTML = steps.map(({ step, count }) => {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const barW = Math.round((count / max) * 100);
+    return `<div class="ab-step">
+      <span class="ab-step-name" title="${step}">${step}</span>
+      <div class="ab-step-bar"><div class="ab-step-fill" style="width:${barW}%"></div></div>
+      <span class="ab-step-num">${count}</span>
+      <span class="ab-step-pct">${pct}%</span>
     </div>`;
   }).join('');
-  el.innerHTML = `<div style="display:flex;align-items:flex-end;gap:8px;height:100%;padding-bottom:20px">${bars}</div>`;
 }
 
 function renderStepChart(map) {
   const el = document.getElementById('step-chart');
-  if (!map || !Object.keys(map).length) { el.innerHTML = '<div class="empty">Nenhuma sessão ativa.</div>'; return; }
-  const stepLabels = { welcome:'Bem-vindo', contact_email:'Email', contact_name:'Nome', path_select:'Triagem', personal_info:'Perfil', academic_start:'Formação', prof_exp_start:'Experiência', scoring_intro:'Scoring', resultado:'Resultado' };
-  const entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,8);
-  const max = Math.max(...entries.map(e=>e[1]), 1);
-  const bars = entries.map(([k,v]) => {
-    const h = Math.round((v/max)*160);
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-      <span style="font-size:11px;font-weight:700;color:var(--blue2)">${v}</span>
-      <div style="width:100%;height:${h}px;background:linear-gradient(180deg,var(--blue2),var(--blue4));border-radius:4px 4px 0 0;min-height:4px"></div>
-      <span style="font-size:9.5px;color:var(--txt3);text-align:center;line-height:1.2">${stepLabels[k]||k}</span>
+  if (!map || !Object.keys(map).length) { el.innerHTML = '<div class="empty">Nenhuma sessão ativa (7d).</div>'; return; }
+  const stepLabels = {
+    welcome:'Bem-vindo', contact_email:'E-mail', contact_name:'Nome', contact_phone:'Telefone',
+    path_select:'Triagem', pi_local:'Perfil', pi_profissao:'Profissão', pi_fundos:'Fundos',
+    ac_grau:'Formação', pe_emp1:'Empresa 1', pe_segunda:'Empresa 2',
+    sc_niw_1:'Scoring NIW', sc_eb1_intro:'Scoring EB-1A', resultado:'Resultado'
+  };
+  const entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 10);
+  const total = entries.reduce((s, [,v]) => s + v, 0);
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">' + entries.map(([k,v]) => {
+    const pct = Math.round((v/total)*100);
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:11.5px;color:var(--txt2);width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${k}">${stepLabels[k]||k}</span>
+      <div style="flex:1;height:7px;background:rgba(11,25,41,.06);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue2),var(--blue4));border-radius:4px"></div>
+      </div>
+      <span style="font-size:12px;font-weight:600;color:var(--blue2);min-width:20px;text-align:right">${v}</span>
+      <span style="font-size:11px;color:var(--txt3);min-width:30px;text-align:right">${pct}%</span>
     </div>`;
-  }).join('');
-  el.innerHTML = `<div style="display:flex;align-items:flex-end;gap:8px;height:100%;padding-bottom:20px">${bars}</div>`;
+  }).join('') + '</div>';
 }
 
 function renderDeviceChart(map) {
   const el = document.getElementById('device-chart');
   if (!el) return;
   const devices = { desktop:'🖥️ Desktop', mobile:'📱 Mobile', tablet:'📟 Tablet' };
-  const total = Object.values(map).reduce((a,b)=>a+b,0) || 1;
-  if (!total || !Object.keys(map).length) { el.innerHTML='<div style="font-size:13px;color:var(--txt3);padding:8px">Sem dados ainda.</div>'; return; }
+  const total = Object.values(map).reduce((a,b)=>a+b,0) || 0;
+  if (!total) { el.innerHTML='<div style="font-size:13px;color:var(--txt3);padding:8px">Sem dados ainda.</div>'; return; }
   el.innerHTML = Object.entries(devices).map(([k,label]) => {
     const v = map[k] || 0;
     const pct = Math.round((v/total)*100);
-    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <span style="font-size:20px;width:28px">${label.split(' ')[0]}</span>
       <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
           <span style="font-weight:500;color:var(--txt)">${label.split(' ')[1]}</span>
-          <span style="color:var(--txt3)">${v} (${pct}%)</span>
+          <span style="color:var(--txt3)">${v} · <b style="color:var(--txt)">${pct}%</b></span>
         </div>
-        <div style="height:7px;background:rgba(11,25,41,.06);border-radius:4px;overflow:hidden">
+        <div style="height:8px;background:rgba(11,25,41,.06);border-radius:4px;overflow:hidden">
           <div style="height:100%;width:${pct}%;background:${k==='mobile'?'linear-gradient(90deg,var(--pink),#ff7aaa)':k==='tablet'?'linear-gradient(90deg,var(--amber),#f59e0b)':'linear-gradient(90deg,var(--blue2),var(--blue4))'};border-radius:4px;transition:width .5s"></div>
         </div>
       </div>
     </div>`;
   }).join('');
-}
-
-function renderExitChart(map) {
-  const el = document.getElementById('exit-chart');
-  if (!el) return;
-  if (!map || !Object.keys(map).length) { el.innerHTML='<div style="font-size:13px;color:var(--txt3);padding:8px">Sem dados de exit intent ainda.</div>'; return; }
-  const labels = { scoring:'Scoring', personal_info:'Perfil Pessoal', academic_start:'Formação', prof_exp_start:'Experiência', path_select:'Triagem', exit_intent:'Saiu (geral)' };
-  const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const max = Math.max(...entries.map(e=>e[1]),1);
-  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' + entries.map(([k,v]) => {
-    const pct = Math.round((v/max)*100);
-    return `<div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:12px;color:var(--txt2);width:120px;flex-shrink:0">${labels[k]||k}</span>
-      <div style="flex:1;height:8px;background:rgba(11,25,41,.06);border-radius:4px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--red),#ef4444);border-radius:4px"></div>
-      </div>
-      <span style="font-size:12px;font-weight:700;color:var(--red);min-width:24px;text-align:right">${v}</span>
-    </div>`;
-  }).join('') + '</div>';
 }
 
 // ── USERS ──
