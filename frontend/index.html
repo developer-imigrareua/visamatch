@@ -1940,10 +1940,9 @@ const flows = {
     waitInput(async val => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
       if (!emailRegex.test(val)) {
-        userMsg(val);
         botMsg('⚠️ E-mail inválido. Por favor, use o formato <strong>nome@dominio.com</strong>.');
         waitInput(v2 => {
-          if (!emailRegex.test(v2)) { userMsg(v2); botMsg('⚠️ E-mail inválido. Tente novamente.'); waitInput(v3 => { S.email = v3; go('contact_name'); }); }
+          if (!emailRegex.test(v2)) { botMsg('⚠️ E-mail inválido. Tente novamente.'); waitInput(v3 => { S.email = v3; go('contact_name'); }); }
           else { S.email = v2; go('check_email_exists'); }
         });
         return;
@@ -1991,7 +1990,7 @@ const flows = {
               await botMsg('Tudo bem! Qual é o seu <strong>e-mail</strong>?');
               waitInput(async v2 => {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-                if (!emailRegex.test(v2)) { userMsg(v2); botMsg('⚠️ E-mail inválido.'); waitInput(v3 => { S.email = v3; go('contact_name'); }); return; }
+                if (!emailRegex.test(v2)) { botMsg('⚠️ E-mail inválido.'); waitInput(v3 => { S.email = v3; go('contact_name'); }); return; }
                 S.email = v2; go('check_email_exists');
               });
             }
@@ -2151,9 +2150,8 @@ const flows = {
         await botMsg('Qual é o seu <strong>nome completo</strong> atualizado?');
         waitInput(async v => {
           const partes = v.trim().split(/\s+/).filter(p => p.length >= 2);
-          if (partes.length < 2) { userMsg(v); await botMsg('⚠️ Informe nome e sobrenome.'); waitInput(async v2 => { S.nome = v2.split(' ')[0]; S.profile.nomeCompleto = v2; await saveUserProfile(v2, null); go('contact_phone'); }); return; }
+          if (partes.length < 2) { await botMsg('⚠️ Informe nome e sobrenome.'); waitInput(async v2 => { S.nome = v2.split(' ')[0]; S.profile.nomeCompleto = v2; await saveUserProfile(v2, null); go('contact_phone'); }); return; }
           S.nome = partes[0]; S.profile.nomeCompleto = v;
-          userMsg(v);
           await saveUserProfile(v, null);
           go('contact_phone');
         });
@@ -2259,7 +2257,6 @@ const flows = {
     waitInput(val => {
       const partes = val.trim().split(/\s+/).filter(p => p.length >= 2);
       if (partes.length < 2) {
-        userMsg(val);
         botMsg('⚠️ Por favor, informe seu <strong>nome e sobrenome</strong> completos.');
         waitInput(v2 => { S.nome = fml(v2); S.profile.nomeCompleto = v2; go('contact_phone'); });
         return;
