@@ -832,6 +832,34 @@ async function chatForgotPassword() {
   }
 }
 
+// ─── HELPERS DE DATA ───
+function parseMesAno(str) {
+  if (!str) return null;
+  const s = str.trim().toLowerCase();
+  if (s === 'atual' || s === 'present' || s === 'atualmente') return new Date();
+  const m = s.match(/^(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(parseInt(m[2]), parseInt(m[1]) - 1, 1);
+  return null;
+}
+
+function diffMeses(d1, d2) {
+  // d2 - d1 em meses
+  return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+}
+
+function somarExpMeses(p) {
+  let total = 0;
+  const pares = [
+    [p.emp1Entrada, p.emp1Saida],
+    [p.emp2Entrada, p.emp2Saida],
+  ];
+  for (const [ent, sai] of pares) {
+    const d1 = parseMesAno(ent), d2 = parseMesAno(sai || 'atual');
+    if (d1 && d2 && d2 > d1) total += diffMeses(d1, d2);
+  }
+  return total;
+}
+
 // ─── SCORING ENGINE ───
 function calcScore(visto, p) {
   let s = 0;
@@ -883,12 +911,16 @@ function getClass(score) {
 // ─── RESULT CARD ───
 function partnerCtaHtml(partner, visto) {
   if (partner === 'liv') {
-    return `<div class="partner-cta liv">
-      <div class="partner-ico liv">⚖️</div>
+    return `<div class="partner-cta liv" style="overflow:hidden;border-radius:14px">
+      <div style="width:100%;height:90px;position:relative;overflow:hidden">
+        <img src="https://liv.law/wp-content/uploads/2026/05/LIV-Advogados-Licenciados-scaled.webp" style="width:100%;height:100%;object-fit:cover;object-position:center top" alt="Time LIV Immigration Law" loading="lazy" onerror="this.style.display='none'"/>
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,43,112,.7) 100%)"></div>
+        <div style="position:absolute;bottom:8px;left:12px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em">LIV Immigration Law · Parceiro Oficial ImigrarEUA</div>
+      </div>
       <div class="partner-info">
-        <div class="partner-name">LIV Immigration Law · Parceiro Oficial ImigrarEUA</div>
+        <div class="partner-name">LIV Immigration Law</div>
         <div class="partner-desc">Escritório de advocacia <b>licenciado nos EUA</b>, especializado em vistos de trabalho e Green Card. Parceiro oficial da ImigrarEUA para casos de ${visto}.</div>
-        <button class="partner-btn" onclick="alert('Em produção: redirecionaria para o site da LIV Immigration Law ou formulário de contato.')">Agendar avaliação com a LIV Immigration Law →</button>
+        <button class="partner-btn" onclick="window.open('https://wa.link/pxtk7k','_blank')">💬 Falar com especialistas →</button>
       </div>
     </div>`;
   }
@@ -897,7 +929,7 @@ function partnerCtaHtml(partner, visto) {
     <div class="partner-info">
       <div class="partner-name">Phoenix — Parceiro de Fortalecimento de Perfil</div>
       <div class="partner-desc">Especialista em <b>melhoria de perfil para imigração</b> e vistos de estudante. Ideal para construir as bases necessárias antes de um processo imigratório.</div>
-      <button class="partner-btn phoenix-btn" onclick="alert('Em produção: redirecionaria para o site da Phoenix.')">Conhecer a Phoenix →</button>
+      <button class="partner-btn phoenix-btn" onclick="window.open('https://wa.link/pxtk7k','_blank')">Conhecer a Phoenix →</button>
     </div>
   </div>`;
 }
@@ -1619,8 +1651,8 @@ function singleFullCard(a) {
       <!-- COLUNA LATERAL -->
       <div class="ai-full-card-side" style="padding:20px 18px;background:var(--surface2);display:flex;flex-direction:column;gap:14px">
 
-        <!-- Scorecard -->
-        ${a.scorecard ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
+        <!-- Scorecard — apenas para vistos que não são EB-2 NIW -->
+        ${a.scorecard && a.visto !== 'EB-2 NIW' ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
           <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">✦ Scorecard Final</div>
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1A72F6,#002b70);display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.3);flex-shrink:0">
@@ -1633,32 +1665,43 @@ function singleFullCard(a) {
               <div style="display:inline-block;margin-top:5px;background:rgba(29,158,112,.09);border:1px solid rgba(29,158,112,.2);border-radius:7px;padding:2px 8px;font-size:10.5px;font-weight:600;color:var(--green)">✦ Exige-se apenas ${a.scorecard.minimo_exigido||3}</div>
             </div>
           </div>
+        </div>` : a.visto === 'EB-2 NIW' ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px;text-align:center">
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">✦ Classificação de Elegibilidade</div>
+          <div style="font-family:Manrope,sans-serif;font-size:32px;font-weight:800;color:${cls.pctColor};line-height:1">${pct}</div>
+          <div style="font-size:10px;color:var(--txt3);margin-top:2px;letter-spacing:.05em">SCORE EB-2 NIW</div>
+          <div style="margin-top:8px;display:inline-block;background:${cls.bg};border:1px solid ${cls.brd};border-radius:7px;padding:3px 10px;font-size:11.5px;font-weight:700;color:${cls.cor}">${cls.ico} ${a.classificacao}</div>
         </div>` : ''}
 
         <!-- Veredicto -->
         ${a.veredicto ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px">
           <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">📋 Resumo</div>
           <div style="font-size:12px;color:var(--txt2);line-height:1.65;font-style:italic">${a.veredicto}</div>
-          ${a.estrategia_adicional ? `<div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(11,25,41,.07);font-size:11.5px;color:var(--txt2);line-height:1.6">${a.estrategia_adicional}</div>` : ''}
+          ${a.estrategia_adicional && !(a.visto === 'EB-2 NIW' && /O-1|EB-1A|H-1B/i.test(a.estrategia_adicional)) ? `<div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(11,25,41,.07);font-size:11.5px;color:var(--txt2);line-height:1.6">${a.estrategia_adicional}</div>` : ''}
         </div>` : ''}
 
         <!-- Parceiro -->
-        <div style="border-radius:10px;padding:14px;${a.recomendacao_parceiro==='liv'?'background:linear-gradient(135deg,#1A72F6,#002b70);border:1px solid rgba(255,255,255,.2)':'background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)'}">
-          <div style="font-size:20px;margin-bottom:6px">${a.recomendacao_parceiro==='liv'?'⚖️':'🎓'}</div>
-          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'LIV Immigration Law · Parceiro Oficial':'Phoenix · Fortalecimento de Perfil'}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Escritório licenciado nos EUA, especializado em ${a.visto}.`:'Especialista em melhoria de perfil para imigração.'}</div>
+        <div style="border-radius:10px;overflow:hidden;${a.recomendacao_parceiro==='liv'?'background:linear-gradient(135deg,#1A72F6,#002b70);border:1px solid rgba(255,255,255,.2)':'background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid rgba(59,130,246,.3)'}">
+          ${a.recomendacao_parceiro==='liv' ? `
+          <div style="width:100%;height:90px;position:relative;overflow:hidden">
+            <img src="https://liv.law/wp-content/uploads/2026/05/LIV-Advogados-Licenciados-scaled.webp" style="width:100%;height:100%;object-fit:cover;object-position:center top" alt="Time LIV Immigration Law" loading="lazy" onerror="this.style.display='none'"/>
+            <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,43,112,.7) 100%)"></div>
+            <div style="position:absolute;bottom:8px;left:12px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em">LIV Immigration Law · Parceiro Oficial ImigrarEUA</div>
+          </div>` : ''}
+          <div style="padding:14px">
+          ${a.recomendacao_parceiro !== 'liv' ? `<div style="font-size:20px;margin-bottom:6px">🎓</div>` : ''}
+          <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'Escritório licenciado nos EUA':'Phoenix · Fortalecimento de Perfil'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Especializado em ${a.visto} e vistos de trabalho e Green Card.`:'Especialista em melhoria de perfil para imigração.'}</div>
           ${a.recomendacao_parceiro==='liv' && (a.score||0) >= 40 ? `
-  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:"Inter Tight",sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
+  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
     💬 Falar com nossos especialistas, sem custo
   </button>
-  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 12px;font-family:"Inter Tight",sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">
+  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 12px;font-family:'Inter Tight',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">
     📅 Agendar consulta com advogado licenciado
-  </button>
-` : `
-  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'linear-gradient(135deg,var(--blue2),var(--pink))':'rgba(255,255,255,.15)'};color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:"Inter Tight",sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+  </button>` : `
+  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'linear-gradient(135deg,var(--blue2),var(--pink))':'rgba(255,255,255,.15)'};color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
     ${a.recomendacao_parceiro==='liv'?'💬 Falar com especialistas →':'Conhecer a Phoenix →'}
-  </button>
-`}
+  </button>`}
+          </div>
         </div>
 
       </div>
@@ -1666,15 +1709,22 @@ function singleFullCard(a) {
 
     <!-- FOOTER CTAs -->
     <div style="padding:16px 24px;background:#fff;border-top:1px solid rgba(11,25,41,.06);display:flex;flex-direction:column;gap:8px">
+      ${S.profile.fundos === 'Não tenho disponibilidade' ? `
+      <div style="background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:11px 14px;font-size:12px;color:#78350f;line-height:1.6;margin-bottom:2px">
+        💾 <b>Seu caminho já está mapeado.</b> Quando estiver pronto financeiramente, este relatório estará no seu e-mail.
+      </div>
+      <button onclick="sendReportEmail(this)" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--blue4));color:#fff;border:none;border-radius:11px;padding:12px 16px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+        💾 Salvar análise e receber por e-mail
+      </button>` : `
       <div style="display:flex;gap:8px">
-        <button onclick="window.open('report.html','_blank','fullscreen=yes')" style="flex:1;background:linear-gradient(135deg,var(--blue2),var(--blue4));color:#fff;border:none;border-radius:11px;padding:12px 16px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px">
+        <button onclick="window.open('report.html','_blank','fullscreen=yes')" style="flex:1;background:linear-gradient(135deg,var(--blue2),var(--blue4));color:#fff;border:none;border-radius:11px;padding:12px 16px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px">
           📄 Ver Relatório Completo
         </button>
-        <button onclick="sendReportEmail(this)" style="background:#fff;color:var(--txt2);border:1.5px solid var(--border);border-radius:11px;padding:12px 16px;font-family:"Inter Tight",sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">
+        <button onclick="sendReportEmail(this)" style="background:#fff;color:var(--txt2);border:1.5px solid var(--border);border-radius:11px;padding:12px 16px;font-family:'Inter Tight',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">
           📧 E-mail
         </button>
-      </div>
-      <button onclick="resetAndRestart()" style="width:100%;background:var(--surface3);color:var(--blue);border:1.5px solid var(--border);border-radius:11px;padding:11px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:600;cursor:pointer">
+      </div>`}
+      <button onclick="resetAndRestart()" style="width:100%;background:var(--surface3);color:var(--blue);border:1.5px solid var(--border);border-radius:11px;padding:11px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;cursor:pointer">
         🔄 Fazer nova análise
       </button>
     </div>
@@ -2411,8 +2461,7 @@ const flows = {
     showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
       userMsg(val);
       S.profile.fundos = val;
-      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
-      else go('path_cidadania');
+      go('path_cidadania');
     });
   },
 
@@ -2465,8 +2514,7 @@ const flows = {
     showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
       userMsg(val);
       S.profile.fundos = val;
-      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
-      else go('path_family_beneficiario');
+      go('path_family_beneficiario');
     });
   },
 
@@ -2565,8 +2613,7 @@ const flows = {
     showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
       userMsg(val);
       S.profile.fundos = val;
-      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
-      else go('personal_info');
+      go('personal_info');
     });
   },
 
@@ -2628,8 +2675,7 @@ const flows = {
     showOpts(['Menos de US$ 25k','Entre US$ 26k e US$ 50k','Entre US$ 51k e US$ 100k','Acima de US$ 100 mil','Sem previsão de investimento'], val => {
       userMsg(val);
       S.profile.investimento = val;
-      if (val === 'Sem previsão de investimento') go('path_offramp_fundos');
-      else go('path_e2_negocio');
+      go('path_e2_negocio');
     });
   },
 
@@ -2650,8 +2696,7 @@ const flows = {
     showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
       userMsg(val);
       S.profile.fundos = val;
-      if (val === 'Não tenho disponibilidade') go('path_offramp_fundos');
-      else go('personal_info');
+      go('personal_info');
     });
   },
 
@@ -2841,11 +2886,33 @@ const flows = {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile })
     }).catch(()=>{});
-    await botMsg(`Com o perfil atual, o encaixe direto em uma categoria é desafiador, mas um especialista pode identificar caminhos que não são imediatamente óbvios. Gostaria que nossa equipe analisasse seu caso de forma personalizada?`);
-    showOpts(['Sim, quero análise personalizada', 'Recomeçar avaliação'], val => {
+    await botMsg(`Com o perfil atual, os vistos de trabalho e Green Card ainda exigem algumas bases que precisam ser construídas. A boa notícia é que <strong>isso tem caminho</strong> — e o time da Phoenix pode te ajudar com isso.`);
+    await pause(400);
+    await botMsg(`A <strong>Phoenix</strong> é especialista em desenvolvimento de perfil para imigração: formação acadêmica estratégica, vistos de estudante (F-1), construção de currículo internacional e planejamento de longo prazo para quem quer chegar nos EUA com o perfil certo.`);
+    await pause(300);
+    // Card Phoenix direto
+    const phoenixCard = document.createElement('div');
+    phoenixCard.style.cssText = 'max-width:420px;margin-top:4px';
+    phoenixCard.innerHTML = `
+      <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(59,130,246,.25);box-shadow:0 4px 18px rgba(11,28,48,.1)">
+        <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);padding:18px 20px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:6px">Parceiro ImigrarEUA</div>
+          <div style="font-family:Manrope,sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">🎓 Phoenix</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.5">Fortalecimento de Perfil para Imigração</div>
+        </div>
+        <div style="background:#fff;padding:16px 20px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:12.5px;color:#424655;line-height:1.6">✦ Visto de estudante F-1 e planejamento acadêmico<br>✦ Construção de currículo internacional<br>✦ Desenvolvimento de perfil para vistos de trabalho<br>✦ Roteiro personalizado de imigração de longo prazo</div>
+          <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,#1d4ed8,#1e3a8a);color:#fff;border:none;border-radius:9px;padding:11px 14px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">
+            Conhecer a Phoenix e iniciar meu plano →
+          </button>
+        </div>
+      </div>`;
+    chat.appendChild(phoenixCard);
+    scrollBottom();
+    await pause(400);
+    showOpts(['🔄 Recomeçar avaliação'], val => {
       userMsg(val);
-      if (val.includes('Recomeçar')) { resetAndRestart(); }
-      else go('resultado_nurturing');
+      resetAndRestart();
     });
   },
 
@@ -3081,7 +3148,40 @@ const flows = {
   async ac_conclusao() {
     await think(350);
     await botMsg('Qual foi a <strong>data de conclusão</strong>?');
-    showMonthYearWidget('acConclusao1', 'ac_segunda');
+    showMonthYearWidget('acConclusao1', 'ac_valida_formacao');
+  },
+
+  async ac_valida_formacao() {
+    // Validação cruzada: grauFormacao "mais de 5 anos" vs data de conclusão real
+    const grau = S.profile.grauFormacao || '';
+    const concl = S.profile.acConclusao1;
+    if (grau.includes('mais de 5 anos') && concl) {
+      const dConcl = parseMesAno(concl);
+      if (dConcl) {
+        const anosAtras = diffMeses(dConcl, new Date()) / 12;
+        if (anosAtras < 5) {
+          await think(500);
+          await botMsg(`Você selecionou <strong>"Bacharelado concluído há mais de 5 anos"</strong>, mas a data de conclusão informada foi <strong>${concl}</strong> — há menos de 5 anos. Deseja confirmar ou corrigir?`);
+          showOpts([
+            'Confirmar — a data está correta',
+            'Corrigir a data',
+            'Corrigir a seleção anterior'
+          ], val => {
+            userMsg(val);
+            if (val === 'Confirmar — a data está correta') {
+              S.profile.grauFormacao = 'Bacharelado/Licenciatura concluído há menos de 5 anos';
+              go('ac_segunda');
+            } else if (val === 'Corrigir a data') {
+              go('ac_conclusao');
+            } else {
+              go('path_prof_formacao');
+            }
+          });
+          return;
+        }
+      }
+    }
+    go('ac_segunda');
   },
 
   async ac_segunda() {
@@ -3169,7 +3269,56 @@ const flows = {
   async pe_saida1() {
     await think(350);
     await botMsg('Qual foi a <strong>data de saída</strong>? (clique em "Atual" se ainda está lá)');
-    showMonthYearWidget('emp1Saida', 'pe_segunda', true);
+    showMonthYearWidget('emp1Saida', 'pe_valida1', true);
+  },
+
+  async pe_valida1() {
+    // Validação cruzada: experiência declarada vs datas
+    const mesesCalc = somarExpMeses(S.profile);
+    const anosCalc  = Math.round(mesesCalc / 12 * 10) / 10;
+    const decl = S.profile.tempoExp || '';
+    const rangeMap = {
+      'Menos de 3 anos (recém-formado)': [0, 3],
+      'Entre 3 e 5 anos': [3, 5],
+      'Entre 5 e 10 anos': [5, 10],
+      'Mais de 10 anos': [10, 99],
+    };
+    const range = Object.entries(rangeMap).find(([k]) => decl.includes(k.split(' ')[0]) || decl === k);
+    const minDecl = range ? range[1][0] : null;
+    if (minDecl !== null && mesesCalc > 0 && anosCalc < minDecl - 2) {
+      await think(500);
+      await botMsg(`Com base nas datas informadas, identifiquei aproximadamente <strong>${anosCalc} anos</strong> de experiência — você havia mencionado <strong>"${decl}"</strong>. Deseja corrigir alguma data ou confirmar que há experiências não listadas?`);
+      showOpts([
+        'Tenho outras experiências não listadas',
+        'Quero corrigir as datas',
+        'As informações estão corretas'
+      ], async val => {
+        userMsg(val);
+        if (val === 'Tenho outras experiências não listadas') {
+          await botMsg('Descreva brevemente essas outras experiências:');
+          waitInput(v => { S.profile.expNaoListada = v; go('pe_segunda'); });
+        } else if (val === 'Quero corrigir as datas') {
+          // volta para pe_entrada1 via undo
+          if (S.history.length >= 2) {
+            // encontra o snapshot de pe_entrada1
+            const idx = [...S.history].reverse().findIndex(h => h.step === 'pe_entrada1');
+            if (idx >= 0) {
+              const h = S.history[S.history.length - 1 - idx];
+              while (chat.children.length > h.chatLen) chat.removeChild(chat.lastChild);
+              S.profile = JSON.parse(h.profileSnap);
+              setSideStep(h.sStep); setProgress(h.prog);
+              clearInputHandlers(); rmOpts();
+            }
+          }
+          go('pe_entrada1');
+        } else {
+          S.profile.coerenciaExperienciaConfirmada = true;
+          go('pe_segunda');
+        }
+      });
+    } else {
+      go('pe_segunda');
+    }
   },
 
   async pe_segunda() {
@@ -3178,7 +3327,7 @@ const flows = {
     showOpts(['Sim','Não'], val => {
       userMsg(val);
       if (val === 'Sim') go('pe_emp2');
-      else go('pe_projetos');
+      else go('pe_gap_check');
     });
   },
 
@@ -3218,7 +3367,7 @@ const flows = {
     showOpts(['Sim','Não'], val => {
       userMsg(val);
       if (val === 'Sim') go('pe_emp3');
-      else go('pe_projetos');
+      else go('pe_gap_check');
     });
   },
 
@@ -3231,7 +3380,48 @@ const flows = {
   async pe_cargo3() {
     await think(300);
     await botMsg('Função na terceira empresa e datas de entrada e saída? (pode responder tudo junto)');
-    waitInput(val => { S.profile.emp3Info = val; go('pe_projetos'); });
+    waitInput(val => { S.profile.emp3Info = val; go('pe_gap_check'); });
+  },
+
+  async pe_gap_check() {
+    // Detectar gap > 12 meses entre empregos consecutivos
+    const pares = [
+      { saida: S.profile.emp1Saida, entrada: S.profile.emp2Entrada },
+      { saida: S.profile.emp2Saida, entrada: S.profile.emp3Entrada },
+    ];
+    let gapEncontrado = null;
+    for (const { saida, entrada } of pares) {
+      if (!saida || !entrada) continue;
+      const dSaida  = parseMesAno(saida);
+      const dEntrada = parseMesAno(entrada);
+      if (dSaida && dEntrada && dEntrada > dSaida) {
+        const meses = diffMeses(dSaida, dEntrada);
+        if (meses > 12) { gapEncontrado = { saida, entrada, meses }; break; }
+      }
+    }
+    if (gapEncontrado) {
+      await think(500);
+      await botMsg(`Notei um período sem vínculo empregatório declarado entre <strong>${gapEncontrado.saida}</strong> e <strong>${gapEncontrado.entrada}</strong>. O que aconteceu nesse intervalo?`);
+      showOpts([
+        'Empreendedorismo / negócio próprio',
+        'Freelancer / consultoria',
+        'Pós-graduação / especialização',
+        'Período sabático / viagem',
+        'Desemprego / transição de carreira',
+        'Outro motivo'
+      ], async val => {
+        userMsg(val);
+        if (val === 'Outro motivo') {
+          await botMsg('Pode descrever brevemente?');
+          waitInput(v => { S.profile.gapExplicacao = `${gapEncontrado.saida}–${gapEncontrado.entrada}: ${v}`; go('pe_projetos'); });
+        } else {
+          S.profile.gapExplicacao = `${gapEncontrado.saida}–${gapEncontrado.entrada}: ${val}`;
+          go('pe_projetos');
+        }
+      });
+    } else {
+      go('pe_projetos');
+    }
   },
 
   async pe_projetos() {
@@ -3346,7 +3536,7 @@ const flows = {
       ti.disabled = false;
       const selecionados = hab.filter((_,i) => sel.has(i));
       userMsg(selecionados.length ? selecionados.join(', ') : 'Nenhum critério selecionado');
-      go('resultado');
+      go('sc_eb1_intro');
     };
     w.appendChild(conf);
     chat.appendChild(w);

@@ -142,6 +142,10 @@ Fator negativo:
 - Sem nenhuma evidência documentável: -30 pts
 - Sem disponibilidade financeira para o processo: -25 pts
 
+RESTRIÇÕES DE CONTEÚDO PARA EB-2 NIW:
+- No campo "veredicto", NÃO mencionar outros vistos como O-1, EB-1A ou H-1B. O resumo deve ser exclusivo sobre o EB-2 NIW e o perfil do candidato.
+- No campo "estrategia_adicional", NÃO citar outros vistos. Foque apenas no EB-2 NIW.
+
 ${SCHEMA_INSTRUCAO}
 `;
 
