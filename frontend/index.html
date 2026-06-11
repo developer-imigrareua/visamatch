@@ -3678,44 +3678,74 @@ const flows = {
 
     await think(600);
 
-    // ── Loading animado com expectativa ──
+    // ── Oculta input-zone durante geração ──
+    const inputZoneEl = document.querySelector('.input-zone');
+    if (inputZoneEl) inputZoneEl.style.display = 'none';
+
+    // ── Barra de progresso animada (substitui os 5 botMsgs de loading) ──
     const loadingSteps = [
-      { ico: '🔍', txt: `Analisando o perfil de <strong>${S.nome}</strong>...` },
-      { ico: '⚖️', txt: 'Verificando critérios oficiais do USCIS...' },
-      { ico: '📊', txt: `Calculando score de elegibilidade para <strong>${visto}</strong>...` },
-      { ico: '✍️', txt: 'Gerando análise personalizada...' },
-      { ico: '📄', txt: 'Preparando seu relatório completo...' },
+      { pct: 18, txt: `Analisando o perfil de <strong>${S.nome}</strong>...` },
+      { pct: 38, txt: 'Verificando critérios oficiais do USCIS...' },
+      { pct: 60, txt: `Calculando score de elegibilidade para <strong>${visto}</strong>...` },
+      { pct: 80, txt: 'Gerando análise personalizada...' },
+      { pct: 95, txt: 'Preparando seu relatório completo...' },
     ];
 
-    // Mostra primeiro passo
-    await botMsg(`${loadingSteps[0].ico} ${loadingSteps[0].txt}`);
+    // Cria bolha única com barra de progresso
+    const loadRow = document.createElement('div');
+    loadRow.className = 'row';
+    loadRow.id = 'analysis-loading-row';
+    loadRow.innerHTML = `
+      <div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+      <div class="msg-wrap" style="max-width:88%">
+        <div class="bubble bot-b" style="padding:14px 16px;min-width:220px">
+          <div id="loading-step-txt" style="font-size:13px;margin-bottom:10px;min-height:18px">🔍 Analisando o perfil de <strong>${S.nome}</strong>...</div>
+          <div style="background:rgba(11,28,48,.08);border-radius:99px;height:6px;overflow:hidden">
+            <div id="loading-bar" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--pink));transition:width .6s ease"></div>
+          </div>
+          <div id="loading-pct" style="font-size:10.5px;color:var(--txt3);margin-top:5px;text-align:right">0%</div>
+        </div>
+      </div>`;
+    chat.appendChild(loadRow);
+    scrollBottom();
 
     // Calcula scores locais (fonte da verdade — IA não pode alterar)
     const targetVistos = (S.vistos && S.vistos.length > 0) ? S.vistos : [S.visto || 'EB-2 NIW'];
     const localScores = {};
     targetVistos.forEach(v => { localScores[v] = calcScore(v, S.profile); });
 
-    // Inicia fetch em paralelo com os loadings
+    // Inicia fetch em paralelo com a animação
     const analyzePromise = fetch(`${API_BASE}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, visto: S.visto, vistos: S.vistos, profile: S.profile, localScores })
     });
 
-    // Mostra os demais passos enquanto aguarda
-    for (let i = 1; i < loadingSteps.length; i++) {
-      await pause(1800);
+    // Anima barra enquanto aguarda a API
+    const barEl  = document.getElementById('loading-bar');
+    const txtEl  = document.getElementById('loading-step-txt');
+    const pctEl  = document.getElementById('loading-pct');
+    for (let i = 0; i < loadingSteps.length; i++) {
       const s = loadingSteps[i];
-      const typRow = showTyping();
-      await pause(700);
-      rmTyping();
-      await botMsg(`${s.ico} ${s.txt}`);
+      if (barEl)  barEl.style.width  = s.pct + '%';
+      if (pctEl)  pctEl.textContent  = s.pct + '%';
+      if (txtEl)  txtEl.innerHTML    = (i === 0 ? '🔍 ' : i === 1 ? '⚖️ ' : i === 2 ? '📊 ' : i === 3 ? '✍️ ' : '📄 ') + s.txt;
+      await pause(i === 0 ? 800 : 1800);
     }
 
     try {
       const res = await analyzePromise;
       if (!res.ok) throw new Error('API error ' + res.status);
       const analysis = await res.json();
+
+      // Completa barra para 100%
+      if (barEl) barEl.style.width = '100%';
+      if (pctEl) pctEl.textContent = '100%';
+      if (txtEl) txtEl.innerHTML = '✅ Concluído!';
+      await pause(600);
+
+      // Remove bolha de loading
+      loadRow.remove();
 
       // Armazena para relatório PDF
       localStorage.setItem('visamatch_report', JSON.stringify({
@@ -3726,9 +3756,7 @@ const flows = {
       const bestScore = analysis.melhor?.score ?? 0;
       if (analysis.melhor?.visto) setSideVisto(analysis.melhor.visto);
 
-      await pause(600);
-      const typRow2 = showTyping(); await pause(900); rmTyping();
-      await botMsg(`✅ Análise concluída! Aqui está o relatório completo de pré-elegibilidade de <strong>${S.nome}</strong>:`);
+      await botMsg(`✅ Análise concluída! Aqui está o relatório completo de <strong>${S.nome}</strong> 👇`);
       await pause(500);
 
       const row = document.createElement('div');
@@ -3755,12 +3783,15 @@ const flows = {
 
     } catch (err) {
       console.warn('Análise IA indisponível, usando scoring local:', err);
+      // Remove barra de loading e restaura input
+      const lr = document.getElementById('analysis-loading-row');
+      if (lr) lr.remove();
+      if (inputZoneEl) inputZoneEl.style.display = '';
       const targetVistos = (S.vistos && S.vistos.length > 0) ? S.vistos : [visto];
       const scores = targetVistos.map(v => ({ visto: v, score: calcScore(v, S.profile) }));
       const best = scores.reduce((a, b) => a.score > b.score ? a : b);
       setSideBar(best.score);
-      const typRow2 = showTyping(); await pause(900); rmTyping();
-      await botMsg(`Análise concluída! Aqui está o resultado para <strong>${S.nome}</strong>:`);
+      await botMsg(`Análise concluída! Aqui está o resultado para <strong>${S.nome}</strong> 👇`);
       await pause(400);
       const row = document.createElement('div');
       row.className = 'row';
