@@ -5,7 +5,7 @@ const router = express.Router();
 
 // POST /lead/partial — salva progresso parcial (sem completar o fluxo)
 router.post('/partial', async (req, res) => {
-  const { nome, email, phone, etapa, visto, profile } = req.body;
+  const { nome, email, phone, etapa, visto, profile, utm } = req.body;
   if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
 
   try {
@@ -22,7 +22,7 @@ router.post('/partial', async (req, res) => {
       await supabase.from('leads').update({
         nome, phone,
         visto_recomendado: visto,
-        profile: { ...profile, _etapa_abandono: etapa, _completo: false }
+        profile: { ...profile, _etapa_abandono: etapa, _completo: false, _utm: utm || undefined }
       }).eq('id', existing.id);
       return res.json({ success: true, lead_id: existing.id, updated: true });
     }
@@ -31,7 +31,7 @@ router.post('/partial', async (req, res) => {
       nome, email, phone,
       visto_recomendado: visto,
       score: null,
-      profile: { ...profile, _etapa_abandono: etapa, _completo: false },
+      profile: { ...profile, _etapa_abandono: etapa, _completo: false, _utm: utm || undefined },
       hubspot_synced: false
     }).select().single();
 
@@ -45,7 +45,7 @@ router.post('/partial', async (req, res) => {
 
 // POST /lead — salva lead completo
 router.post('/', async (req, res) => {
-  const { nome, email, phone, visto, score, profile } = req.body;
+  const { nome, email, phone, visto, score, profile, utm } = req.body;
 
   if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
 
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
       phone,
       visto_recomendado: visto,
       score,
-      profile,
+      profile: { ...profile, _utm: utm || undefined },
       hubspot_synced: false
     })
     .select()
@@ -94,6 +94,13 @@ router.post('/', async (req, res) => {
             visamatch_caminho: profile?.caminhoPrincipal || '',
             visamatch_fundos: profile?.fundos || '',
             visamatch_planos_eua: profile?.planosEUA || '',
+            hs_analytics_source: utm?.utm_source || '',
+            hs_analytics_source_data_1: utm?.utm_medium || '',
+            hs_analytics_source_data_2: utm?.utm_campaign || '',
+            visamatch_utm_content: utm?.utm_content || '',
+            visamatch_utm_term: utm?.utm_term || '',
+            visamatch_utm_affiliatetype: utm?.utm_affiliatetype || '',
+            visamatch_utm_affiliatename: utm?.utm_affiliatename || '',
           }
         })
       });

@@ -393,6 +393,21 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
   ? 'http://localhost:3000'
   : '';
 
+// ─── UTM CAPTURE ───
+function captureUTMs() {
+  const keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_affiliatetype','utm_affiliatename'];
+  const params = new URLSearchParams(window.location.search);
+  const found = {};
+  keys.forEach(k => { if (params.get(k)) found[k] = params.get(k); });
+  if (Object.keys(found).length > 0) {
+    localStorage.setItem('vm_utms', JSON.stringify(found));
+    window._vmUtms = found;
+  } else {
+    try { window._vmUtms = JSON.parse(localStorage.getItem('vm_utms') || 'null') || {}; } catch(e) { window._vmUtms = {}; }
+  }
+}
+captureUTMs();
+
 // ─── STATE ───
 const S = {
   step: 'welcome', sStep: 0, prog: 0,
@@ -2336,7 +2351,7 @@ const flows = {
       // Salva lead parcial após ter email + nome + telefone
       fetch(`${API_BASE}/lead/partial`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ nome: S.nome, email: S.email, phone: full, etapa: 'contato', profile: S.profile })
+        body: JSON.stringify({ nome: S.nome, email: S.email, phone: full, etapa: 'contato', profile: S.profile, utm: window._vmUtms || {} })
       }).catch(()=>{});
       saveSession('contato_completo');
       go('path_select');
@@ -2864,7 +2879,7 @@ const flows = {
     // Salva lead parcial — abandono por fundos
     fetch(`${API_BASE}/lead/partial`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_fundos', visto: S.visto, profile: S.profile })
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_fundos', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
     }).catch(()=>{});
     await botMsg(`Entendemos completamente, ${S.nome}. O processo de visto é um investimento importante. Nossa equipe pode explicar melhor as opções de pagamento e ajudar a planejar. Posso coletar seus dados para que um especialista entre em contato?`);
     showOpts(['Sim, quero ser contatado', 'Recomeçar avaliação'], val => {
@@ -2880,7 +2895,7 @@ const flows = {
     // Salva lead parcial — abandono por perfil
     fetch(`${API_BASE}/lead/partial`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile })
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
     }).catch(()=>{});
     await botMsg(`Com o perfil atual, os vistos de trabalho e Green Card ainda exigem algumas bases que precisam ser construídas. A boa notícia é que <strong>isso tem caminho</strong> — e o time da Phoenix pode te ajudar com isso.`);
     await pause(400);
@@ -3716,7 +3731,7 @@ const flows = {
     const analyzePromise = fetch(`${API_BASE}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, visto: S.visto, vistos: S.vistos, profile: S.profile, localScores })
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, visto: S.visto, vistos: S.vistos, profile: S.profile, localScores, utm: window._vmUtms || {} })
     });
 
     // Anima barra enquanto aguarda a API
@@ -3818,7 +3833,7 @@ const flows = {
     // Salva lead de nurturing (não completou mas quer contato)
     fetch(`${API_BASE}/lead/partial`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'nurturing_contato', visto: S.visto, profile: S.profile })
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'nurturing_contato', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
     }).catch(()=>{});
     await botMsg(`Obrigado pelas informações, <strong>${S.nome}</strong>! Registrei seu perfil e nossa equipe entrará em contato em breve para dar os próximos passos. 🙌`);
     await pause(400);

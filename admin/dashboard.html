@@ -230,9 +230,15 @@ td.nome{color:var(--txt);font-weight:500}
           <div class="donut-wrap" id="score-donut"></div>
         </div>
       </div>
-      <div class="card" style="margin-bottom:24px">
-        <div class="card-title">Evolução de Leads — Últimos 30 dias</div>
-        <div class="timeline-bars" id="timeline"></div>
+      <div class="grid2" style="margin-bottom:24px">
+        <div class="card">
+          <div class="card-title">Evolução de Leads — Últimos 30 dias</div>
+          <div class="timeline-bars" id="timeline"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top Sources (UTM)</div>
+          <div id="utm-sources"></div>
+        </div>
       </div>
     </div>
 
@@ -382,6 +388,7 @@ async function loadStats() {
   renderVistoBars(data.porVisto);
   renderScoreDonut(data.porScore);
   renderTimeline(data.timeline);
+  renderUtmSources(data.porUtmSource);
 }
 
 function renderKPIs(d) {
@@ -414,6 +421,17 @@ function renderVistoBars(porVisto) {
         <span class="bar-num">${n}</span>
       </div>
     `).join('');
+}
+
+function renderUtmSources(porUtmSource) {
+  const el = document.getElementById('utm-sources');
+  if (!el) return;
+  if (!porUtmSource || !Object.keys(porUtmSource).length) { el.innerHTML = '<div class="empty">Nenhum UTM registrado ainda</div>'; return; }
+  const sorted = Object.entries(porUtmSource).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr><th style="text-align:left;font-size:10.5px;color:var(--txt3);padding:4px 8px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">Source</th><th style="text-align:right;font-size:10.5px;color:var(--txt3);padding:4px 8px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">Leads</th></tr></thead>
+    <tbody>${sorted.map(([src, n]) => `<tr><td style="padding:6px 8px;font-size:13px;color:var(--txt)">${src}</td><td style="padding:6px 8px;font-size:13px;color:var(--txt2);text-align:right;font-weight:600">${n}</td></tr>`).join('')}</tbody>
+  </table>`;
 }
 
 function renderScoreDonut(s) {
@@ -499,11 +517,13 @@ function renderLeadsTable({ leads, total, page, pages }) {
   const rows = leads.map(l => {
     const sc = scoreClass(l.score);
     const dt = new Date(l.created_at).toLocaleDateString('pt-BR');
+    const utmSrc = l.profile?._utm?.utm_source || '—';
     return `<tr>
       <td class="nome">${l.nome || '—'}</td>
       <td>${l.email}</td>
       <td>${l.visto_recomendado || '—'}</td>
       <td><span class="score-pill ${sc.cls}">${l.score ?? '—'} pts</span></td>
+      <td style="max-width:80px;font-size:11.5px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${utmSrc}">${utmSrc}</td>
       <td>${dt}</td>
       <td style="font-size:12px;color:var(--txt3)">${l.updated_at ? new Date(l.updated_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
       <td><span class="hs-badge ${l.hubspot_synced ? 'hs-ok' : 'hs-no'}">${l.hubspot_synced ? 'Sincronizado' : 'Pendente'}</span></td>
@@ -514,7 +534,7 @@ function renderLeadsTable({ leads, total, page, pages }) {
   document.getElementById('leads-table-wrap').innerHTML = `
     <table>
       <thead><tr>
-        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th>Criado</th><th>Última interação</th><th>HubSpot</th><th></th>
+        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th style="max-width:80px">Source</th><th>Criado</th><th>Última interação</th><th>HubSpot</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -554,6 +574,20 @@ async function viewLead(id) {
       <div class="detail-grid">
         ${fields.map(([lb, v]) => `<div class="detail-field"><div class="detail-label">${lb}</div><div class="detail-val">${v || '—'}</div></div>`).join('')}
       </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">UTM / Origem</div>
+      ${(function() {
+        const utm = l.profile?._utm || {};
+        const utmFields = [
+          ['utm_source', 'Source'], ['utm_medium', 'Medium'], ['utm_campaign', 'Campaign'],
+          ['utm_content', 'Content'], ['utm_term', 'Term'],
+          ['utm_affiliatetype', 'Affiliate Type'], ['utm_affiliatename', 'Affiliate Name']
+        ];
+        const hasAny = utmFields.some(([k]) => utm[k]);
+        if (!hasAny) return '<div style="font-size:13px;color:var(--txt3);padding:4px 0">Nenhum UTM registrado para este lead.</div>';
+        return `<div class="detail-grid">${utmFields.map(([k, lb]) => `<div class="detail-field"><div class="detail-label">${lb}</div><div class="detail-val" style="word-break:break-all">${utm[k] || '—'}</div></div>`).join('')}</div>`;
+      })()}
     </div>
     <div class="card">
       <div class="card-title">Perfil Completo (JSON)</div>

@@ -6,7 +6,7 @@ const router = express.Router();
 // POST /analyze
 // Body: { nome, email, phone, visto, vistos, profile }
 router.post('/', async (req, res) => {
-  const { nome, email, phone, visto, vistos, profile, localScores } = req.body;
+  const { nome, email, phone, visto, vistos, profile, localScores, utm } = req.body;
 
   if (!profile) return res.status(400).json({ error: 'Profile obrigatório.' });
 
@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
           classificacao: bestClassif,
           completo: true,
           etapa_abandono: null,
-          profile: { ...profile, ai_analysis: analysis },
+          profile: { ...profile, ai_analysis: analysis, _utm: utm || undefined },
           updated_at: new Date().toISOString(),
         }).eq('id', existing.id);
       } else {
@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
           classificacao: bestClassif,
           completo: true,
           etapa_abandono: null,
-          profile: { ...profile, ai_analysis: analysis },
+          profile: { ...profile, ai_analysis: analysis, _utm: utm || undefined },
           hubspot_synced: false,
         });
       }

@@ -85,13 +85,26 @@ router.get('/stats', auth, async (req, res) => {
       return acc;
     }, {});
 
+    // UTM sources aggregation
+    const { data: utmRows } = await supabase
+      .from('leads')
+      .select('profile')
+      .not('profile', 'is', null);
+
+    const porUtmSource = {};
+    (utmRows || []).forEach(r => {
+      const src = r.profile?._utm?.utm_source;
+      if (src) porUtmSource[src] = (porUtmSource[src] || 0) + 1;
+    });
+
     res.json({
       total,
       ultimos7dias,
       pendentesHubspot,
       porVisto: vistoCount,
       porScore: scoreClass,
-      timeline
+      timeline,
+      porUtmSource
     });
   } catch (err) {
     console.error('Admin stats error:', err);
@@ -107,7 +120,7 @@ router.get('/leads', auth, async (req, res) => {
   try {
     let query = supabase
       .from('leads')
-      .select('id, created_at, nome, email, phone, visto_recomendado, score, hubspot_synced, hubspot_contact_id', { count: 'exact' })
+      .select('id, created_at, nome, email, phone, visto_recomendado, score, hubspot_synced, hubspot_contact_id, profile', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
