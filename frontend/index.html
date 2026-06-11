@@ -801,18 +801,30 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   const inputEl = document.getElementById(inputId);
   const wrapEl  = document.getElementById(wrapId);
 
-  // Auto-formata MM/AAAA
+  const sendBtn = document.getElementById(sendId);
+
+  // Controla estado visual do botão de envio
+  const setValid = (ok) => {
+    sendBtn.style.opacity  = ok ? '1'    : '0.35';
+    sendBtn.style.cursor   = ok ? 'pointer' : 'not-allowed';
+  };
+  setValid(false); // começa desabilitado
+
+  const isComplete = (v) => /^\d{2}\/\d{4}$/.test(v);
+
+  // Auto-formata MM/AAAA e atualiza botão
   inputEl.addEventListener('input', function() {
     let v = this.value.replace(/\D/g,'');
     if (v.length > 6) v = v.slice(0,6);
     if (v.length > 2) v = `${v.slice(0,2)}/${v.slice(2)}`;
     this.value = v;
+    setValid(isComplete(v));
   });
   wrapEl.addEventListener('focusin',  () => { wrapEl.style.borderColor='var(--blue)'; wrapEl.style.boxShadow='0 0 0 4px rgba(0,83,208,.06)'; });
   wrapEl.addEventListener('focusout', () => { wrapEl.style.borderColor='var(--border2)'; wrapEl.style.boxShadow=''; });
 
   const submit = (val) => {
-    if (!val || val.length < 4) return;
+    if (!isComplete(val)) return; // exige MM/AAAA completo (ex: 03/2021)
     row.remove();
     hideStructuredZone();
     document.querySelector('.input-zone').style.display = '';
@@ -822,7 +834,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
     go(nextStep);
   };
 
-  document.getElementById(sendId).onclick = () => submit(inputEl.value.trim());
+  sendBtn.onclick = () => submit(inputEl.value.trim());
   inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') submit(inputEl.value.trim()); });
   if (allowCurrent) {
     document.getElementById(currId).onclick = () => submit('atual');
