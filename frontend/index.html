@@ -2363,16 +2363,39 @@ const flows = {
       </div>`;
     sz.appendChild(phoneRow);
 
-    // Formata número BR automaticamente
-    document.getElementById('phone-num').addEventListener('input', function() {
-      const ddi = document.getElementById('phone-country').value;
-      if (ddi !== '+55') return;
-      let v = this.value.replace(/\D/g,'');
-      if (v.length > 11) v = v.slice(0,11);
-      if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
-      else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
-      this.value = v;
+    const phoneSendBtn = document.getElementById('phone-send');
+    const phoneNumEl   = document.getElementById('phone-num');
+    const phoneSelEl   = document.getElementById('phone-country');
+
+    // Mínimo de dígitos por DDI
+    const minDigits = { '+55':10, '+1':10, '+351':9, '+54':10, '+39':9, '+34':9, '+49':10, '+33':9, '+52':10 };
+    const defaultMin = 7;
+
+    const phoneIsValid = () => {
+      const ddi  = phoneSelEl.value;
+      const digits = phoneNumEl.value.replace(/\D/g, '');
+      return digits.length >= (minDigits[ddi] || defaultMin);
+    };
+
+    const setPhoneValid = (ok) => {
+      phoneSendBtn.style.opacity = ok ? '1' : '0.35';
+      phoneSendBtn.style.cursor  = ok ? 'pointer' : 'not-allowed';
+    };
+    setPhoneValid(false);
+
+    // Formata número BR automaticamente e atualiza botão
+    phoneNumEl.addEventListener('input', function() {
+      const ddi = phoneSelEl.value;
+      if (ddi === '+55') {
+        let v = this.value.replace(/\D/g,'');
+        if (v.length > 11) v = v.slice(0,11);
+        if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+        else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+        this.value = v;
+      }
+      setPhoneValid(phoneIsValid());
     });
+    phoneSelEl.addEventListener('change', () => setPhoneValid(phoneIsValid()));
 
     document.getElementById('phone-wrap').addEventListener('focusin', () =>
       document.getElementById('phone-wrap').style.borderColor = 'var(--blue2)'
@@ -2382,9 +2405,9 @@ const flows = {
     );
 
     const submitPhone = () => {
-      const ddi = document.getElementById('phone-country').value;
-      const num = document.getElementById('phone-num').value.trim();
-      if (!num) return;
+      if (!phoneIsValid()) return;
+      const ddi = phoneSelEl.value;
+      const num = phoneNumEl.value.trim();
       const full = `${ddi} ${num}`;
       phoneRow.remove();
       sz.style.display = 'none';
@@ -2402,8 +2425,8 @@ const flows = {
       go('path_select');
     };
 
-    document.getElementById('phone-send').onclick = submitPhone;
-    document.getElementById('phone-num').addEventListener('keydown', e => { if(e.key==='Enter') submitPhone(); });
+    phoneSendBtn.onclick = submitPhone;
+    phoneNumEl.addEventListener('keydown', e => { if(e.key==='Enter') submitPhone(); });
   },
 
   // ──────── TRIAGEM ────────
