@@ -280,10 +280,14 @@ td.nome{color:var(--txt);font-weight:500}
       <div class="card" style="margin-bottom:24px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div class="card-title" style="margin-bottom:0">Origens de Tráfego (UTM)</div>
-          <div style="display:flex;gap:4px" id="utm-tabs">
+          <div style="display:flex;gap:4px;flex-wrap:wrap" id="utm-tabs">
             <button class="utm-tab active" onclick="switchUtmTab('source',this)">Source</button>
             <button class="utm-tab" onclick="switchUtmTab('medium',this)">Medium</button>
             <button class="utm-tab" onclick="switchUtmTab('campaign',this)">Campaign</button>
+            <button class="utm-tab" onclick="switchUtmTab('content',this)">Content</button>
+            <button class="utm-tab" onclick="switchUtmTab('term',this)">Term</button>
+            <button class="utm-tab" onclick="switchUtmTab('afftype',this)">Affiliate Type</button>
+            <button class="utm-tab" onclick="switchUtmTab('affname',this)">Affiliate Name</button>
           </div>
         </div>
         <div id="utm-content"></div>
@@ -359,16 +363,10 @@ td.nome{color:var(--txt);font-weight:500}
         <div class="card-title">🔍 Abandono por Step Específico</div>
         <div id="abandon-steps" style="margin-top:4px"></div>
       </div>
-      <!-- Grid 2 colunas -->
-      <div class="grid2" style="margin-bottom:20px">
-        <div class="card">
-          <div class="card-title">🕐 Sessões Ativas (por etapa)</div>
-          <div id="step-chart" style="margin-top:8px"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">📱 Dispositivos</div>
-          <div id="device-chart" style="margin-top:8px"></div>
-        </div>
+      <!-- Dispositivos -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">📱 Dispositivos</div>
+        <div id="device-chart" style="margin-top:8px"></div>
       </div>
     </div>
 
@@ -453,7 +451,16 @@ function showPanel(id) {
 }
 
 // ── LOAD ALL ──
-function loadAll() { loadStats(); }
+function loadAll() {
+  loadStats();
+  // Recarrega painel ativo se não for o overview
+  const active = document.querySelector('.panel.active');
+  if (active) {
+    const id = active.id.replace('panel-', '');
+    if (id === 'leads') loadLeads(1);
+    if (id === 'analytics') loadAnalytics();
+  }
+}
 
 // ── STATS ──
 async function loadStats() {
@@ -464,7 +471,15 @@ async function loadStats() {
     apiFetch('/overview').catch(() => ({}))
   ]);
   Object.assign(data, overview);
-  _utmData = { source: data.porUtmSource || {}, medium: data.porUtmMedium || {}, campaign: data.porUtmCampaign || {} };
+  _utmData = {
+    source:   data.porUtmSource   || {},
+    medium:   data.porUtmMedium   || {},
+    campaign: data.porUtmCampaign || {},
+    content:  data.porUtmContent  || {},
+    term:     data.porUtmTerm     || {},
+    afftype:  data.porUtmAffType  || {},
+    affname:  data.porUtmAffName  || {},
+  };
   renderKPIs(data);
   renderVistoBars(data.porVisto, data.total);
   renderScoreDonut(data.porScore);
@@ -626,11 +641,14 @@ async function loadLeads(page = 1) {
   const visto = document.getElementById('filter-visto')?.value || '';
   const scoreRange = document.getElementById('filter-score')?.value || '';
   const source = document.getElementById('filter-source')?.value || '';
+  const { from, to } = getDateRange();
   let qs = `?page=${page}&limit=15`;
   if (search) qs += `&search=${encodeURIComponent(search)}`;
   if (visto) qs += `&visto=${encodeURIComponent(visto)}`;
   if (scoreRange) { const [mn, mx] = scoreRange.split(','); qs += `&score_min=${mn}&score_max=${mx}`; }
   if (source) qs += `&utm_source=${encodeURIComponent(source)}`;
+  if (from) qs += `&from=${from}`;
+  if (to)   qs += `&to=${to}`;
 
   document.getElementById('leads-table-wrap').innerHTML = '<div class="loading"><div class="spin"></div>Carregando leads...</div>';
   const data = await apiFetch('/leads' + qs);
@@ -647,13 +665,18 @@ function renderLeadsTable({ leads, total, page, pages }) {
   const rows = leads.map(l => {
     const sc = scoreClass(l.score);
     const dt = new Date(l.created_at).toLocaleDateString('pt-BR');
-    const utmSrc = l.profile?._utm?.utm_source || '—';
+    const utm = l.profile?._utm || {};
+    const utmBadges = [
+      utm.utm_source   ? `<span style="background:rgba(37,99,235,.1);color:var(--blue2);font-size:10px;padding:1px 6px;border-radius:4px;white-space:nowrap">${utm.utm_source}</span>` : '',
+      utm.utm_medium   ? `<span style="background:rgba(124,58,237,.08);color:#7c3aed;font-size:10px;padding:1px 6px;border-radius:4px;white-space:nowrap">${utm.utm_medium}</span>` : '',
+      utm.utm_campaign ? `<span style="background:rgba(5,150,105,.08);color:var(--green);font-size:10px;padding:1px 6px;border-radius:4px;white-space:nowrap" title="${utm.utm_campaign}">${utm.utm_campaign.length>20?utm.utm_campaign.slice(0,20)+'…':utm.utm_campaign}</span>` : '',
+    ].filter(Boolean).join(' ');
     return `<tr>
       <td class="nome">${l.nome || '—'}</td>
       <td>${l.email}</td>
       <td>${l.visto_recomendado || '—'}</td>
       <td><span class="score-pill ${sc.cls}">${l.score ?? '—'} pts</span></td>
-      <td style="max-width:80px;font-size:11.5px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${utmSrc}">${utmSrc}</td>
+      <td style="max-width:160px">${utmBadges || '<span style="font-size:11px;color:var(--txt3)">—</span>'}</td>
       <td>${dt}</td>
       <td style="font-size:12px;color:var(--txt3)">${l.updated_at ? new Date(l.updated_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
       <td><span class="hs-badge ${l.hubspot_synced ? 'hs-ok' : 'hs-no'}">${l.hubspot_synced ? 'Sincronizado' : 'Pendente'}</span></td>
@@ -664,7 +687,7 @@ function renderLeadsTable({ leads, total, page, pages }) {
   document.getElementById('leads-table-wrap').innerHTML = `
     <table>
       <thead><tr>
-        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th style="max-width:80px">Source</th><th>Criado</th><th>Última interação</th><th>HubSpot</th><th></th>
+        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th style="max-width:160px">UTM</th><th>Criado</th><th>Última interação</th><th>HubSpot</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -756,7 +779,6 @@ async function loadAnalytics() {
   renderAnalyticsStats(funnelData, statsData);
   renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0);
   renderAbandonSteps(funnelData.topAbandonSteps || [], funnelData.total || 0);
-  renderStepChart(funnelData.stepMap || {});
   renderDeviceChart(funnelData.deviceMap || {});
 }
 
@@ -833,29 +855,6 @@ function renderAbandonSteps(steps, total) {
   }).join('');
 }
 
-function renderStepChart(map) {
-  const el = document.getElementById('step-chart');
-  if (!map || !Object.keys(map).length) { el.innerHTML = '<div class="empty">Nenhuma sessão ativa (7d).</div>'; return; }
-  const stepLabels = {
-    welcome:'Bem-vindo', contact_email:'E-mail', contact_name:'Nome', contact_phone:'Telefone',
-    path_select:'Triagem', pi_local:'Perfil', pi_profissao:'Profissão', pi_fundos:'Fundos',
-    ac_grau:'Formação', pe_emp1:'Empresa 1', pe_segunda:'Empresa 2',
-    sc_niw_1:'Scoring NIW', sc_eb1_intro:'Scoring EB-1A', resultado:'Resultado'
-  };
-  const entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 10);
-  const total = entries.reduce((s, [,v]) => s + v, 0);
-  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">' + entries.map(([k,v]) => {
-    const pct = Math.round((v/total)*100);
-    return `<div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11.5px;color:var(--txt2);width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${k}">${stepLabels[k]||k}</span>
-      <div style="flex:1;height:7px;background:rgba(11,25,41,.06);border-radius:4px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue2),var(--blue4));border-radius:4px"></div>
-      </div>
-      <span style="font-size:12px;font-weight:600;color:var(--blue2);min-width:20px;text-align:right">${v}</span>
-      <span style="font-size:11px;color:var(--txt3);min-width:30px;text-align:right">${pct}%</span>
-    </div>`;
-  }).join('') + '</div>';
-}
 
 function renderDeviceChart(map) {
   const el = document.getElementById('device-chart');
