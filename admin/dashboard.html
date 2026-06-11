@@ -158,6 +158,8 @@ td.nome{color:var(--txt);font-weight:500}
 .change-up{background:rgba(29,158,112,.09);color:var(--green)}
 .change-dn{background:rgba(220,38,38,.07);color:var(--red)}
 .change-flat{background:rgba(11,25,41,.05);color:var(--txt3)}
+/* ── CHART TOOLTIP ── */
+#chart-tooltip{position:fixed;z-index:9999;background:var(--blue4);color:#fff;font-size:12px;padding:8px 12px;border-radius:9px;pointer-events:none;white-space:pre-line;line-height:1.55;box-shadow:0 4px 16px rgba(11,25,41,.25);max-width:220px;opacity:0;transition:opacity .12s}
 /* ── FUNNEL v2 ── */
 .funnel-item{display:grid;grid-template-columns:160px 1fr 70px 70px 80px;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:10px}
 /* ── ABANDON STEPS ── */
@@ -372,12 +374,33 @@ td.nome{color:var(--txt);font-weight:500}
 
   </div>
 </main>
+<div id="chart-tooltip"></div>
 </div>
 
 <script>
 const API = '/api/admin';
 const token = localStorage.getItem('admin_token');
 if (!token) window.location.href = '/admin/';
+
+// ── Tooltip global para gráficos ──
+const _tt = document.getElementById('chart-tooltip');
+function showTooltip(e, html) {
+  _tt.innerHTML = html;
+  _tt.style.opacity = '1';
+  _positionTooltip(e);
+}
+function hideTooltip() { _tt.style.opacity = '0'; }
+function _positionTooltip(e) {
+  const mx = e.clientX, my = e.clientY;
+  const tw = _tt.offsetWidth || 180, th = _tt.offsetHeight || 60;
+  let x = mx + 14, y = my - th / 2;
+  if (x + tw > window.innerWidth - 10) x = mx - tw - 14;
+  if (y < 6) y = 6;
+  if (y + th > window.innerHeight - 6) y = window.innerHeight - th - 6;
+  _tt.style.left = x + 'px';
+  _tt.style.top  = y + 'px';
+}
+document.addEventListener('mousemove', e => { if (_tt.style.opacity === '1') _positionTooltip(e); });
 
 let searchTimer = null;
 let currentPage = 1;
@@ -504,6 +527,7 @@ function renderKPIs(d) {
     { label: 'Análises Completas', val: d.completos || 0, sub: `vs ${d.completosPrev||0} período anterior`, change: d.completosChange },
     { label: 'Taxa de Conversão', val: conv + '%', sub: `Completos / Iniciados`, change: convChange },
     { label: 'Sessões (24h)', val: d.activeSessions || 0, sub: `Pendentes HubSpot: ${d.pendentesHubspot||0}`, change: null },
+    { label: 'Média de Idade', val: d.mediaIdade ? d.mediaIdade + ' anos' : '—', sub: 'Baseado nos leads do período', change: null },
   ];
   document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
     <div class="kpi">
@@ -524,8 +548,11 @@ function renderVistoBars(porVisto, totalLeads) {
   document.getElementById('visto-total').textContent = `Total: ${totalLeads || 0}`;
   el.innerHTML = sorted.map(([v, n]) => {
     const pct = Math.round((n / tot) * 100);
-    return `<div class="bar-item">
-      <span class="bar-label" title="${v}">${v}</span>
+    const ttHtml = `<b>${v}</b>\n👤 ${n} leads  ·  ${pct}% do total`;
+    return `<div class="bar-item" style="cursor:default"
+      onmouseenter="showTooltip(event,'${ttHtml.replace(/'/g,"&#39;")}')"
+      onmouseleave="hideTooltip()">
+      <span class="bar-label">${v}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${(n/max*100).toFixed(1)}%"></div></div>
       <span class="bar-num">${n}</span>
       <span style="font-size:11px;color:var(--txt3);min-width:32px;text-align:right">${pct}%</span>
@@ -548,8 +575,11 @@ function renderUtmTab(tab) {
   const max = sorted[0][1];
   el.innerHTML = `<div class="bar-list">${sorted.slice(0, 10).map(([v, n]) => {
     const pct = Math.round((n / total) * 100);
-    return `<div class="bar-item">
-      <span class="bar-label" title="${v}" style="width:180px">${v || '(vazio)'}</span>
+    const ttHtml = `<b>${v || '(não identificado)'}</b>\n👤 ${n} leads  ·  ${pct}% do total`;
+    return `<div class="bar-item" style="cursor:default"
+      onmouseenter="showTooltip(event,'${ttHtml.replace(/'/g,"&#39;")}')"
+      onmouseleave="hideTooltip()">
+      <span class="bar-label" style="width:180px">${v || '(vazio)'}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${(n/max*100).toFixed(1)}%"></div></div>
       <span class="bar-num">${n}</span>
       <span style="font-size:11px;color:var(--txt3);min-width:36px;text-align:right">${pct}%</span>
@@ -598,7 +628,10 @@ function renderScoreDonut(s) {
 
   const legend = `<div class="donut-legend">${cats.map(c => {
     const pct = Math.round((c.val / total) * 100);
-    return `<div class="leg-item">
+    const ttHtml = `<b>${c.label}</b>\n👤 ${c.val} leads  ·  ${pct}% do total`;
+    return `<div class="leg-item" style="cursor:default"
+      onmouseenter="showTooltip(event,'${ttHtml.replace(/'/g,"&#39;")}')"
+      onmouseleave="hideTooltip()">
       <div class="leg-dot" style="background:${c.color}"></div>
       <span style="flex:1">${c.label}</span>
       <b style="color:var(--txt)">${c.val}</b>
@@ -622,7 +655,10 @@ function renderTimeline(timeline, timelineCompletos) {
     const hc = Math.max(0, Math.round((nc / max) * 80));
     const label = dia.slice(5); // MM-DD
     const conv = n > 0 ? Math.round((nc / n) * 100) : 0;
-    return `<div class="tl-col" style="position:relative" title="${dia} — ${n} iniciados, ${nc} completos (${conv}% conv.)">
+    const ttHtml = `<b>${dia}</b>\n🔵 ${n} iniciados\n🟢 ${nc} completos\n📈 ${conv}% conversão`;
+    return `<div class="tl-col" style="position:relative;cursor:default"
+      onmouseenter="showTooltip(event,'${ttHtml.replace(/'/g,"&#39;")}')"
+      onmouseleave="hideTooltip()">
       <span style="font-size:8px;color:var(--txt3);margin-bottom:2px">${n}</span>
       <div style="position:relative;width:100%;height:${h}px">
         <div style="position:absolute;bottom:0;left:0;right:0;height:${h}px;background:rgba(26,114,246,.18);border-radius:3px 3px 0 0"></div>
@@ -711,10 +747,23 @@ async function viewLead(id) {
   const l = await apiFetch('/leads/' + id);
   const sc = scoreClass(l.score);
   const dt = new Date(l.created_at).toLocaleString('pt-BR');
+  // Calcula idade na hora (usa dataNasc ou o campo idade já calculado)
+  let idadeExibir = l.profile?.idade ? `${l.profile.idade} anos` : null;
+  if (!idadeExibir && l.profile?.dataNasc) {
+    const _dn = l.profile.dataNasc.split('/');
+    if (_dn.length === 3) {
+      const _d = new Date(+_dn[2], +_dn[1] - 1, +_dn[0]);
+      const _h = new Date();
+      let _a = _h.getFullYear() - _d.getFullYear();
+      if (_h.getMonth() < _d.getMonth() || (_h.getMonth() === _d.getMonth() && _h.getDate() < _d.getDate())) _a--;
+      if (_a >= 10 && _a <= 100) idadeExibir = `${_a} anos (nasc. ${l.profile.dataNasc})`;
+    }
+  }
   const fields = [
     ['Nome', l.nome], ['E-mail', l.email], ['WhatsApp', l.phone],
     ['Visto Recomendado', l.visto_recomendado], ['Score', `${l.score} pts`],
-    ['Data', dt], ['HubSpot', l.hubspot_synced ? '✓ Sincronizado' : 'Pendente'],
+    ['Idade', idadeExibir || '—'],
+    ['Data Cadastro', dt], ['HubSpot', l.hubspot_synced ? '✓ Sincronizado' : 'Pendente'],
     ['HubSpot ID', l.hubspot_contact_id || '—'],
   ];
   dv.innerHTML = `

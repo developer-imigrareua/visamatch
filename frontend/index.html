@@ -1927,6 +1927,14 @@ async function go(id) {
   await flows[id]();
 }
 
+// goSilent: transição automática sem salvar no histórico
+// Usar para auto-steps que não esperam input do usuário (evita loop no undo)
+async function goSilent(id) {
+  S.step = id;
+  const ur = document.getElementById('undo-row'); if (ur) ur.remove();
+  await flows[id]();
+}
+
 const flows = {
 
   // ──────── CONTATO ────────
@@ -3000,6 +3008,15 @@ const flows = {
       document.querySelector('.input-zone').style.display = ''  ; // date-restore;
       ti.disabled = false;
       S.profile.dataNasc = val;
+      // Calcula idade automaticamente a partir da data de nascimento
+      const _dn = val.split('/');
+      if (_dn.length === 3) {
+        const _nascDate = new Date(+_dn[2], +_dn[1] - 1, +_dn[0]);
+        const _hoje = new Date();
+        let _age = _hoje.getFullYear() - _nascDate.getFullYear();
+        if (_hoje.getMonth() < _nascDate.getMonth() || (_hoje.getMonth() === _nascDate.getMonth() && _hoje.getDate() < _nascDate.getDate())) _age--;
+        if (_age >= 10 && _age <= 100) S.profile.idade = _age;
+      }
       userMsg(val);
       go('pi_local');
     };
@@ -3217,7 +3234,7 @@ const flows = {
         }
       }
     }
-    go('ac_segunda');
+    goSilent('ac_segunda');
   },
 
   async ac_segunda() {

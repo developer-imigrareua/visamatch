@@ -94,6 +94,7 @@ router.post('/', async (req, res) => {
             visamatch_caminho: profile?.caminhoPrincipal || '',
             visamatch_fundos: profile?.fundos || '',
             visamatch_planos_eua: profile?.planosEUA || '',
+            visamatch_idade: profile?.idade ? String(profile.idade) : '',
             hs_analytics_source: utm?.utm_source || '',
             hs_analytics_source_data_1: utm?.utm_medium || '',
             hs_analytics_source_data_2: utm?.utm_campaign || '',

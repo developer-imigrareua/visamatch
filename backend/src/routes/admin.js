@@ -88,10 +88,15 @@ router.get('/stats', auth, async (req, res) => {
       if (r.completo) timelineCompletos[dia] = (timelineCompletos[dia] || 0) + 1;
     });
 
-    // UTM aggregations (todos os parâmetros)
-    const { data: utmRows } = await supabase
+    // Média de idade
+    const { data: idadeRows } = await supabase
       .from('leads').select('profile').not('profile', 'is', null)
       .gte('created_at', from).lte('created_at', to);
+    const idades = (idadeRows || []).map(r => r.profile?.idade).filter(v => v && v >= 10 && v <= 100);
+    const mediaIdade = idades.length ? Math.round(idades.reduce((a, b) => a + b, 0) / idades.length) : null;
+
+    // UTM aggregations (todos os parâmetros) — reutiliza idadeRows
+    const utmRows = idadeRows;
     const porUtmSource = {}, porUtmMedium = {}, porUtmCampaign = {},
           porUtmContent = {}, porUtmTerm = {}, porUtmAffType = {}, porUtmAffName = {};
     (utmRows || []).forEach(r => {
@@ -115,6 +120,7 @@ router.get('/stats', auth, async (req, res) => {
       timeline, timelineCompletos,
       porUtmSource, porUtmMedium, porUtmCampaign,
       porUtmContent, porUtmTerm, porUtmAffType, porUtmAffName,
+      mediaIdade,
       from, to,
     });
   } catch (err) {
