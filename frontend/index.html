@@ -510,6 +510,9 @@ function addUndoBtn() {
     S.visto = prev.visto; S.vistos = prev.vistos;
     setSideStep(prev.sStep); setProgress(prev.prog);
     clearInputHandlers(); rmOpts();
+    document.querySelector('.input-zone').classList.remove('dimmed');
+    document.querySelector('.input-zone').style.display = '';
+    ti.disabled = false;
     go(prev.step);
   };
 }
@@ -3400,7 +3403,17 @@ const flows = {
   async sc_eb1_8() {
     await think(400);
     await botMsg('Tem evidências de <strong>contribuições originais de grande importância</strong> para o seu campo (científicas, artísticas, de negócios)?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_contrib = val; go('sc_eb1_decide'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_contrib = val; go('sc_eb1_9'); });
+  },
+  async sc_eb1_9() {
+    await think(400);
+    await botMsg('Você já teve <strong>sucesso comercial comprovado em artes performáticas</strong> (música, cinema, teatro, dança)?');
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_artes = val; go('sc_eb1_10'); });
+  },
+  async sc_eb1_10() {
+    await think(400);
+    await botMsg('Você é <strong>autor de artigos acadêmicos publicados</strong> em revistas ou publicações profissionais reconhecidas?');
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.eb1_artigos = val; go('sc_eb1_decide'); });
   },
 
   async sc_eb1_decide() {
@@ -3439,7 +3452,32 @@ const flows = {
   async sc_o1_5() {
     await think(400);
     await botMsg('Sua remuneração está <strong>acima da média da sua área</strong>?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_salario = val; go(S._afterO1 || 'resultado'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_salario = val; go('sc_o1_6'); });
+  },
+  async sc_o1_6() {
+    await think(400);
+    await botMsg('Você participa ou já participou de <strong>associações que exigem realizações de destaque</strong> para admissão (acesso por convite ou mérito)?');
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_assoc = val; go('sc_o1_7'); });
+  },
+  async sc_o1_7() {
+    await think(400);
+    await botMsg('Você já foi <strong>convidado a avaliar o trabalho de outros profissionais</strong> da sua área, individualmente ou como parte de um painel?');
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_avaliador = val; go('sc_o1_8'); });
+  },
+  async sc_o1_8() {
+    await think(400);
+    await botMsg('Você já teve <strong>sucesso comercial comprovado em artes performáticas</strong> (música, cinema, teatro, dança)?');
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_artes = val; go('sc_o1_9'); });
+  },
+  async sc_o1_9() {
+    await think(400);
+    await botMsg('Seu trabalho já foi exibido em <strong>exposições, mostras ou showcases reconhecidos</strong>?');
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_exposicoes = val; go('sc_o1_10'); });
+  },
+  async sc_o1_10() {
+    await think(400);
+    await botMsg('Você é <strong>autor de artigos acadêmicos</strong> publicados em revistas ou publicações profissionais?');
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_artigos = val; go(S._afterO1 || 'resultado'); });
   },
 
   // ──────── RESULTADO ────────
