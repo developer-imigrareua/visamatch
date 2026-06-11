@@ -3870,7 +3870,7 @@ async function checkAndResumeSession() {
 
 async function checkSessionInBackground() {
   const savedId = localStorage.getItem('vm_session_id');
-  if (!savedId) return; // sem sessão — welcome já iniciou
+  if (!savedId) return; // sem sessão — welcome já iniciou normalmente
 
   try {
     const controller = new AbortController();
@@ -3880,21 +3880,25 @@ async function checkSessionInBackground() {
     if (!res.ok) { localStorage.removeItem('vm_session_id'); return; }
     const { state, updated_at } = await res.json();
 
-    // Só oferece retomada se tem progresso real e é recente
+    // Só oferece retomada se tem progresso real e é recente (7 dias)
     const age = Date.now() - new Date(updated_at).getTime();
     if (age > 7 * 24 * 60 * 60 * 1000 || !state?.email || state.prog < 10) {
       localStorage.removeItem('vm_session_id'); return;
     }
 
-    // Mostra card de retomada
-    await pause(300);
+    // Sessão válida — apaga mensagens do welcome que já apareceram
+    // (o welcome rodou em paralelo enquanto buscávamos a sessão)
+    chat.querySelectorAll('.row, .opts-wrap, .fact-row').forEach(el => el.remove());
+
+    // Mostra card de retomada como PRIMEIRA mensagem
+    await think(400);
     const resumeRow = document.createElement('div');
     resumeRow.className = 'row';
     resumeRow.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap" style="max-width:88%">
         <div class="bubble bot-b">
           👋 Olá! Você tem uma análise em andamento.<br>
-          <span style="font-size:12.5px;color:var(--txt3)">Etapa: <b style="color:var(--blue)">${state._etapa || state.step || 'em andamento'}</b> · Progresso: <b>${state.prog || 0}%</b></span>
+          <span style="font-size:12.5px;color:var(--txt3)">Etapa: <b style="color:var(--blue)">${state._etapa || state.step || 'em andamento'}</b> · Progresso: <b style="color:var(--blue)">${state.prog || 0}%</b></span>
         </div>
       </div>`;
     chat.appendChild(resumeRow);
@@ -3908,7 +3912,6 @@ async function checkSessionInBackground() {
     btnContinue.textContent = '▶ Continuar de onde parei';
     btnContinue.onclick = () => {
       optsRow.remove();
-      // Restaura estado
       const saved = state;
       S.email   = saved.email   || '';
       S.nome    = saved.nome    || '';
@@ -3928,10 +3931,9 @@ async function checkSessionInBackground() {
     btnNew.textContent = '↺ Começar nova análise';
     btnNew.onclick = () => {
       optsRow.remove();
-      const resumeRow2 = document.getElementById('session-resume-row');
-      if (resumeRow2) resumeRow2.remove();
+      resumeRow.remove();
       localStorage.removeItem('vm_session_id');
-      // welcome já está rodando em background, não precisa chamar de novo
+      go('welcome');
     };
 
     optsRow.appendChild(btnContinue);
@@ -3941,7 +3943,7 @@ async function checkSessionInBackground() {
 
   } catch(e) {
     localStorage.removeItem('vm_session_id');
-    go('welcome');
+    // welcome já está rodando normalmente
   }
 }
 
@@ -3976,11 +3978,13 @@ if (ti) {
 }
 
 // ─── START ───
-// Inicia IMEDIATAMENTE o fluxo — não espera nenhuma operação assíncrona
-go('welcome');
-
-// Depois verifica sessão em background e oferece retomada se necessário
-setTimeout(() => checkSessionInBackground(), 1500);
+// Se há sessão salva, verifica PRIMEIRO e só mostra welcome se não houver sessão válida.
+// Se não há sessão, inicia welcome imediatamente.
+if (localStorage.getItem('vm_session_id')) {
+  checkSessionInBackground();
+} else {
+  go('welcome');
+}
 </script>
 
 
