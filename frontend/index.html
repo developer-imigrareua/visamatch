@@ -1103,24 +1103,29 @@ function buildResult(visto, score, p) {
     const score1 = calcScore('EB-1A', p);
     const bestScore = Math.max(score2, score1);
     const bestPartner = getClass(bestScore).partner;
+    const showBoth = score2 > 0 && score1 > 0;
+    const activeVisto = score2 > 0 ? 'niw' : 'eb1';
+
+    const tabsHtml = showBoth ? `
+      <div class="dual-tab-row">
+        <button class="dual-tab${activeVisto==='niw'?' active':''}" id="tab-niw" onclick="showTab('niw')">EB-2 NIW · ${score2} pts</button>
+        <button class="dual-tab${activeVisto==='eb1'?' active':''}" id="tab-eb1" onclick="showTab('eb1')">EB-1A · ${Math.max(0,score1)} pts</button>
+      </div>` : '';
 
     return `<div style="display:flex;flex-direction:column;gap:12px">
       <div class="res-card">
         <div class="res-head" style="padding-bottom:16px">
-          <div class="res-tag">✦ Visa Match · Elegibilidade — Análise Dupla</div>
-          <div class="res-visto">EB-2 NIW + EB-1A</div>
+          <div class="res-tag">✦ Visa Match · Elegibilidade${showBoth ? ' — Análise Dupla' : ''}</div>
+          <div class="res-visto">${showBoth ? 'EB-2 NIW + EB-1A' : (score2 > 0 ? 'EB-2 NIW' : 'EB-1A')}</div>
           <div class="res-nome">Análise de critérios — ${p.nomeCompleto || S.nome}</div>
         </div>
         <div class="res-body">
           ${legalHtml}
-          <div class="dual-tab-row">
-            <button class="dual-tab active" id="tab-niw" onclick="showTab('niw')">EB-2 NIW · ${score2} pts</button>
-            <button class="dual-tab" id="tab-eb1" onclick="showTab('eb1')">EB-1A · ${Math.max(0,score1)} pts</button>
-          </div>
-          <div id="panel-niw">${buildSingleCard('EB-2 NIW', score2, p, false)}</div>
-          <div id="panel-eb1" style="display:none">${buildSingleCard('EB-1A', score1, p, false)}</div>
+          ${tabsHtml}
+          <div id="panel-niw" ${activeVisto!=='niw'&&!showBoth?'style="display:none"':''}>${buildSingleCard('EB-2 NIW', score2, p, false)}</div>
+          <div id="panel-eb1" ${activeVisto==='niw'||showBoth&&activeVisto==='niw'?'style="display:none"':''}>${buildSingleCard('EB-1A', score1, p, false)}</div>
           <div class="sec-lbl" style="margin-top:16px">Parceiro Recomendado</div>
-          ${partnerCtaHtml(bestPartner, 'EB-2 NIW / EB-1A')}
+          ${partnerCtaHtml(bestPartner, showBoth ? 'EB-2 NIW / EB-1A' : (score2 > 0 ? 'EB-2 NIW' : 'EB-1A'))}
           ${pdfBtn}
         </div>
       </div>
@@ -1515,10 +1520,16 @@ function buildFullAICard(analysis) {
   const isDual = analysis.isDual && analysis.resultados?.length > 1;
   if (isDual) {
     const [r1, r2] = analysis.resultados;
+    const _fs1 = r1?.aprovacao_pct ?? r1?.score ?? 0;
+    const _fs2 = r2?.aprovacao_pct ?? r2?.score ?? 0;
+    const _bothFull = _fs1 > 0 && _fs2 > 0;
+    if (!_bothFull) {
+      return singleFullCard(_fs1 > 0 ? r1 : r2);
+    }
     return `<div>
       <div class="dual-tab-row" style="margin-bottom:8px">
-        <button class="dual-tab active" id="tab-full-1" onclick="switchFullTab(1)">${r1?.visto} · ${r1?.aprovacao_pct ?? r1?.score ?? 0}%</button>
-        <button class="dual-tab" id="tab-full-2" onclick="switchFullTab(2)">${r2?.visto} · ${r2?.aprovacao_pct ?? r2?.score ?? 0}%</button>
+        <button class="dual-tab active" id="tab-full-1" onclick="switchFullTab(1)">${r1?.visto} · ${_fs1}%</button>
+        <button class="dual-tab" id="tab-full-2" onclick="switchFullTab(2)">${r2?.visto} · ${_fs2}%</button>
       </div>
       <div id="full-panel-1">${singleFullCard(r1)}</div>
       <div id="full-panel-2" style="display:none">${singleFullCard(r2)}</div>
@@ -1905,12 +1916,15 @@ function buildAISummaryCard(analysis) {
 
   // Dual: tabs NIW + EB-1A
   const [r1, r2] = resultados;
+  const _s1 = r1?.aprovacao_pct ?? r1?.score ?? 0;
+  const _s2 = r2?.aprovacao_pct ?? r2?.score ?? 0;
+  const _bothAI = _s1 > 0 && _s2 > 0;
   return `<div>
-    <div class="dual-tab-row">
-      <button class="dual-tab active" id="tab-ai-1" onclick="switchAITab(1)">${r1?.visto} · ${r1?.aprovacao_pct ?? r1?.score ?? 0}%</button>
-      <button class="dual-tab" id="tab-ai-2" onclick="switchAITab(2)">${r2?.visto} · ${r2?.aprovacao_pct ?? r2?.score ?? 0}%</button>
-    </div>
-    <div id="ai-panel-1">${singleCard(r1, true)}</div>
+    ${_bothAI ? `<div class="dual-tab-row">
+      <button class="dual-tab active" id="tab-ai-1" onclick="switchAITab(1)">${r1?.visto} · ${_s1}%</button>
+      <button class="dual-tab" id="tab-ai-2" onclick="switchAITab(2)">${r2?.visto} · ${_s2}%</button>
+    </div>` : ''}
+    <div id="ai-panel-1">${singleCard(_s1 > 0 ? r1 : r2, true)}</div>
     <div id="ai-panel-2" style="display:none">${singleCard(r2, true)}</div>
     <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
       <button class="cta1" onclick="window.open('report.html','_blank','fullscreen=yes')" style="display:flex;align-items:center;justify-content:center;gap:8px">
@@ -4057,11 +4071,31 @@ async function checkSessionInBackground() {
     const btnNew = document.createElement('button');
     btnNew.className = 'opt';
     btnNew.textContent = '↺ Começar nova análise';
-    btnNew.onclick = () => {
+    btnNew.onclick = async () => {
       optsRow.remove();
       resumeRow.remove();
       localStorage.removeItem('vm_session_id');
-      go('welcome');
+
+      // Limpa estado completamente
+      S.email = ''; S.nome = ''; S.phone = ''; S.profile = {}; S.visto = null; S.vistos = []; S.prog = 0;
+
+      const oldEmail = state.email || '';
+      if (oldEmail) {
+        await botMsg('Quer usar o mesmo e-mail da análise anterior?<br><span style="font-size:12.5px;color:var(--txt3)">' + oldEmail + '</span>');
+        showOpts(['Sim, usar ' + oldEmail, 'Não, usar outro e-mail'], async val => {
+          if (val.startsWith('Sim')) {
+            userMsg('Sim, ' + oldEmail);
+            S.email = oldEmail;
+            if (state.nome) { S.nome = state.nome.split(' ')[0]; S.profile.nomeCompleto = state.nome; }
+            go(state.nome ? 'contact_phone' : 'contact_name');
+          } else {
+            userMsg('Usar outro e-mail');
+            go('welcome');
+          }
+        });
+      } else {
+        go('welcome');
+      }
     };
 
     optsRow.appendChild(btnContinue);
