@@ -1,12 +1,4 @@
-const express = require('express');
-const supabase = require('../lib/supabase');
-const { buildHubSpotProperties, upsertContact, createNote } = require('../services/hubspot');
-const router = express.Router();
-
-const HUBSPOT_ENABLED = true;
-const HUBSPOT_TOKEN = process.env.HUBSPOT_TOKEN;
-
-// ── Mapeamento de valores PT → HubSpot ──────────────────────────────────────
+const fetch = require('node-fetch');
 
 function mapCaminho(v) {
   if (!v) return '';
@@ -30,8 +22,7 @@ function mapGrau(v) {
 function mapTempoExp(v) {
   if (!v) return '';
   if (v.includes('recém-formado') || v.includes('3 e 5')) return 'Menos de 5 anos';
-  if (v.includes('5 e 10')) return 'Entre 5 e 15 anos';
-  if (v.includes('Mais de 10')) return 'Entre 5 e 15 anos';
+  if (v.includes('5 e 10') || v.includes('Mais de 10')) return 'Entre 5 e 15 anos';
   return 'Menos de 5 anos';
 }
 
@@ -125,13 +116,11 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
   const firstname = nameParts[0] || '';
   const lastname = nameParts.slice(1).join(' ') || '';
 
-  // Scores por visto
-  const niwScore  = visto === 'EB-2 NIW' ? score : null;
-  const eb1Score  = (visto === 'EB-1A' || visto === 'O-1') ? score : null;
-  const e2Score   = visto === 'E-2' ? score : null;
+  const niwScore = visto === 'EB-2 NIW' ? score : null;
+  const eb1Score = (visto === 'EB-1A' || visto === 'O-1') ? score : null;
+  const e2Score  = visto === 'E-2' ? score : null;
 
   const props = {
-    // ── Contato ──────────────────────────────────────────────────────────────
     email,
     firstname,
     lastname,
@@ -139,14 +128,11 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
     date_of_birth: p.dataNasc || '',
     visamatch_age: p.idade ? Number(p.idade) : undefined,
 
-    // ── Triagem ───────────────────────────────────────────────────────────────
     first_immigration_path: mapCaminho(p.caminhoPrincipal),
 
-    // ── Formação ──────────────────────────────────────────────────────────────
     nonimmigrant_visas__level_of_education: mapGrau(p.grauFormacao),
     nonimmigrant__ha_quanto_tempo_voce_atua_na_sua_area_de_formacao_: mapTempoExp(p.tempoExp),
 
-    // ── Perfil pessoal ────────────────────────────────────────────────────────
     jobtitle: p.profissao || '',
     nonimmigrant__onde_voce_mora_atualmente_: mapLocalMora(p.localMora),
     monthly_income: mapRenda(p.renda),
@@ -154,23 +140,18 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
     has_children: mapSimNao(p.filhos),
     dependents_applying_for_visa: mapDependentes(p.conjugeVisto),
 
-    // ── Histórico imigratório ─────────────────────────────────────────────────
     has_applied_for_us_visa: mapSimNao(p.solicitouVisto),
     nonimmigrant__voce_ja_teve_algum_visto_negado_: p.vistoNegado || '',
     us_presence_history: mapHistoricoEUA(p.historicoPermanenciaEUA),
 
-    // ── Timing / financeiro ───────────────────────────────────────────────────
     gc_eb_timing: mapPrazoGC(p.prazoGC),
     available_funds_for_green_card_: mapFundos(p.fundos),
 
-    // ── Área de formação ──────────────────────────────────────────────────────
     professional_area_matches_degree: mapAreaFormacao(p.areaAtuacaoFormacao),
 
-    // ── Projetos impactantes ──────────────────────────────────────────────────
     have_you_led_impactful_projects_: mapSimNaoBool(p.temProjetos),
     additional_information_about_impactful_projects: p.projetosDesc || '',
 
-    // ── NIW: 9 critérios ──────────────────────────────────────────────────────
     has_rec_letters_from_relevant_people_in_the_industry_: mapSimNaoBool(p.niw_cartas),
     has_certificates_for_giving_lectures_or_organizing_events_in_their_field_: mapSimNaoBool(p.niw_palestras),
     has_proof_of_participation_on_thesis_defense_panels_for_undergraduate__master_s__or_doctoral_progra: mapSimNaoBool(p.niw_bancas),
@@ -182,7 +163,6 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
     has_a_license_from_a_professional_council_or_certification_from_certifying_organizations_to_work_in: mapSimNaoBool(p.niw_licencas),
     which_criteria_do_they_think_they_meet_: mapHabCriteria(p),
 
-    // ── EB-1A / O-1 critérios (string 'Sim'/'Não') ───────────────────────────
     nonimmigrant__evidencias_de_material_publicado_sobre_voce: p.eb1_midia || p.o1_midia || '',
     nonimmigrant__comprovacoes_de_que_seu_trabalho_foi_exibido_em_exposicoes_ou_mostras_artisticas: p.eb1_exposicoes || p.o1_exposicoes || '',
     nonimmigrant__evidencia_do_seu_desempenho_de_um_papel_importante_ou_critico_em_organizacoes_distint: p.eb1_lideranca || p.o1_lideranca || '',
@@ -192,134 +172,101 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
     nonimmigrant__provas_de_que_voce_foi_solicitado_para_avaliar_o_trabalho_de_outras_pessoas: p.eb1_avaliador || p.o1_avaliador || '',
     nonimmigrant__evidencias_de_suas_contribuicoes_originais_cientificas__academicas__artisticas__atlet: p.eb1_contrib || p.o1_contrib || '',
 
-    // ── Scores ────────────────────────────────────────────────────────────────
-    ...(niwScore !== null ? {
-      eb_2_niw_score: niwScore,
-      eb_2_niw_score_threshold: mapScoreThreshold(niwScore),
-    } : {}),
-    ...(eb1Score !== null ? {
-      eb_1_o_1_score: eb1Score,
-      eb_1_o_1_score_threshold: mapScoreThreshold(eb1Score),
-    } : {}),
-    ...(e2Score !== null ? {
-      e_2_score: e2Score,
-      e_2_score_threshold: mapScoreThreshold(e2Score),
-    } : {}),
+    ...(niwScore !== null ? { eb_2_niw_score: niwScore, eb_2_niw_score_threshold: mapScoreThreshold(niwScore) } : {}),
+    ...(eb1Score !== null ? { eb_1_o_1_score: eb1Score, eb_1_o_1_score_threshold: mapScoreThreshold(eb1Score) } : {}),
+    ...(e2Score  !== null ? { e_2_score: e2Score,  e_2_score_threshold:  mapScoreThreshold(e2Score)  } : {}),
 
-    // ── UTMs ──────────────────────────────────────────────────────────────────
-    utm_source: utm?.utm_source || '',
-    utm_medium: utm?.utm_medium || '',
-    utm_campaign: utm?.utm_campaign || '',
-    utm_content: utm?.utm_content || '',
-    utm_term: utm?.utm_term || '',
+    utm_source:       utm?.utm_source       || '',
+    utm_medium:       utm?.utm_medium       || '',
+    utm_campaign:     utm?.utm_campaign     || '',
+    utm_content:      utm?.utm_content      || '',
+    utm_term:         utm?.utm_term         || '',
     utm_affiliatetype: utm?.utm_affiliatetype || '',
     utm_affiliatename: utm?.utm_affiliatename || '',
   };
 
-  // Remove campos undefined ou string vazia para não sobrescrever dados existentes
   return Object.fromEntries(
     Object.entries(props).filter(([, v]) => v !== undefined && v !== '')
   );
 }
 
-// POST /lead/partial — salva progresso parcial (sem completar o fluxo)
-router.post('/partial', async (req, res) => {
-  const { nome, email, phone, etapa, visto, profile, utm } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
-
-  try {
-    const { data: existing } = await supabase
-      .from('leads')
-      .select('id')
-      .eq('email', email)
-      .eq('hubspot_synced', false)
-      .is('score', null)
-      .single();
-
-    if (existing) {
-      await supabase.from('leads').update({
-        nome, phone,
-        visto_recomendado: visto,
-        profile: { ...profile, _etapa_abandono: etapa, _completo: false, _utm: utm || undefined }
-      }).eq('id', existing.id);
-      return res.json({ success: true, lead_id: existing.id, updated: true });
-    }
-
-    const { data, error } = await supabase.from('leads').insert({
-      nome, email, phone,
-      visto_recomendado: visto,
-      score: null,
-      profile: { ...profile, _etapa_abandono: etapa, _completo: false, _utm: utm || undefined },
-      hubspot_synced: false
-    }).select().single();
-
-    if (error) throw error;
-    res.json({ success: true, lead_id: data.id, updated: false });
-  } catch (err) {
-    console.error('Partial lead error:', err);
-    res.status(500).json({ error: 'Erro ao salvar lead parcial.' });
-  }
-});
-
-// POST /lead — salva lead completo
-router.post('/', async (req, res) => {
-  const { nome, email, phone, visto, score, profile, utm } = req.body;
-
-  if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
-
-  // 1. Salvar no Supabase
-  const { data: savedLead, error: dbError } = await supabase
-    .from('leads')
-    .insert({
-      nome,
-      email,
-      phone,
-      visto_recomendado: visto,
-      score,
-      profile: { ...profile, _utm: utm || undefined },
-      hubspot_synced: false
-    })
-    .select()
-    .single();
-
-  if (dbError) {
-    console.error('Supabase insert error:', dbError);
-    return res.status(500).json({ error: 'Erro ao salvar lead.' });
-  }
-
-  // 2. Envio ao HubSpot
-  let hubspotId = null;
-
-  if (HUBSPOT_ENABLED && HUBSPOT_TOKEN) {
-    try {
-      const properties = buildHubSpotProperties(nome, email, phone, visto, score, profile, utm);
-      const { hubspotId: hsId, error: hsErr } = await upsertContact(HUBSPOT_TOKEN, properties);
-
-      if (hsId) {
-        hubspotId = hsId;
-        await supabase.from('leads')
-          .update({ hubspot_synced: true, hubspot_contact_id: String(hsId), hubspot_error: null })
-          .eq('id', savedLead.id);
-        const noteBody = [`✅ Preencheu VisaMatch`, `Visto: ${visto || '—'}`, `Score: ${score ?? '—'}`, `Caminho: ${profile?.caminho || '—'}`].join('\n');
-        await createNote(HUBSPOT_TOKEN, hsId, noteBody);
-      } else {
-        console.error('HubSpot sync failed:', hsErr);
-        await supabase.from('leads')
-          .update({ hubspot_error: hsErr, hubspot_payload: properties })
-          .eq('id', savedLead.id);
-      }
-    } catch (err) {
-      console.error('HubSpot request failed:', err);
-      await supabase.from('leads').update({ hubspot_error: err.message || String(err) }).eq('id', savedLead.id);
-    }
-  }
-
-  res.json({
-    success: true,
-    lead_id: savedLead.id,
-    hubspot_synced: !!hubspotId,
-    hubspot_contact_id: hubspotId
+// Resolve ID de contato HubSpot por email (primário ou alias)
+async function resolveHubSpotId(token, email) {
+  const r1 = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`, {
+    headers: { 'Authorization': `Bearer ${token}` }
   });
-});
+  if (r1.ok) return (await r1.json()).id;
 
-module.exports = router;
+  const r2 = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      filterGroups: [
+        { filters: [{ propertyName: 'email', operator: 'EQ', value: email }] },
+        { filters: [{ propertyName: 'hs_additional_emails', operator: 'CONTAINS_TOKEN', value: email }] }
+      ],
+      properties: ['email', 'hs_additional_emails'],
+      limit: 1
+    })
+  });
+  if (r2.ok) {
+    const body = await r2.json();
+    if (body.results?.length) return body.results[0].id;
+  }
+  return null;
+}
+
+// Upsert contato + retorna { hubspotId, error }
+async function upsertContact(token, properties) {
+  const hsRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ properties })
+  });
+
+  if (hsRes.ok) return { hubspotId: (await hsRes.json()).id };
+
+  if (hsRes.status === 409) {
+    const conflict = await hsRes.json();
+    const inlineId = conflict?.message?.match(/ID:\s*(\d+)/i)?.[1]
+      || (conflict?.error === 'CONTACT_EXISTS' ? conflict?.identityProfile?.vid : null);
+    const resolvedId = inlineId || await resolveHubSpotId(token, properties.email);
+
+    if (!resolvedId) {
+      return { error: `409 + contato não localizado via search. Conflict: ${JSON.stringify(conflict)}` };
+    }
+
+    const upRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${resolvedId}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ properties })
+    });
+
+    if (upRes.ok) return { hubspotId: resolvedId };
+    return { error: `PATCH ${resolvedId} HTTP ${upRes.status}: ${await upRes.text()}` };
+  }
+
+  return { error: `HTTP ${hsRes.status}: ${await hsRes.text()}` };
+}
+
+// Cria Note associada ao contato (não lança exceção se falhar)
+async function createNote(token, hubspotId, body) {
+  try {
+    const r = await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        properties: { hs_note_body: body, hs_timestamp: new Date().toISOString() },
+        associations: [{
+          to: { id: String(hubspotId) },
+          types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }]
+        }]
+      })
+    });
+    if (!r.ok) console.error('HubSpot note HTTP:', r.status, await r.text());
+  } catch (e) {
+    console.error('HubSpot note error:', e.message);
+  }
+}
+
+module.exports = { buildHubSpotProperties, upsertContact, createNote, resolveHubSpotId };
