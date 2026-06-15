@@ -2057,7 +2057,7 @@ const flows = {
         );
       } else if (hasLead) {
         if (nome) { S.nome = nome.split(' ')[0]; S.profile.nomeCompleto = nome; }
-        await botMsg('Bem-vindo de volta' + (S.nome ? ', <strong>' + S.nome + '</strong>' : '') + '! Você já realizou uma análise com este e-mail. Vamos continuar.');
+        await botMsg('Olá' + (S.nome ? ', <strong>' + S.nome + '</strong>' : '') + '! Você já iniciou uma análise com este e-mail. Vamos continuar de onde parou.');
         go(S.nome ? 'contact_phone' : 'contact_name');
       } else {
         go('contact_name');
