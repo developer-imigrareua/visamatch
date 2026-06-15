@@ -156,11 +156,12 @@ router.post('/check-email', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
   try {
     const { data: user } = await supabase.from('users').select('id,nome').eq('email', email).single();
-    const { count: leadCount } = await supabase.from('leads').select('*', { count:'exact', head:true }).eq('email', email);
+    const { data: leads, count: leadCount } = await supabase.from('leads').select('nome', { count:'exact' }).eq('email', email).order('created_at', { ascending: false }).limit(1);
+    const leadNome = leads?.[0]?.nome || null;
     res.json({
       hasAccount: !!user,
       hasLead: (leadCount || 0) > 0,
-      nome: user?.nome || null
+      nome: user?.nome || leadNome || null
     });
   } catch(err) {
     res.json({ hasAccount: false, hasLead: false, nome: null });
