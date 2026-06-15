@@ -207,6 +207,10 @@ td.nome{color:var(--txt);font-weight:500}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Analytics
     </button>
+    <button class="nav-item" id="nav-hubspot" onclick="showPanel('hubspot')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      HubSpot Logs
+    </button>
   </nav>
   <div class="sb-footer">
     <button class="logout-btn" onclick="logout()">
@@ -372,6 +376,22 @@ td.nome{color:var(--txt);font-weight:500}
       </div>
     </div>
 
+    <!-- HUBSPOT LOGS PANEL -->
+    <div class="panel" id="panel-hubspot">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--txt)">HubSpot — Sincronização</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px">Leads pendentes ou com erro no envio ao HubSpot</div>
+        </div>
+        <button class="filter-sel" style="cursor:pointer;font-family:'Inter Tight',sans-serif;font-size:13px;padding:8px 16px;border-radius:8px;background:var(--blue2);color:#fff;border:none;font-weight:600" onclick="loadHubspotLogs()">↺ Atualizar</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="hubspot-logs-wrap">
+          <div class="loading"><div class="spin"></div></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 <div id="chart-tooltip"></div>
@@ -471,6 +491,7 @@ function showPanel(id) {
   if (id === 'users') loadUsers(1);
   if (id === 'sessions') loadSessions(1);
   if (id === 'analytics') loadAnalytics();
+  if (id === 'hubspot') loadHubspotLogs();
 }
 
 // ── LOAD ALL ──
@@ -1064,6 +1085,67 @@ function renderSessionsTable({ sessions, total, page, pages }) {
       <button class="pag-btn" ${prev} onclick="loadSessions(${page-1})">← Anterior</button>
       <button class="pag-btn" ${next} onclick="loadSessions(${page+1})">Próxima →</button>
     </div>`;
+}
+
+// ── HUBSPOT LOGS ──
+async function loadHubspotLogs() {
+  document.getElementById('hubspot-logs-wrap').innerHTML = '<div class="loading"><div class="spin"></div></div>';
+  try {
+    const data = await apiFetch('/hubspot-logs');
+    const logs = data.logs || [];
+    if (!logs.length) {
+      document.getElementById('hubspot-logs-wrap').innerHTML = '<div style="padding:32px;text-align:center;color:var(--txt3);font-size:13px">✅ Nenhum lead pendente — todos sincronizados.</div>';
+      return;
+    }
+    const rows = logs.map(l => {
+      const dt = new Date(l.created_at).toLocaleString('pt-BR');
+      const err = l.hubspot_error ? `<span style="color:#dc2626;font-size:11px">${escHtml(l.hubspot_error)}</span>` : '<span style="color:var(--txt3);font-size:11px">—</span>';
+      return `<tr>
+        <td style="font-size:12px;color:var(--txt3)">${dt}</td>
+        <td class="nome">${escHtml(l.nome||'—')}</td>
+        <td style="font-size:12px">${escHtml(l.email||'—')}</td>
+        <td style="font-size:12px">${l.visto_recomendado||'—'}</td>
+        <td style="font-size:12px;text-align:center">${l.score!=null?l.score:'—'}</td>
+        <td style="max-width:260px">${err}</td>
+        <td style="text-align:center">
+          <button onclick="retryHubspot('${l.id}',this)" style="background:var(--blue2);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11.5px;font-family:'Inter Tight',sans-serif;font-weight:600;cursor:pointer">Retry</button>
+        </td>
+      </tr>`;
+    }).join('');
+    document.getElementById('hubspot-logs-wrap').innerHTML = `
+      <div style="padding:12px 16px;background:rgba(220,38,38,.04);border-bottom:1px solid var(--border);font-size:12px;color:#dc2626;font-weight:600">${logs.length} lead(s) pendente(s)</div>
+      <table>
+        <thead><tr><th>Data</th><th>Nome</th><th>E-mail</th><th>Visto</th><th style="text-align:center">Score</th><th>Erro</th><th style="text-align:center">Ação</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } catch(e) {
+    document.getElementById('hubspot-logs-wrap').innerHTML = '<div style="padding:24px;color:#dc2626;font-size:13px">Erro ao carregar logs.</div>';
+  }
+}
+
+async function retryHubspot(id, btn) {
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const data = await apiFetch(`/hubspot-retry/${id}`, { method: 'POST' });
+    if (data.success) {
+      btn.textContent = '✓';
+      btn.style.background = '#16a34a';
+      setTimeout(() => loadHubspotLogs(), 1000);
+    } else {
+      btn.textContent = 'Erro';
+      btn.style.background = '#dc2626';
+      btn.disabled = false;
+      alert('Erro: ' + (data.error || 'desconhecido'));
+    }
+  } catch(e) {
+    btn.textContent = 'Erro';
+    btn.disabled = false;
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── INIT ──

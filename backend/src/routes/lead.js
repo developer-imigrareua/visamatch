@@ -349,11 +349,46 @@ router.post('/', async (req, res) => {
       if (hubspotId) {
         await supabase
           .from('leads')
-          .update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId) })
+          .update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null })
+          .eq('id', savedLead.id);
+
+        // Cria atividade "Preencheu VisaMatch" no contato
+        try {
+          const noteBody = [
+            `✅ Preencheu VisaMatch`,
+            `Visto recomendado: ${visto || '—'}`,
+            `Score: ${score != null ? score : '—'}`,
+            `Caminho: ${profile?.caminho || '—'}`,
+          ].join('\n');
+          await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              properties: {
+                hs_note_body: noteBody,
+                hs_timestamp: new Date().toISOString()
+              },
+              associations: [{
+                to: { id: String(hubspotId) },
+                types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }]
+              }]
+            })
+          });
+        } catch (noteErr) {
+          console.error('HubSpot note error:', noteErr.message);
+        }
+      } else {
+        await supabase
+          .from('leads')
+          .update({ hubspot_error: 'Contato não criado/encontrado no HubSpot após tentativas' })
           .eq('id', savedLead.id);
       }
     } catch (err) {
       console.error('HubSpot request failed:', err);
+      await supabase
+        .from('leads')
+        .update({ hubspot_error: err.message || String(err) })
+        .eq('id', savedLead.id);
     }
   }
 

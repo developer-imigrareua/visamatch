@@ -395,4 +395,102 @@ router.get('/overview', auth, async (req, res) => {
   }
 });
 
+// ── GET /api/admin/hubspot-logs ── leads com problema no HubSpot
+router.get('/hubspot-logs', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('id, created_at, nome, email, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error')
+      .eq('hubspot_synced', false)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    res.json({ logs: data || [] });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar logs HubSpot.' });
+  }
+});
+
+// ── POST /api/admin/hubspot-retry/:id ── retentar sincronização
+router.post('/hubspot-retry/:id', auth, async (req, res) => {
+  const HUBSPOT_TOKEN = process.env.HUBSPOT_TOKEN;
+  if (!HUBSPOT_TOKEN) return res.status(500).json({ error: 'HUBSPOT_TOKEN não configurado.' });
+
+  try {
+    const { data: lead } = await supabase.from('leads').select('*').eq('id', req.params.id).single();
+    if (!lead) return res.status(404).json({ error: 'Lead não encontrado.' });
+
+    const profile = lead.profile || {};
+    const utm = profile._utm || {};
+
+    // Reconstrói propriedades básicas para retry
+    const properties = {
+      email: lead.email,
+      firstname: (lead.nome || '').split(' ')[0] || '',
+      lastname: (lead.nome || '').split(' ').slice(1).join(' ') || '',
+      phone: lead.phone || '',
+    };
+
+    const hsRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ properties })
+    });
+
+    let hubspotId = null;
+    if (hsRes.ok) {
+      hubspotId = (await hsRes.json()).id;
+    } else if (hsRes.status === 409) {
+      const conflict = await hsRes.json();
+      const existingId = conflict?.message?.match(/ID: (\d+)/)?.[1];
+      if (existingId) {
+        await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${existingId}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ properties })
+        });
+        hubspotId = existingId;
+      } else {
+        const srRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(lead.email)}?idProperty=email`, {
+          headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}` }
+        });
+        if (srRes.ok) hubspotId = (await srRes.json()).id;
+      }
+    } else {
+      const errText = await hsRes.text();
+      await supabase.from('leads').update({ hubspot_error: `HTTP ${hsRes.status}: ${errText}` }).eq('id', lead.id);
+      return res.status(400).json({ error: `HubSpot retornou ${hsRes.status}`, detail: errText });
+    }
+
+    if (hubspotId) {
+      await supabase.from('leads').update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null }).eq('id', lead.id);
+
+      // Note de atividade
+      try {
+        await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            properties: {
+              hs_note_body: `✅ Preencheu VisaMatch\nVisto recomendado: ${lead.visto_recomendado || '—'}\nScore: ${lead.score != null ? lead.score : '—'}\n(Retry manual pelo admin)`,
+              hs_timestamp: new Date().toISOString()
+            },
+            associations: [{
+              to: { id: String(hubspotId) },
+              types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }]
+            }]
+          })
+        });
+      } catch (_) {}
+
+      res.json({ success: true, hubspot_contact_id: hubspotId });
+    } else {
+      await supabase.from('leads').update({ hubspot_error: 'Retry: contato não encontrado/criado' }).eq('id', lead.id);
+      res.status(400).json({ error: 'Não foi possível criar/encontrar contato no HubSpot.' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
