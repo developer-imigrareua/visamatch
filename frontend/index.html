@@ -4142,7 +4142,7 @@ if (localStorage.getItem('vm_session_id')) {
   </div>
   <div style="padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px">
     <a href="/" style="flex:1;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:10px;padding:10px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block">+ Nova Análise</a>
-    <a href="/portal/dashboard.html" style="background:var(--surface3);color:var(--blue);border:none;border-radius:10px;padding:10px 14px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;display:block">Portal →</a>
+    <a id="minhas-analises-portal-btn" href="/portal/dashboard.html" style="background:var(--surface3);color:var(--blue);border:none;border-radius:10px;padding:10px 14px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;display:block">Portal →</a>
   </div>
 </div>
 
@@ -4163,6 +4163,7 @@ async function loadAnalysesPanel() {
   const token = localStorage.getItem('vm_user_token');
   const user  = JSON.parse(localStorage.getItem('vm_user') || '{}');
   if (user.nome) document.getElementById('panel-user-name').textContent = user.nome + ' · ' + (user.email || '');
+  if (token) { const pb = document.getElementById('minhas-analises-portal-btn'); if (pb) pb.style.display = 'none'; }
 
   try {
     const res = await fetch(API_BASE + '/user/analyses', {
@@ -4289,12 +4290,14 @@ setTimeout(() => { _exitEnabled = true; }, 8000);
 // Desktop: detecta mouse saindo pelo topo da janela
 document.addEventListener('mouseleave', e => {
   if (!_exitEnabled || _exitShown) return;
+  if (S.prog >= 100) return;
   if (e.clientY <= 5 && S.prog > 10) showExitPopup();
 });
 
 // Mobile: detecta quando a aba fica em background
 document.addEventListener('visibilitychange', () => {
   if (!_exitEnabled || _exitShown) return;
+  if (S.prog >= 100) return;
   if (document.hidden && S.prog > 10) showExitPopup();
 });
 
