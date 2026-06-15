@@ -311,19 +311,24 @@ router.post('/', async (req, res) => {
         // Contato já existe — busca ID e atualiza
         const conflict = await hsRes.json();
         const existingId = conflict?.message?.match(/ID: (\d+)/)?.[1]
-          || conflict?.error === 'CONTACT_EXISTS' && conflict?.identityProfile?.vid;
+          || (conflict?.error === 'CONTACT_EXISTS' && conflict?.identityProfile?.vid);
 
         if (existingId) {
           const upRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${existingId}`, {
             method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${HUBSPOT_TOKEN}`,
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ properties })
           });
-          if (upRes.ok) hubspotId = existingId;
-          else console.error('HubSpot update error:', await upRes.text());
+          if (upRes.ok) {
+            hubspotId = existingId;
+          } else {
+            const upErr = await upRes.text();
+            console.error('HubSpot PATCH error:', upErr);
+            await supabase.from('leads').update({
+              hubspot_error: `PATCH ${existingId} falhou HTTP ${upRes.status}: ${upErr}`,
+              hubspot_payload: properties
+            }).eq('id', savedLead.id);
+          }
         } else {
           // Fallback: busca por email e atualiza
           const searchRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`, {
@@ -332,18 +337,36 @@ router.post('/', async (req, res) => {
           if (searchRes.ok) {
             const found = await searchRes.json();
             hubspotId = found.id;
-            await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${found.id}`, {
+            const patchRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${found.id}`, {
               method: 'PATCH',
-              headers: {
-                'Authorization': `Bearer ${HUBSPOT_TOKEN}`,
-                'Content-Type': 'application/json'
-              },
+              headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ properties })
             });
+            if (!patchRes.ok) {
+              const pErr = await patchRes.text();
+              console.error('HubSpot fallback PATCH error:', pErr);
+              await supabase.from('leads').update({
+                hubspot_error: `Fallback PATCH ${found.id} falhou HTTP ${patchRes.status}: ${pErr}`,
+                hubspot_payload: properties
+              }).eq('id', savedLead.id);
+              hubspotId = null;
+            }
+          } else {
+            const srErr = await searchRes.text();
+            console.error('HubSpot search error:', srErr);
+            await supabase.from('leads').update({
+              hubspot_error: `409 sem ID + busca por email falhou HTTP ${searchRes.status}: ${srErr} | conflict: ${JSON.stringify(conflict)}`,
+              hubspot_payload: properties
+            }).eq('id', savedLead.id);
           }
         }
       } else {
-        console.error('HubSpot error:', hsRes.status, await hsRes.text());
+        const errText = await hsRes.text();
+        console.error('HubSpot error:', hsRes.status, errText);
+        await supabase.from('leads').update({
+          hubspot_error: `HTTP ${hsRes.status}: ${errText}`,
+          hubspot_payload: properties
+        }).eq('id', savedLead.id);
       }
 
       if (hubspotId) {
@@ -378,17 +401,17 @@ router.post('/', async (req, res) => {
           console.error('HubSpot note error:', noteErr.message);
         }
       } else {
-        await supabase
-          .from('leads')
-          .update({ hubspot_error: 'Contato não criado/encontrado no HubSpot após tentativas' })
-          .eq('id', savedLead.id);
+        await supabase.from('leads').update({
+          hubspot_error: 'Contato não criado/encontrado no HubSpot após todas as tentativas',
+          hubspot_payload: properties
+        }).eq('id', savedLead.id);
       }
     } catch (err) {
       console.error('HubSpot request failed:', err);
-      await supabase
-        .from('leads')
-        .update({ hubspot_error: err.message || String(err) })
-        .eq('id', savedLead.id);
+      await supabase.from('leads').update({
+        hubspot_error: err.message || String(err),
+        hubspot_payload: null
+      }).eq('id', savedLead.id);
     }
   }
 

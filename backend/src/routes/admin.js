@@ -395,12 +395,74 @@ router.get('/overview', auth, async (req, res) => {
   }
 });
 
+// ── GET /api/admin/health ── verifica conexões externas
+router.get('/health', auth, async (req, res) => {
+  const fetch = require('node-fetch');
+  const nodemailer = require('nodemailer');
+
+  const check = async (name, fn) => {
+    const t0 = Date.now();
+    try {
+      const result = await fn();
+      return { name, ok: true, ms: Date.now() - t0, detail: result || null };
+    } catch (err) {
+      return { name, ok: false, ms: Date.now() - t0, detail: err.message || String(err) };
+    }
+  };
+
+  const results = await Promise.all([
+    check('Supabase', async () => {
+      const { error } = await supabase.from('leads').select('id', { count: 'exact', head: true });
+      if (error) throw new Error(error.message);
+      return 'Query OK';
+    }),
+
+    check('HubSpot', async () => {
+      const token = process.env.HUBSPOT_TOKEN;
+      if (!token) throw new Error('HUBSPOT_TOKEN não configurado');
+      const r = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=1', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return `HTTP 200`;
+    }),
+
+    check('OpenAI', async () => {
+      const key = process.env.OPENAI_API_KEY;
+      if (!key) throw new Error('OPENAI_API_KEY não configurado');
+      const r = await fetch('https://api.openai.com/v1/models?limit=1', {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return 'HTTP 200';
+    }),
+
+    check('SMTP', async () => {
+      const host = process.env.SMTP_HOST;
+      const user = process.env.SMTP_USER;
+      const pass = process.env.SMTP_PASS;
+      if (!host || !user || !pass) throw new Error('Credenciais SMTP incompletas');
+      const transporter = nodemailer.createTransport({
+        host,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: false,
+        auth: { user, pass },
+        tls: { rejectUnauthorized: false }
+      });
+      await transporter.verify();
+      return 'Autenticado';
+    }),
+  ]);
+
+  res.json({ checks: results, ts: new Date().toISOString() });
+});
+
 // ── GET /api/admin/hubspot-logs ── leads com problema no HubSpot
 router.get('/hubspot-logs', auth, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('leads')
-      .select('id, created_at, nome, email, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error')
+      .select('id, created_at, nome, email, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error, hubspot_payload')
       .eq('hubspot_synced', false)
       .order('created_at', { ascending: false })
       .limit(200);

@@ -211,6 +211,10 @@ td.nome{color:var(--txt);font-weight:500}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       HubSpot Logs
     </button>
+    <button class="nav-item" id="nav-health" onclick="showPanel('health')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Health
+    </button>
   </nav>
   <div class="sb-footer">
     <button class="logout-btn" onclick="logout()">
@@ -376,6 +380,19 @@ td.nome{color:var(--txt);font-weight:500}
       </div>
     </div>
 
+    <!-- HEALTH PANEL -->
+    <div class="panel" id="panel-health">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--txt)">Health — Conexões Externas</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px">Verifica a conectividade com cada serviço em tempo real</div>
+        </div>
+        <button onclick="loadHealth()" style="background:var(--blue2);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-family:'Inter Tight',sans-serif;font-weight:600;cursor:pointer">↺ Verificar agora</button>
+      </div>
+      <div id="health-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px"></div>
+      <div id="health-ts" style="margin-top:14px;font-size:11px;color:var(--txt3);text-align:right"></div>
+    </div>
+
     <!-- HUBSPOT LOGS PANEL -->
     <div class="panel" id="panel-hubspot">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -492,6 +509,7 @@ function showPanel(id) {
   if (id === 'sessions') loadSessions(1);
   if (id === 'analytics') loadAnalytics();
   if (id === 'hubspot') loadHubspotLogs();
+  if (id === 'health') loadHealth();
 }
 
 // ── LOAD ALL ──
@@ -1087,6 +1105,41 @@ function renderSessionsTable({ sessions, total, page, pages }) {
     </div>`;
 }
 
+// ── HEALTH ──
+async function loadHealth() {
+  const grid = document.getElementById('health-grid');
+  const ICONS = { Supabase: '🗄️', HubSpot: '🔗', OpenAI: '🤖', SMTP: '📧' };
+  grid.innerHTML = ['Supabase','HubSpot','OpenAI','SMTP'].map(n => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:18px">${ICONS[n]||'🔌'}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--txt)">${n}</span>
+      </div>
+      <div id="hc-${n}" style="font-size:12px;color:var(--txt3)">Verificando…</div>
+    </div>`).join('');
+
+  try {
+    const data = await apiFetch('/health');
+    document.getElementById('health-ts').textContent = `Verificado em: ${new Date(data.ts).toLocaleString('pt-BR')}`;
+    (data.checks || []).forEach(c => {
+      const el = document.getElementById(`hc-${c.name}`);
+      if (!el) return;
+      const card = el.closest('div[style*="border-radius:12px"]');
+      if (c.ok) {
+        card.style.borderColor = 'rgba(22,163,74,.35)';
+        card.style.background = 'rgba(22,163,74,.05)';
+        el.innerHTML = `<span style="color:#16a34a;font-weight:600">● Online</span> <span style="color:var(--txt3)">${c.ms}ms</span>${c.detail ? `<br><span style="color:var(--txt3);font-size:11px">${c.detail}</span>` : ''}`;
+      } else {
+        card.style.borderColor = 'rgba(220,38,38,.35)';
+        card.style.background = 'rgba(220,38,38,.05)';
+        el.innerHTML = `<span style="color:#dc2626;font-weight:600">● Erro</span> <span style="color:var(--txt3)">${c.ms}ms</span><br><span style="color:#dc2626;font-size:11px">${escHtml(c.detail||'')}</span>`;
+      }
+    });
+  } catch(e) {
+    grid.innerHTML = `<div style="color:#dc2626;font-size:13px;padding:16px">Erro ao verificar health: ${e.message}</div>`;
+  }
+}
+
 // ── HUBSPOT LOGS ──
 async function loadHubspotLogs() {
   document.getElementById('hubspot-logs-wrap').innerHTML = '<div class="loading"><div class="spin"></div></div>';
@@ -1100,13 +1153,16 @@ async function loadHubspotLogs() {
     const rows = logs.map(l => {
       const dt = new Date(l.created_at).toLocaleString('pt-BR');
       const err = l.hubspot_error ? `<span style="color:#dc2626;font-size:11px">${escHtml(l.hubspot_error)}</span>` : '<span style="color:var(--txt3);font-size:11px">—</span>';
+      const payloadBtn = l.hubspot_payload
+        ? `<button onclick="showPayload(this)" data-payload="${escHtml(JSON.stringify(l.hubspot_payload))}" style="background:none;border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-size:11px;font-family:'Inter Tight',sans-serif;cursor:pointer;color:var(--txt2);margin-top:4px">Ver campos</button>`
+        : '';
       return `<tr>
         <td style="font-size:12px;color:var(--txt3)">${dt}</td>
         <td class="nome">${escHtml(l.nome||'—')}</td>
         <td style="font-size:12px">${escHtml(l.email||'—')}</td>
         <td style="font-size:12px">${l.visto_recomendado||'—'}</td>
         <td style="font-size:12px;text-align:center">${l.score!=null?l.score:'—'}</td>
-        <td style="max-width:260px">${err}</td>
+        <td style="max-width:260px">${err}${payloadBtn}</td>
         <td style="text-align:center">
           <button onclick="retryHubspot('${l.id}',this)" style="background:var(--blue2);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11.5px;font-family:'Inter Tight',sans-serif;font-weight:600;cursor:pointer">Retry</button>
         </td>
@@ -1142,6 +1198,22 @@ async function retryHubspot(id, btn) {
     btn.textContent = 'Erro';
     btn.disabled = false;
   }
+}
+
+function showPayload(btn) {
+  const payload = JSON.parse(btn.dataset.payload || '{}');
+  const lines = Object.entries(payload).map(([k,v]) => `<tr><td style="padding:4px 10px 4px 0;font-size:11.5px;color:var(--txt3);white-space:nowrap;vertical-align:top">${escHtml(k)}</td><td style="padding:4px 0;font-size:11.5px;color:var(--txt);word-break:break-all">${escHtml(String(v??''))}</td></tr>`).join('');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:24px;max-width:560px;width:90vw;max-height:80vh;overflow:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--txt)">Payload enviado ao HubSpot</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--txt3)">✕</button>
+    </div>
+    <table style="width:100%"><tbody>${lines}</tbody></table>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 function escHtml(s) {
