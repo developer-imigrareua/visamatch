@@ -294,71 +294,74 @@ router.post('/', async (req, res) => {
     try {
       const properties = buildHubSpotProperties(nome, email, phone, visto, score, profile, utm);
 
-      // Tenta criar contato; se já existe, atualiza por email
+      // Resolve o ID do contato HubSpot dado um email (primário ou alias)
+      async function resolveHubSpotId(emailAddr) {
+        // 1. Busca por email primário
+        const r1 = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(emailAddr)}?idProperty=email`, {
+          headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}` }
+        });
+        if (r1.ok) return (await r1.json()).id;
+
+        // 2. Search API — cobre email primário, aliases e hs_additional_emails
+        const r2 = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filterGroups: [
+              { filters: [{ propertyName: 'email', operator: 'EQ', value: emailAddr }] },
+              { filters: [{ propertyName: 'hs_additional_emails', operator: 'CONTAINS_TOKEN', value: emailAddr }] }
+            ],
+            properties: ['email', 'hs_additional_emails'],
+            limit: 1
+          })
+        });
+        if (r2.ok) {
+          const body = await r2.json();
+          if (body.results?.length) return body.results[0].id;
+        }
+        return null;
+      }
+
+      // Tenta criar contato; se já existe, resolve ID e atualiza
       const hsRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${HUBSPOT_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ properties })
       });
 
       if (hsRes.ok) {
-        const hsData = await hsRes.json();
-        hubspotId = hsData.id;
+        hubspotId = (await hsRes.json()).id;
       } else if (hsRes.status === 409) {
-        // Contato já existe — busca ID e atualiza
         const conflict = await hsRes.json();
-        const existingId = conflict?.message?.match(/ID: (\d+)/)?.[1]
-          || (conflict?.error === 'CONTACT_EXISTS' && conflict?.identityProfile?.vid);
 
-        if (existingId) {
-          const upRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${existingId}`, {
+        // Extrai ID direto da mensagem de conflito (mais rápido)
+        const inlineId = conflict?.message?.match(/ID:\s*(\d+)/i)?.[1]
+          || (conflict?.error === 'CONTACT_EXISTS' ? conflict?.identityProfile?.vid : null);
+
+        const resolvedId = inlineId || await resolveHubSpotId(email);
+
+        if (resolvedId) {
+          const upRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${resolvedId}`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ properties })
           });
           if (upRes.ok) {
-            hubspotId = existingId;
+            hubspotId = resolvedId;
           } else {
             const upErr = await upRes.text();
             console.error('HubSpot PATCH error:', upErr);
             await supabase.from('leads').update({
-              hubspot_error: `PATCH ${existingId} falhou HTTP ${upRes.status}: ${upErr}`,
+              hubspot_error: `PATCH ${resolvedId} falhou HTTP ${upRes.status}: ${upErr}`,
               hubspot_payload: properties
             }).eq('id', savedLead.id);
           }
         } else {
-          // Fallback: busca por email e atualiza
-          const searchRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`, {
-            headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}` }
-          });
-          if (searchRes.ok) {
-            const found = await searchRes.json();
-            hubspotId = found.id;
-            const patchRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${found.id}`, {
-              method: 'PATCH',
-              headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ properties })
-            });
-            if (!patchRes.ok) {
-              const pErr = await patchRes.text();
-              console.error('HubSpot fallback PATCH error:', pErr);
-              await supabase.from('leads').update({
-                hubspot_error: `Fallback PATCH ${found.id} falhou HTTP ${patchRes.status}: ${pErr}`,
-                hubspot_payload: properties
-              }).eq('id', savedLead.id);
-              hubspotId = null;
-            }
-          } else {
-            const srErr = await searchRes.text();
-            console.error('HubSpot search error:', srErr);
-            await supabase.from('leads').update({
-              hubspot_error: `409 sem ID + busca por email falhou HTTP ${searchRes.status}: ${srErr} | conflict: ${JSON.stringify(conflict)}`,
-              hubspot_payload: properties
-            }).eq('id', savedLead.id);
-          }
+          console.error('HubSpot 409 mas contato não encontrado via search');
+          await supabase.from('leads').update({
+            hubspot_error: `409 + contato não localizado via search (email pode ser alias sem match). Conflict: ${JSON.stringify(conflict)}`,
+            hubspot_payload: properties
+          }).eq('id', savedLead.id);
         }
       } else {
         const errText = await hsRes.text();

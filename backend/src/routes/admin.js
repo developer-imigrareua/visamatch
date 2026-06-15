@@ -475,18 +475,40 @@ router.get('/hubspot-logs', auth, async (req, res) => {
 
 // ── POST /api/admin/hubspot-retry/:id ── retentar sincronização
 router.post('/hubspot-retry/:id', auth, async (req, res) => {
+  const fetch = require('node-fetch');
   const HUBSPOT_TOKEN = process.env.HUBSPOT_TOKEN;
   if (!HUBSPOT_TOKEN) return res.status(500).json({ error: 'HUBSPOT_TOKEN não configurado.' });
+
+  async function resolveHubSpotId(emailAddr) {
+    const r1 = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(emailAddr)}?idProperty=email`, {
+      headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}` }
+    });
+    if (r1.ok) return (await r1.json()).id;
+    const r2 = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filterGroups: [
+          { filters: [{ propertyName: 'email', operator: 'EQ', value: emailAddr }] },
+          { filters: [{ propertyName: 'hs_additional_emails', operator: 'CONTAINS_TOKEN', value: emailAddr }] }
+        ],
+        properties: ['email', 'hs_additional_emails'],
+        limit: 1
+      })
+    });
+    if (r2.ok) {
+      const body = await r2.json();
+      if (body.results?.length) return body.results[0].id;
+    }
+    return null;
+  }
 
   try {
     const { data: lead } = await supabase.from('leads').select('*').eq('id', req.params.id).single();
     if (!lead) return res.status(404).json({ error: 'Lead não encontrado.' });
 
-    const profile = lead.profile || {};
-    const utm = profile._utm || {};
-
-    // Reconstrói propriedades básicas para retry
-    const properties = {
+    // Usa payload salvo se disponível, senão reconstrói dados básicos
+    const properties = lead.hubspot_payload || {
       email: lead.email,
       firstname: (lead.nome || '').split(' ')[0] || '',
       lastname: (lead.nome || '').split(' ').slice(1).join(' ') || '',
@@ -504,19 +526,16 @@ router.post('/hubspot-retry/:id', auth, async (req, res) => {
       hubspotId = (await hsRes.json()).id;
     } else if (hsRes.status === 409) {
       const conflict = await hsRes.json();
-      const existingId = conflict?.message?.match(/ID: (\d+)/)?.[1];
-      if (existingId) {
-        await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${existingId}`, {
+      const inlineId = conflict?.message?.match(/ID:\s*(\d+)/i)?.[1]
+        || (conflict?.error === 'CONTACT_EXISTS' ? conflict?.identityProfile?.vid : null);
+      hubspotId = inlineId || await resolveHubSpotId(lead.email);
+      if (hubspotId) {
+        const upRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${hubspotId}`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ properties })
         });
-        hubspotId = existingId;
-      } else {
-        const srRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(lead.email)}?idProperty=email`, {
-          headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}` }
-        });
-        if (srRes.ok) hubspotId = (await srRes.json()).id;
+        if (!upRes.ok) hubspotId = null;
       }
     } else {
       const errText = await hsRes.text();
