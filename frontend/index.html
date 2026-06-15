@@ -824,7 +824,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   wrapEl.addEventListener('focusout', () => { wrapEl.style.borderColor='var(--border2)'; wrapEl.style.boxShadow=''; });
 
   const submit = (val) => {
-    if (!isComplete(val)) return; // exige MM/AAAA completo (ex: 03/2021)
+    if (val !== 'atual' && !isComplete(val)) return; // exige MM/AAAA completo (ex: 03/2021)
     row.remove();
     hideStructuredZone();
     document.querySelector('.input-zone').style.display = '';
