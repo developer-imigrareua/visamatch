@@ -61,7 +61,7 @@ rm -rf "$TMP_DIR"
 echo ""
 echo "🐳 Construindo imagem: $TAG"
 cd "$CODE_DIR"
-docker build -t "$TAG" .
+docker build --no-cache -t "$TAG" .
 echo "   ✅ Build concluído"
 
 # ── 5. Atualizar serviço Docker Swarm ─────────────────────────
