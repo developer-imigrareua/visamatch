@@ -546,9 +546,9 @@ router.post('/hubspot-retry/:id', auth, async (req, res) => {
     if (hubspotId) {
       await supabase.from('leads').update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null }).eq('id', lead.id);
 
-      // Note de atividade
+      // Note de atividade (não bloqueia o retry mesmo se falhar por scope)
       try {
-        await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+        const nr = await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -562,6 +562,7 @@ router.post('/hubspot-retry/:id', auth, async (req, res) => {
             }]
           })
         });
+        if (!nr.ok) console.error('HubSpot note retry HTTP:', nr.status, await nr.text());
       } catch (_) {}
 
       res.json({ success: true, hubspot_contact_id: hubspotId });

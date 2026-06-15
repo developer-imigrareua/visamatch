@@ -378,7 +378,7 @@ router.post('/', async (req, res) => {
           .update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null })
           .eq('id', savedLead.id);
 
-        // Cria atividade "Preencheu VisaMatch" no contato
+        // Cria atividade "Preencheu VisaMatch" no contato (não bloqueia sync)
         try {
           const noteBody = [
             `✅ Preencheu VisaMatch`,
@@ -386,20 +386,18 @@ router.post('/', async (req, res) => {
             `Score: ${score != null ? score : '—'}`,
             `Caminho: ${profile?.caminho || '—'}`,
           ].join('\n');
-          await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+          const noteRes = await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${HUBSPOT_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              properties: {
-                hs_note_body: noteBody,
-                hs_timestamp: new Date().toISOString()
-              },
+              properties: { hs_note_body: noteBody, hs_timestamp: new Date().toISOString() },
               associations: [{
                 to: { id: String(hubspotId) },
                 types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }]
               }]
             })
           });
+          if (!noteRes.ok) console.error('HubSpot note HTTP error:', noteRes.status, await noteRes.text());
         } catch (noteErr) {
           console.error('HubSpot note error:', noteErr.message);
         }
