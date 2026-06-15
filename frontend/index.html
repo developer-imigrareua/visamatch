@@ -837,7 +837,15 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   sendBtn.onclick = () => submit(inputEl.value.trim());
   inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') submit(inputEl.value.trim()); });
   if (allowCurrent) {
-    document.getElementById(currId).onclick = () => submit('atual');
+    document.getElementById(currId).addEventListener('click', () => {
+      row.remove();
+      hideStructuredZone();
+      document.querySelector('.input-zone').style.display = '';
+      ti.disabled = false;
+      S.profile[profileKey] = 'atual';
+      userMsg('Atual');
+      go(nextStep);
+    });
   }
   inputEl.focus();
 }
