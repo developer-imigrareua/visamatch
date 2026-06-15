@@ -3553,47 +3553,47 @@ const flows = {
   async sc_niw_1() {
     await think(500);
     await botMsg('Você tem ou conseguiria <strong>cartas de recomendação</strong> de pessoas com relevância ou destaque na sua área de atuação?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_cartas = val; go('sc_niw_2'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_cartas = val; go('sc_niw_2'); });
   },
   async sc_niw_2() {
     await think(400);
     await botMsg('Você possui <strong>certificados de palestras ministradas</strong> ou de participação na organização de eventos da sua área?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_palestras = val; go('sc_niw_3'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_palestras = val; go('sc_niw_3'); });
   },
   async sc_niw_3() {
     await think(400);
     await botMsg('Tem comprovação de participação como <strong>avaliador ou especialista em bancas</strong> acadêmicas ou profissionais?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_bancas = val; go('sc_niw_4'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_bancas = val; go('sc_niw_4'); });
   },
   async sc_niw_4() {
     await think(400);
     await botMsg('Possui comprovação de <strong>reportagens ou entrevistas</strong> em que foi citado como fonte de informação?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_reportagens = val; go('sc_niw_5'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_reportagens = val; go('sc_niw_5'); });
   },
   async sc_niw_5() {
     await think(400);
     await botMsg('Você já <strong>publicou artigos de sua autoria</strong> em revistas científicas ou na mídia em geral?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_artigos = val; go('sc_niw_6'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_artigos = val; go('sc_niw_6'); });
   },
   async sc_niw_6() {
     await think(400);
     await botMsg('Já teve <strong>participação em projetos de pesquisa</strong> na sua área?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_pesquisa = val; go('sc_niw_7'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_pesquisa = val; go('sc_niw_7'); });
   },
   async sc_niw_7() {
     await think(400);
     await botMsg('Tem comprovação de <strong>premiações e/ou reconhecimentos</strong> recebidos pelo seu trabalho?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_premios = val; go('sc_niw_8'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_premios = val; go('sc_niw_8'); });
   },
   async sc_niw_8() {
     await think(400);
     await botMsg('Possui <strong>certificados de cursos e/ou treinamentos</strong> na sua área?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_cursos = val; go('sc_niw_9'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_cursos = val; go('sc_niw_9'); });
   },
   async sc_niw_9() {
     await think(400);
     await botMsg('Possui <strong>licenças emitidas por Conselhos Profissionais</strong> ou certificações de organizações reconhecidas?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.niw_licencas = val; go('sc_niw_hab'); });
+    showOpts(['Sim','Não'], val => { userMsg(val); S.profile.niw_licencas = val; go('sc_niw_hab'); });
   },
   async sc_niw_hab() {
     setProgress(86);
