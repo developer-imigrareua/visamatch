@@ -3882,8 +3882,19 @@ const flows = {
         row.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 300);
 
-      // Pergunta se quer salvar (botões no chat, sem modal automático)
-      if (!localStorage.getItem('vm_user_token')) {
+      // Marca sessão como concluída para não aparecer "análise em andamento" ao recarregar
+      S._completo = true;
+      saveSession('resultado_concluido');
+      localStorage.removeItem('vm_session_id');
+
+      const token = localStorage.getItem('vm_user_token');
+      if (token) {
+        // Usuário já logado — salva análise automaticamente
+        _pendingAnalysis = analysis;
+        await _saveAnalysisToAccount(token);
+        await pause(800);
+        await botMsg(`✅ Análise salva na sua conta, ${S.nome}! Acesse <b>Minhas Análises</b> para consultar quando quiser.`);
+      } else {
         await pause(1800);
         await botMsg(`${S.nome}, deseja salvar esta análise para consultas futuras?`);
         showOpts(['💾 Salvar para consultas futuras','Seguir sem salvar'], val => {
@@ -3924,6 +3935,17 @@ const flows = {
         '<div class="msg-wrap" style="max-width:92%">' + resultHtml + '</div>';
       chat.appendChild(row);
       scrollBottom();
+
+      // Marca sessão como concluída
+      S._completo = true;
+      saveSession('resultado_concluido');
+      localStorage.removeItem('vm_session_id');
+
+      const fbToken = localStorage.getItem('vm_user_token');
+      if (fbToken) {
+        _pendingAnalysis = { melhor: best, resultados: scores.map(s => ({ visto: s.visto, score: s.score, aprovacao_pct: s.score })), isDual: scores.length > 1 };
+        await _saveAnalysisToAccount(fbToken);
+      }
     }
   },
 
@@ -4024,7 +4046,7 @@ async function checkSessionInBackground() {
 
     // Só oferece retomada se tem progresso real e é recente (7 dias)
     const age = Date.now() - new Date(updated_at).getTime();
-    if (age > 7 * 24 * 60 * 60 * 1000 || !state?.email || state.prog < 10) {
+    if (age > 7 * 24 * 60 * 60 * 1000 || !state?.email || state.prog < 10 || state._completo) {
       localStorage.removeItem('vm_session_id'); return;
     }
 
