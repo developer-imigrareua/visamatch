@@ -172,9 +172,6 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
     nonimmigrant__provas_de_que_voce_foi_solicitado_para_avaliar_o_trabalho_de_outras_pessoas: p.eb1_avaliador || p.o1_avaliador || '',
     nonimmigrant__evidencias_de_suas_contribuicoes_originais_cientificas__academicas__artisticas__atlet: p.eb1_contrib || p.o1_contrib || '',
 
-    ...(niwScore !== null ? { eb_2_niw_score: niwScore } : {}),
-    ...(eb1Score !== null ? { eb_1_o_1_score: eb1Score } : {}),
-    ...(e2Score  !== null ? { e_2_score: e2Score } : {}),
 
     utm_source:       utm?.utm_source       || '',
     utm_medium:       utm?.utm_medium       || '',
