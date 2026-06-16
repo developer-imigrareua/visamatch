@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Relatório de Elegibilidade · Visa Match</title>
+<title>Avaliação de Perfil · Visa Match</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -193,7 +193,7 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 <div class="page" id="report">
   <div class="loading-state">
     <div class="spin"></div>
-    <div class="loading-txt">Gerando análise de elegibilidade...</div>
+    <div class="loading-txt">Gerando avaliação de perfil...</div>
   </div>
 </div>
 
@@ -206,6 +206,8 @@ if (window.location.search.includes('print=1') && raw) {
   window.addEventListener('load', () => setTimeout(() => window.print(), 1500));
 }
 
+const MAX_AGE_MS = 30 * 60 * 1000; // 30 minutos
+
 if (!raw) {
   document.getElementById('report').innerHTML = `
     <div class="error-state">
@@ -215,10 +217,19 @@ if (!raw) {
     </div>`;
 } else {
   const data = JSON.parse(raw);
-  // Se tem múltiplos resultados, renderiza o melhor (tabs são no main app)
-  const analysis = data.melhor || data;
-  const candidato = data.candidato || {};
-  renderReport(analysis, candidato);
+  const age = data._version ? (Date.now() - data._version) : Infinity;
+  if (age > MAX_AGE_MS) {
+    document.getElementById('report').innerHTML = `
+      <div class="error-state">
+        <div class="error-ico">⏱️</div>
+        <div class="error-title">Relatório expirado</div>
+        <div class="error-sub">Os dados desta análise expiraram. Volte ao Visa Match e clique em <b>"Ver relatório completo"</b> novamente.</div>
+      </div>`;
+  } else {
+    const analysis = data.melhor || data;
+    const candidato = data.candidato || {};
+    renderReport(analysis, candidato);
+  }
 }
 
 function renderReport(a, candidato) {
@@ -259,7 +270,7 @@ function renderHeader(a, candidato, pct, cls) {
   return `
   <div class="header">
     <div class="header-left">
-      <div class="visto-tag">✦ Análise de Elegibilidade</div>
+      <div class="visto-tag">✦ Avaliação de Pré-Elegibilidade</div>
       <div class="visto-nome">${a.visto}</div>
       <div class="visto-subtitulo">${getSubtitulo(a.visto)}</div>
       <div class="candidato-nome">${candidato.nome || '—'}</div>

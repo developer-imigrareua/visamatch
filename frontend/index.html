@@ -916,8 +916,11 @@ function calcScore(visto, p) {
     if (profsN.some(x => (p.profissao||'').includes(x))) s -= 5;
   } else if (visto === 'EB-1A') {
     const keys = ['eb1_premios','eb1_assoc','eb1_midia','eb1_avaliador','eb1_contrib','eb1_lideranca','eb1_salario','eb1_artes','eb1_exposicoes','eb1_artigos'];
-    keys.forEach(k => { if (p[k] === 'Sim') s += 15; else if (p[k] === 'Não') s -= 15; });
-    s = Math.round((s / 150) * 100);
+    keys.forEach(k => {
+      if (p[k] === 'Sim') s += 10;
+      else if (p[k] === 'Não possuo, mas posso obter') s += 3;
+    });
+    s = Math.min(100, s);
   } else if (visto === 'O-1') {
     s += 10;
     const keys = ['o1_premios','o1_assoc','o1_midia','o1_avaliador','o1_contrib','o1_lideranca','o1_salario','o1_artes','o1_exposicoes','o1_artigos'];
@@ -941,9 +944,15 @@ function calcScore(visto, p) {
   return Math.max(-100, Math.min(100, s));
 }
 
-function getClass(score) {
-  if (score >= 70) return { label: 'Elegibilidade Alta', cls: 'cls-forte', ico: '✓', partner: 'liv' };
-  if (score >= 40) return { label: 'Elegibilidade Moderada', cls: 'cls-mod', ico: '◑', partner: 'liv' };
+function getClass(score, visto) {
+  if (visto === 'EB-1A') {
+    if (score >= 50) return { label: 'Perfil Forte', cls: 'cls-forte', ico: '✓', partner: 'liv' };
+    if (score >= 30) return { label: 'Perfil Moderado', cls: 'cls-mod', ico: '◑', partner: 'liv' };
+    if (score >= 10) return { label: 'Perfil em Desenvolvimento', cls: 'cls-dev', ico: '○', partner: 'phoenix' };
+    return { label: 'Perfil Incompatível', cls: 'cls-inc', ico: '✕', partner: 'phoenix' };
+  }
+  if (score >= 70) return { label: 'Perfil Forte', cls: 'cls-forte', ico: '✓', partner: 'liv' };
+  if (score >= 40) return { label: 'Perfil Moderado', cls: 'cls-mod', ico: '◑', partner: 'liv' };
   if (score >= 0)  return { label: 'Perfil em Desenvolvimento', cls: 'cls-dev', ico: '○', partner: 'phoenix' };
   return { label: 'Perfil Incompatível', cls: 'cls-inc', ico: '✕', partner: 'phoenix' };
 }
@@ -975,7 +984,7 @@ function partnerCtaHtml(partner, visto) {
 }
 
 function buildSingleCard(visto, score, p, showHeader = true) {
-  const cl = getClass(score);
+  const cl = getClass(score, visto);
   const pts = Math.max(0, score);
 
   const critMap = {
@@ -1056,7 +1065,7 @@ function buildSingleCard(visto, score, p, showHeader = true) {
 
   const header = showHeader ? `
     <div class="res-head">
-      <div class="res-tag">✦ Visa Match · Elegibilidade</div>
+      <div class="res-tag">✦ Visa Match · Avaliação de Perfil</div>
       <div class="res-visto">${visto}</div>
       <div class="res-nome">Análise de critérios — ${p.nomeCompleto || S.nome}</div>
       <div class="res-circle"><div class="res-pts">${pts}</div><div class="res-pts-lbl">pontos</div></div>
@@ -1083,9 +1092,15 @@ function buildSingleCard(visto, score, p, showHeader = true) {
   </div>`;
 }
 
+function _eb1aPartner(p) {
+  const eb1Keys = ['eb1_premios','eb1_assoc','eb1_midia','eb1_avaliador','eb1_contrib','eb1_lideranca','eb1_salario','eb1_artes','eb1_exposicoes','eb1_artigos'];
+  return eb1Keys.filter(k => p[k] === 'Sim').length >= 3 ? 'liv' : 'phoenix';
+}
+
 function buildResult(visto, score, p) {
   const isDual = S.vistos && S.vistos.length === 2;
-  const cl = getClass(score);
+  const effectivePartner = visto === 'EB-1A' ? _eb1aPartner(p) : getClass(score, visto).partner;
+  const cl = getClass(score, visto);
 
   // Legal disclaimer
   const legalHtml = `<div class="legal-disc">
@@ -1093,7 +1108,7 @@ function buildResult(visto, score, p) {
   </div>`;
 
   // Partner CTA
-  const partnerHtml = partnerCtaHtml(cl.partner, visto);
+  const partnerHtml = partnerCtaHtml(effectivePartner, visto);
 
   // PDF button
   const pdfBtn = `<button class="cta2" style="width:100%;margin-top:8px" onclick="sendReportEmail(this)">📄 Receber relatório completo por e-mail</button>`;
@@ -1101,8 +1116,9 @@ function buildResult(visto, score, p) {
   if (isDual) {
     const score2 = calcScore('EB-2 NIW', p);
     const score1 = calcScore('EB-1A', p);
-    const bestScore = Math.max(score2, score1);
-    const bestPartner = getClass(bestScore).partner;
+    // For EB-1A: partner = criteria count ≥ 3 → LIV, else best score determines
+    const eb1Partner = _eb1aPartner(p);
+    const bestPartner = eb1Partner === 'liv' ? 'liv' : getClass(Math.max(score2, score1), 'EB-2 NIW').partner;
     const showBoth = score2 > 0 && score1 > 0;
     const activeVisto = score2 > 0 ? 'niw' : 'eb1';
 
@@ -1115,7 +1131,7 @@ function buildResult(visto, score, p) {
     return `<div style="display:flex;flex-direction:column;gap:12px">
       <div class="res-card">
         <div class="res-head" style="padding-bottom:16px">
-          <div class="res-tag">✦ Visa Match · Elegibilidade${showBoth ? ' — Análise Dupla' : ''}</div>
+          <div class="res-tag">✦ Visa Match · Avaliação de Perfil${showBoth ? ' — Análise Dupla' : ''}</div>
           <div class="res-visto">${showBoth ? 'EB-2 NIW + EB-1A' : (score2 > 0 ? 'EB-2 NIW' : 'EB-1A')}</div>
           <div class="res-nome">Análise de critérios — ${p.nomeCompleto || S.nome}</div>
         </div>
@@ -1570,6 +1586,12 @@ function buildScoreDonut(pct, classificacao) {
 
 function singleFullCard(a) {
   if (!a) return '';
+  // EB-1A: parceiro determinado por contagem de critérios, não score
+  if (a.visto === 'EB-1A') {
+    const atendidos = (a.criterios || []).filter(c => c.status === 'atendido').length;
+    const eb1Partner = atendidos >= 3 ? 'liv' : _eb1aPartner(S.profile || {});
+    a = { ...a, recomendacao_parceiro: eb1Partner };
+  }
   const pct  = a.aprovacao_pct ?? a.score ?? 0;
   const nome = S.profile.nomeCompleto || S.nome || '';
   const prof = S.profile.profissao || '';
@@ -1674,7 +1696,7 @@ function singleFullCard(a) {
       <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);border-radius:50%"></div>
       <div style="flex-shrink:0;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.3)">${avatar}</div>
       <div style="flex:1">
-        <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-bottom:7px">✦ Análise de Elegibilidade</div>
+        <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-bottom:7px">✦ Análise de Pré-Elegibilidade</div>
         <div class="ai-full-card-visto" style="font-family:Manrope,sans-serif;font-size:28px;color:#fff;line-height:1;font-weight:700">${a.visto}</div>
         <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin:3px 0 6px">${getSubtituloVisto(a.visto)}</div>
         <div style="font-family:Manrope,sans-serif;font-size:17px;color:#fff">${nome}</div>
@@ -1736,7 +1758,7 @@ function singleFullCard(a) {
             </div>
           </div>
         </div>` : a.visto === 'EB-2 NIW' ? `<div style="background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:11px;padding:14px;text-align:center">
-          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">✦ Classificação de Elegibilidade</div>
+          <div style="font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">✦ Avaliação de Perfil</div>
           <div style="font-family:Manrope,sans-serif;font-size:32px;font-weight:800;color:${cls.pctColor};line-height:1">${pct}</div>
           <div style="font-size:10px;color:var(--txt3);margin-top:2px;letter-spacing:.05em">SCORE EB-2 NIW</div>
           <div style="margin-top:8px;display:inline-block;background:${cls.bg};border:1px solid ${cls.brd};border-radius:7px;padding:3px 10px;font-size:11.5px;font-weight:700;color:${cls.cor}">${cls.ico} ${a.classificacao}</div>
@@ -1902,7 +1924,7 @@ function buildAISummaryCard(analysis) {
 
         <div style="display:flex;flex-direction:column;gap:8px">
           <button class="cta1" onclick="window.open('report.html','_blank','fullscreen=yes')" style="display:flex;align-items:center;justify-content:center;gap:8px">
-            📄 Ver Relatório Completo de Elegibilidade
+            📄 Ver Relatório Completo de Avaliação de Perfil
           </button>
           <button class="cta2" onclick="sendReportEmail(this)">
             📧 Receber relatório por e-mail
@@ -1928,7 +1950,7 @@ function buildAISummaryCard(analysis) {
     <div id="ai-panel-2" style="display:none">${singleCard(r2, true)}</div>
     <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
       <button class="cta1" onclick="window.open('report.html','_blank','fullscreen=yes')" style="display:flex;align-items:center;justify-content:center;gap:8px">
-        📄 Ver Relatório Completo de Elegibilidade
+        📄 Ver Relatório Completo de Avaliação de Perfil
       </button>
       <button class="cta2" onclick="sendReportEmail(this)">
         📧 Receber relatório por e-mail
@@ -1989,7 +2011,7 @@ const flows = {
     await think();
     await showFact('🇺🇸', '<b>ImigrarEUA</b> nasceu em 2016 e já impactou mais de <b>1 milhão de pessoas por mês</b>. Somos um HUB completo de imigração legal para os EUA, reunindo especialistas, parceiros e soluções em um só lugar.');
     await pause(300);
-    await botMsg('O Visa Match faz uma análise inteligente do seu perfil, calcula um <strong>score de elegibilidade</strong> com base nos critérios reais do USCIS e indica os parceiros certos para o seu caso.');
+    await botMsg('O Visa Match faz uma análise inteligente do seu perfil, calcula um <strong>score de pré-elegibilidade</strong> com base nos critérios reais do USCIS e indica os parceiros certos para o seu caso.');
     await pause(300);
     await botMsg('Todas as informações são usadas exclusivamente para a sua análise. Vamos começar?');
     showOpts(['Vamos começar!'], () => { userMsg('Vamos começar!'); go('disclaimer_legal'); });
@@ -2002,7 +2024,7 @@ const flows = {
     if (localStorage.getItem('vm_lgpd_consent') === 'accepted') { go('contact_email'); return; }
     document.getElementById('pop-close').textContent = 'Aceitar e iniciar análise';
     await showPopup('⚖️', 'Aviso e Privacidade',
-      '• Esta ferramenta realiza uma <b>análise de critérios de elegibilidade</b> com base nas suas respostas. Não constitui aconselhamento jurídico nem configura relação advogado-cliente.<br><br>' +
+      '• Esta ferramenta realiza uma <b>análise de critérios de pré-elegibilidade</b> com base nas suas respostas. Não constitui aconselhamento jurídico nem configura relação advogado-cliente.<br><br>' +
       '• Ao concluir, você será conectado a <b>especialistas da ImigrarEUA</b>, que encaminham para advogados licenciados nos EUA pela <b>LIV Immigration Law</b> quando aplicável.<br><br>' +
       '• <b>Privacidade (LGPD):</b> Coletamos apenas os dados fornecidos aqui para gerar sua análise. Nenhuma informação é compartilhada com terceiros sem consentimento. <a href="https://imigrareua.com/politica-de-privacidade/" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">Política de privacidade →</a>',
       () => {
@@ -3799,7 +3821,7 @@ const flows = {
     const loadingSteps = [
       { pct: 18, txt: `Analisando o perfil de <strong>${S.nome}</strong>...` },
       { pct: 38, txt: 'Verificando critérios oficiais do USCIS...' },
-      { pct: 60, txt: `Calculando score de elegibilidade para <strong>${visto}</strong>...` },
+      { pct: 60, txt: `Calculando score de pré-elegibilidade para <strong>${visto}</strong>...` },
       { pct: 80, txt: 'Gerando análise personalizada...' },
       { pct: 95, txt: 'Preparando seu relatório completo...' },
     ];
@@ -3863,6 +3885,7 @@ const flows = {
       // Armazena para relatório PDF
       localStorage.setItem('visamatch_report', JSON.stringify({
         ...analysis,
+        _version: Date.now(),
         candidato: { nome: S.profile.nomeCompleto || S.nome, email: S.email, profissao: S.profile.profissao, genero: S.profile.genero }
       }));
 
@@ -4275,6 +4298,7 @@ async function openSavedAnalysis(id) {
     const data = await res.json();
     localStorage.setItem('visamatch_report', JSON.stringify({
       ...(data.analysis_json || {}),
+      _version: Date.now(),
       candidato: JSON.parse(localStorage.getItem('vm_user') || '{}')
     }));
     window.open('/report.html', '_blank', 'fullscreen=yes');
