@@ -282,6 +282,41 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
   .dual-tab{font-size:12px;padding:8px 10px}
 }
 </style>
+
+<!-- ── TRACKING PIXELS ── -->
+
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','2271864576391085');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2271864576391085&ev=PageView&noscript=1"/></noscript>
+
+<!-- Google Analytics 4 + Google Ads -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZETX3T264G"></script>
+<script>
+window.dataLayer=window.dataLayer||[];
+function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());
+gtag('config','G-ZETX3T264G');
+gtag('config','AW-774661110');
+</script>
+
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","jdk4o9eepa");
+</script>
+
+<!-- HubSpot Embed -->
+<script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/46465963.js"></script>
+
+<!-- Hotmart -->
+<script id="hotmart_launcher_script">
+(function(l,a,u,n,c,h,e,r){l['HotmartLauncherObject']=c;l[c]=l[c]||function(){(l[c].q=l[c].q||[]).push(arguments)},l[c].l=1*new Date();h=a.createElement(u),e=a.getElementsByTagName(u)[0];h.async=1;h.src=n;e.parentNode.insertBefore(h,e)})(window,document,'script','//launcher.hotmart.com/launcher.js','hot');
+hot('account','85de63a8-a79a-3eaf-836a-fea0d0805232');
+</script>
+
 </head>
 <body>
 <!-- Honeypot: impede o browser de detectar os campos como formulário de login/senha -->
@@ -392,6 +427,73 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000'
   : '';
+
+// ─── FUNNEL TRACKING ───
+const _funnelSessionId = localStorage.getItem('vm_funnel_sid') || (() => {
+  const id = 'fs_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  localStorage.setItem('vm_funnel_sid', id);
+  return id;
+})();
+let _funnelStartTime = null;
+let _funnelStarted = false;
+let _funnelCompleted = false;
+
+async function trackFunnel(event, extra = {}) {
+  try {
+    fetch(API_BASE + '/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: _funnelSessionId, event, ...extra })
+    });
+  } catch(_) {}
+}
+
+// ─── PIXEL TRACKING ───
+function trackPixelEvent(eventName, params = {}) {
+  // Meta Pixel
+  try { if (window.fbq) fbq('track', eventName, params); } catch(_) {}
+
+  // GA4
+  try {
+    if (window.gtag) {
+      const gaEvent = {
+        'Lead': 'generate_lead',
+        'CompleteRegistration': 'sign_up',
+        'PageView': 'page_view',
+        'ViewContent': 'view_item',
+      }[eventName] || eventName.toLowerCase().replace(/\s/g,'_');
+      gtag('event', gaEvent, { ...params, send_to: 'G-ZETX3T264G' });
+    }
+  } catch(_) {}
+
+  // Google Ads conversion (dispara apenas em Lead/CompleteRegistration)
+  try {
+    if (window.gtag && (eventName === 'Lead' || eventName === 'CompleteRegistration')) {
+      gtag('event', 'conversion', { send_to: 'AW-774661110', ...params });
+    }
+  } catch(_) {}
+
+  // HubSpot custom event
+  try {
+    if (window._hsq) {
+      window._hsq.push(['trackCustomBehavioralEvent', { name: 'pe46465963_visamatch_' + eventName.toLowerCase(), properties: params }]);
+    }
+  } catch(_) {}
+
+  // Clarity tag (identifica sessão com visto/score)
+  try {
+    if (window.clarity && params.visto) clarity('set', 'visto', params.visto);
+    if (window.clarity && params.score != null) clarity('set', 'score', String(params.score));
+    if (window.clarity && eventName !== 'PageView') clarity('event', eventName);
+  } catch(_) {}
+}
+
+function trackConversion(visto, score, classificacao) {
+  const params = { visto, score, classificacao, currency: 'BRL' };
+  trackPixelEvent('Lead', params);
+  trackPixelEvent('CompleteRegistration', params);
+  trackFunnel('complete', { visto, score });
+}
 
 // ─── UTM CAPTURE ───
 function captureUTMs() {
@@ -2037,6 +2139,7 @@ const flows = {
   },
 
   async contact_email() {
+    if (!_funnelStarted) { _funnelStarted = true; _funnelStartTime = Date.now(); trackFunnel('start'); }
     setSideStep(0); setProgress(5);
     await think(500);
     await botMsg('Para enviar sua análise completa, preciso do seu <strong>e-mail</strong>. Qual é?');
@@ -3907,6 +4010,8 @@ const flows = {
 
       // Marca sessão como concluída para não aparecer "análise em andamento" ao recarregar
       S._completo = true;
+      if (!_funnelCompleted) { _funnelCompleted = true; const _fcs = _funnelStartTime ? Math.round((Date.now() - _funnelStartTime) / 1000) : null; trackFunnel('complete', { visto: S.visto, score: S.score, time_to_complete: _fcs }); }
+      trackConversion(S.visto, S.score, getClass(S.score, S.visto));
       saveSession('resultado_concluido');
       localStorage.removeItem('vm_session_id');
 
@@ -3961,6 +4066,7 @@ const flows = {
 
       // Marca sessão como concluída
       S._completo = true;
+      trackConversion(best.visto, best.score, getClass(best.score, best.visto));
       saveSession('resultado_concluido');
       localStorage.removeItem('vm_session_id');
 
@@ -4187,6 +4293,7 @@ if (ti) {
 // ─── START ───
 // Se há sessão salva, verifica PRIMEIRO e só mostra welcome se não houver sessão válida.
 // Se não há sessão, inicia welcome imediatamente.
+trackFunnel('view');
 if (localStorage.getItem('vm_session_id')) {
   checkSessionInBackground();
 } else {

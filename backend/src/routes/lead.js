@@ -5,6 +5,33 @@ const router = express.Router();
 
 const HUBSPOT_ENABLED = true;
 const HUBSPOT_TOKEN = process.env.HUBSPOT_TOKEN;
+const META_PIXEL_ID = '2271864576391085';
+const META_CAPI_TOKEN = process.env.META_CAPI_TOKEN || 'EAAOsTrUDzD8BRrH0kp6BW2ydyPRVDCXmRZArpF0dz9qqsYU68jx2nJZAsVjxSmhgZC0fo6M3N6XSvzFYSf05WsvehRBMGqzYXke2EyiNfw1LHG6sHJPnsW7ACg2ajRZCLjjZCch2KtIYisRuzk4nWY8ZBiXZBGgDx5vB6BwTa8ZBlMmOxXKDGjCQ5rfmZC5c37gZDZD';
+
+async function sendMetaCAPI(email, visto, score, eventSourceUrl) {
+  const crypto = require('crypto');
+  const hashedEmail = crypto.createHash('sha256').update((email || '').trim().toLowerCase()).digest('hex');
+  const body = {
+    data: [{
+      event_name: 'Lead',
+      event_time: Math.floor(Date.now() / 1000),
+      event_source_url: eventSourceUrl || 'https://match.imigrareua.com',
+      action_source: 'website',
+      user_data: { em: [hashedEmail] },
+      custom_data: { visto, score, currency: 'BRL' }
+    }]
+  };
+  try {
+    const r = await fetch(`https://graph.facebook.com/v19.0/${META_PIXEL_ID}/events?access_token=${META_CAPI_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) console.warn('Meta CAPI error:', r.status, await r.text());
+  } catch (e) {
+    console.warn('Meta CAPI request failed:', e.message);
+  }
+}
 
 // POST /lead/partial — salva progresso parcial (sem completar o fluxo)
 router.post('/partial', async (req, res) => {
@@ -71,7 +98,10 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: 'Erro ao salvar lead.' });
   }
 
-  // 2. Envio ao HubSpot
+  // 2. Meta Conversions API (server-side, fire-and-forget)
+  sendMetaCAPI(email, visto, score, req.headers?.referer);
+
+  // 3. Envio ao HubSpot
   let hubspotId = null;
 
   if (HUBSPOT_ENABLED && HUBSPOT_TOKEN) {
