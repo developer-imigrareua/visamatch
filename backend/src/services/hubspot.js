@@ -11,12 +11,12 @@ function mapCaminho(v) {
 
 function mapGrau(v) {
   if (!v) return '';
-  if (v.includes('Doutorado')) return 'PhD / Doutorado';
-  if (v.includes('Mestrado')) return "Master's degree / Mestrado";
-  if (v.includes('Bacharelado') || v.includes('Licenciatura')) return "Bachelor's degree / Graduação";
-  if (v.includes('Tecnólogo')) return "Associate's Degree / Tecnólogo";
+  if (v.includes('Doutorado')) return 'PhD';
+  if (v.includes('Mestrado')) return "Master's degree";
+  if (v.includes('Bacharelado') || v.includes('Licenciatura')) return "Bachelor's degree";
+  if (v.includes('Tecnólogo')) return "Associate's Degree";
   if (v.includes('Superior incompleto') || v.includes('incompleto')) return 'Outros';
-  if (v.includes('Não tenho') || v.includes('não tenho')) return 'No degree / Não tenho graduação';
+  if (v.includes('Não tenho') || v.includes('não tenho') || v.includes('Sem formação')) return 'No degree';
   return '';
 }
 
@@ -50,9 +50,9 @@ function mapFundos(v) {
 function mapLocalMora(v) {
   if (!v) return '';
   // Exact frontend options: 'Brasil 🇧🇷', 'Estados Unidos 🇺🇸', 'Outro país 🌍'
-  if (v.includes('Brasil')) return 'Brasil';
-  if (v.includes('Estados Unidos') || v.includes('EUA')) return 'Estados Unidos';
-  return 'Outro';
+  if (v.includes('Brasil')) return 'Brazil';
+  if (v.includes('Estados Unidos') || v.includes('EUA')) return 'United States';
+  return 'Other';
 }
 
 function mapRenda(v) {
