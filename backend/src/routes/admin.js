@@ -50,6 +50,10 @@ router.get('/stats', auth, async (req, res) => {
     const { count: pendentesHubspot } = await supabase
       .from('leads').select('*', { count: 'exact', head: true }).eq('hubspot_synced', false);
 
+    // Parciais no período (score null = nunca concluíram)
+    const { count: parciais } = await supabase
+      .from('leads').select('*', { count: 'exact', head: true }).is('score', null).gte('created_at', from).lte('created_at', to);
+
     // Últimos 7 dias (KPI fixo)
     const seteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { count: ultimos7dias } = await supabase
@@ -113,6 +117,7 @@ router.get('/stats', auth, async (req, res) => {
     res.json({
       total, totalPrev, totalChange: pct(total, totalPrev),
       completos, completosPrev, completosChange: pct(completos, completosPrev),
+      parciais: parciais || 0,
       conversionRate: total > 0 ? Math.round((completos / total) * 100) : 0,
       conversionRatePrev: totalPrev > 0 ? Math.round(((completosPrev || 0) / totalPrev) * 100) : 0,
       ultimos7dias, pendentesHubspot,
@@ -597,7 +602,7 @@ router.get('/funnel-stats', auth, async (req, res) => {
 // ── GET /api/admin/hubspot-logs ── leads com problema no HubSpot
 router.get('/hubspot-logs', auth, async (req, res) => {
   try {
-    // Mostra apenas leads com erro registrado — leads recém-chegados sem erro ainda não são problema
+    // Mostra leads não sincronizados que tiveram erro (inclui parciais e completos com falha)
     const { data, error } = await supabase
       .from('leads')
       .select('id, created_at, nome, email, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error, hubspot_payload')

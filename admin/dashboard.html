@@ -276,6 +276,21 @@ td.nome{color:var(--txt);font-weight:500}
           <div class="donut-wrap" id="score-donut"></div>
         </div>
       </div>
+      <div class="grid2" style="margin-bottom:0">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:0">Completos vs Parciais</div>
+            <span id="completion-total" style="font-size:11px;color:var(--txt3)"></span>
+          </div>
+          <div class="donut-wrap" id="completion-donut"></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:0">Taxa de Conclusão</div>
+          </div>
+          <div id="completion-rate-wrap" style="display:flex;flex-direction:column;gap:14px;margin-top:4px"></div>
+        </div>
+      </div>
       <div class="card" style="margin-bottom:24px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div class="card-title" style="margin-bottom:0">Evolução de Leads no Período</div>
@@ -547,6 +562,7 @@ async function loadStats() {
   renderKPIs(data);
   renderVistoBars(data.porVisto, data.total);
   renderScoreDonut(data.porScore);
+  renderCompletionDonut(data.completos || 0, data.parciais || 0);
   renderTimeline(data.timeline, data.timelineCompletos);
   renderUtmTab('source');
   populateSourceFilter(data.porUtmSource);
@@ -681,6 +697,84 @@ function renderScoreDonut(s) {
   }).join('')}</div>`;
 
   document.getElementById('score-donut').innerHTML = svg + legend;
+}
+
+function renderCompletionDonut(completos, parciais) {
+  const total = completos + parciais;
+  if (!total) {
+    document.getElementById('completion-donut').innerHTML = '<div class="empty">Nenhum dado ainda</div>';
+    document.getElementById('completion-rate-wrap').innerHTML = '<div class="empty">Nenhum dado ainda</div>';
+    return;
+  }
+  document.getElementById('completion-total').textContent = `Total: ${total}`;
+
+  const cats = [
+    { label: 'Completos', val: completos, color: '#1d9e70' },
+    { label: 'Parciais', val: parciais, color: '#d97706' },
+  ].filter(c => c.val > 0);
+
+  let offset = 0;
+  const r = 36, cx = 44, cy = 44, circ = 2 * Math.PI * r;
+  const segs = cats.map(c => {
+    const pct = c.val / total;
+    const dash = pct * circ;
+    const seg = { ...c, pct, dash, offset };
+    offset += dash;
+    return seg;
+  });
+
+  const taxaConclusao = Math.round((completos / total) * 100);
+  const svg = `<svg class="donut-svg" width="88" height="88" viewBox="0 0 88 88">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(11,25,41,.06)" stroke-width="10"/>
+    ${segs.map(s => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="10"
+      stroke-dasharray="${s.dash} ${circ - s.dash}"
+      stroke-dashoffset="${-(s.offset - circ / 4)}"
+      transform="rotate(-90 ${cx} ${cy})"/>`).join('')}
+    <text x="${cx}" y="${cy}" text-anchor="middle" font-size="13" font-family="Manrope" fill="#0b1929" font-weight="700">${taxaConclusao}%</text>
+    <text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="8" font-family="Manrope" fill="#64748b">conclusão</text>
+  </svg>`;
+
+  const legend = `<div class="donut-legend">${cats.map(c => {
+    const pct = Math.round((c.val / total) * 100);
+    const ttHtml = `<b>${c.label}</b>\n👤 ${c.val} leads  ·  ${pct}% do total`;
+    return `<div class="leg-item" style="cursor:default"
+      onmouseenter="showTooltip(event,'${ttHtml.replace(/'/g,"&#39;")}')"
+      onmouseleave="hideTooltip()">
+      <div class="leg-dot" style="background:${c.color}"></div>
+      <span style="flex:1">${c.label}</span>
+      <b style="color:var(--txt)">${c.val}</b>
+      <span style="color:var(--txt3);font-size:11px;min-width:34px;text-align:right">${pct}%</span>
+    </div>`;
+  }).join('')}</div>`;
+
+  document.getElementById('completion-donut').innerHTML = svg + legend;
+
+  // Completion rate bar card
+  const barW = taxaConclusao;
+  const abandonW = 100 - barW;
+  document.getElementById('completion-rate-wrap').innerHTML = `
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+        <span style="color:var(--txt2);font-weight:600">✅ Completos</span>
+        <span style="font-weight:700;color:#1d9e70">${completos} · ${barW}%</span>
+      </div>
+      <div style="background:rgba(11,25,41,.08);border-radius:99px;height:8px;overflow:hidden">
+        <div style="width:${barW}%;height:100%;border-radius:99px;background:#1d9e70;transition:width .6s ease"></div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+        <span style="color:var(--txt2);font-weight:600">⏳ Parciais (abandono)</span>
+        <span style="font-weight:700;color:#d97706">${parciais} · ${abandonW}%</span>
+      </div>
+      <div style="background:rgba(11,25,41,.08);border-radius:99px;height:8px;overflow:hidden">
+        <div style="width:${abandonW}%;height:100%;border-radius:99px;background:#d97706;transition:width .6s ease"></div>
+      </div>
+    </div>
+    <div style="margin-top:4px;padding:10px 12px;background:rgba(29,158,112,.06);border-radius:10px;border:1px solid rgba(29,158,112,.15)">
+      <div style="font-size:11px;color:var(--txt3)">Taxa de conclusão do funil</div>
+      <div style="font-size:20px;font-weight:800;color:#1d9e70;margin-top:2px">${taxaConclusao}%</div>
+    </div>`;
 }
 
 function renderTimeline(timeline, timelineCompletos) {
@@ -1187,28 +1281,40 @@ async function loadHubspotLogs() {
       document.getElementById('hubspot-logs-wrap').innerHTML = '<div style="padding:32px;text-align:center;color:var(--txt3);font-size:13px">✅ Nenhum lead pendente — todos sincronizados.</div>';
       return;
     }
+    const completos = logs.filter(l => l.score != null).length;
+    const parciais  = logs.filter(l => l.score == null).length;
     const rows = logs.map(l => {
       const dt = new Date(l.created_at).toLocaleString('pt-BR');
+      const isCompleto = l.score != null;
+      const tipoBadge = isCompleto
+        ? `<span style="background:rgba(29,158,112,.12);color:#1d9e70;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">Completo</span>`
+        : `<span style="background:rgba(217,119,6,.12);color:#d97706;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">Parcial</span>`;
       const err = l.hubspot_error ? `<span style="color:#dc2626;font-size:11px">${escHtml(l.hubspot_error)}</span>` : '<span style="color:var(--txt3);font-size:11px">—</span>';
       const payloadBtn = l.hubspot_payload
         ? `<button onclick="showPayload(this)" data-payload="${escHtml(JSON.stringify(l.hubspot_payload))}" style="background:none;border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-size:11px;font-family:'Inter Tight',sans-serif;cursor:pointer;color:var(--txt2);margin-top:4px">Ver campos</button>`
         : '';
+      const retryBtn = isCompleto
+        ? `<button onclick="retryHubspot('${l.id}',this)" style="background:var(--blue2);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11.5px;font-family:'Inter Tight',sans-serif;font-weight:600;cursor:pointer">Retry</button>`
+        : `<span style="font-size:11px;color:var(--txt3)">—</span>`;
       return `<tr>
         <td style="font-size:12px;color:var(--txt3)">${dt}</td>
         <td class="nome">${escHtml(l.nome||'—')}</td>
         <td style="font-size:12px">${escHtml(l.email||'—')}</td>
         <td style="font-size:12px">${l.visto_recomendado||'—'}</td>
         <td style="font-size:12px;text-align:center">${l.score!=null?l.score:'—'}</td>
+        <td style="text-align:center">${tipoBadge}</td>
         <td style="max-width:260px">${err}${payloadBtn}</td>
-        <td style="text-align:center">
-          <button onclick="retryHubspot('${l.id}',this)" style="background:var(--blue2);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11.5px;font-family:'Inter Tight',sans-serif;font-weight:600;cursor:pointer">Retry</button>
-        </td>
+        <td style="text-align:center">${retryBtn}</td>
       </tr>`;
     }).join('');
-    document.getElementById('hubspot-logs-wrap').innerHTML = `
-      <div style="padding:12px 16px;background:rgba(220,38,38,.04);border-bottom:1px solid var(--border);font-size:12px;color:#dc2626;font-weight:600">${logs.length} lead(s) pendente(s)</div>
+    const summary = `<div style="display:flex;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600">
+      <span style="color:#dc2626">${logs.length} lead(s) com erro</span>
+      <span style="color:#1d9e70">✅ ${completos} completo(s)</span>
+      <span style="color:#d97706">⏳ ${parciais} parcial(is)</span>
+    </div>`;
+    document.getElementById('hubspot-logs-wrap').innerHTML = summary + `
       <table>
-        <thead><tr><th>Data</th><th>Nome</th><th>E-mail</th><th>Visto</th><th style="text-align:center">Score</th><th>Erro</th><th style="text-align:center">Ação</th></tr></thead>
+        <thead><tr><th>Data</th><th>Nome</th><th>E-mail</th><th>Visto</th><th style="text-align:center">Score</th><th style="text-align:center">Tipo</th><th>Erro</th><th style="text-align:center">Ação</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   } catch(e) {
