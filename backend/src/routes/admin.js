@@ -597,10 +597,12 @@ router.get('/funnel-stats', auth, async (req, res) => {
 // ── GET /api/admin/hubspot-logs ── leads com problema no HubSpot
 router.get('/hubspot-logs', auth, async (req, res) => {
   try {
+    // Mostra apenas leads com erro registrado — leads recém-chegados sem erro ainda não são problema
     const { data, error } = await supabase
       .from('leads')
       .select('id, created_at, nome, email, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error, hubspot_payload')
       .eq('hubspot_synced', false)
+      .not('hubspot_error', 'is', null)
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) throw error;
