@@ -143,10 +143,9 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
 
     first_immigration_path: mapCaminho(p.caminhoPrincipal),
 
-    nonimmigrant_visas__level_of_education: mapGrau(p.grauFormacao),
+    nonimmigrant_visas__level_of_education: mapGrau(p.grauFormacao || p.grauFormacaoDiag),
     nonimmigrant__ha_quanto_tempo_voce_atua_na_sua_area_de_formacao_: mapTempoExp(p.tempoExp),
 
-    jobtitle: p.profissao || '',
     nonimmigrant__onde_voce_mora_atualmente_: mapLocalMora(p.localMora),
     monthly_income: mapRenda(p.renda),
     is_married: mapSimNao(p.casado),
@@ -176,15 +175,35 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     has_a_license_from_a_professional_council_or_certification_from_certifying_organizations_to_work_in: mapSimNaoBool(p.niw_licencas),
     which_criteria_do_they_think_they_meet_: mapHabCriteria(p),
 
-    nonimmigrant__evidencias_de_material_publicado_sobre_voce: p.eb1_midia || p.o1_midia || '',
-    nonimmigrant__comprovacoes_de_que_seu_trabalho_foi_exibido_em_exposicoes_ou_mostras_artisticas: p.eb1_exposicoes || p.o1_exposicoes || '',
     nonimmigrant__evidencia_do_seu_desempenho_de_um_papel_importante_ou_critico_em_organizacoes_distint: p.eb1_lideranca || p.o1_lideranca || '',
     comprovante_de_recebimento_de_salario: p.eb1_salario || p.o1_salario || '',
     nonimmigrant__premios_ou_reconhecimentos_de_destaque: p.eb1_premios || p.o1_premios || '',
     nonimmigrant__participacao_em_associacoes_que_exigem_realizacoes_extraordinarias: p.eb1_assoc || p.o1_assoc || '',
     nonimmigrant__provas_de_que_voce_foi_solicitado_para_avaliar_o_trabalho_de_outras_pessoas: p.eb1_avaliador || p.o1_avaliador || '',
-    nonimmigrant__evidencias_de_suas_contribuicoes_originais_cientificas__academicas__artisticas__atlet: p.eb1_contrib || p.o1_contrib || '',
 
+
+    // Experiência profissional
+    company:  p.emp1Nome  || '',
+    industry: p.emp1Ramo  || '',
+    jobtitle: p.emp1Cargo || p.profissao || '',
+
+    // 2ª e 3ª empresa
+    previous_company__1:                p.emp2Nome  || '',
+    previous_company_industry:          p.emp2Ramo  || '',
+    job_title_at_previous_company:      p.emp2Cargo || '',
+
+    // Formação acadêmica
+    school:          p.instAcad1 || '',
+    field_of_study:  p.curso1    || '',
+    graduation_status: p.acStatus1   ? (p.acStatus1.includes('conclu') ? 'Completed' : p.acStatus1) : '',
+    graduation_date: p.acConclusao1  || '',
+
+    // Prazo de mudança
+    when_do_you_plan_to_start_your_immigration_process_: p.prazoMudanca || '',
+
+    // EB-1A critérios adicionais
+    nonimmigrant__comprovacoes_de_que_seu_trabalho_foi_exibido_em_exposicoes_ou_mostras_artisticas: p.eb1_exposicoes || p.eb1_artes || p.o1_exposicoes || '',
+    nonimmigrant__evidencias_de_suas_contribuicoes_originais_cientificas__academicas__artisticas__atlet: p.eb1_contrib || p.eb1_artigos || p.o1_contrib || '',
 
     utm_source:       utm?.utm_source       || '',
     utm_medium:       utm?.utm_medium       || '',
