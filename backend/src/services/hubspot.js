@@ -124,7 +124,7 @@ function mapHabCriteria(p) {
     .join(';');
 }
 
-function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) {
+function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, responseType) {
   const p = profile || {};
   const nameParts = (nome || '').trim().split(' ');
   const firstname = nameParts[0] || '';
@@ -193,6 +193,8 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
     utm_term:         utm?.utm_term         || '',
     utm_affiliatetype: utm?.utm_affiliatetype || '',
     utm_affiliatename: utm?.utm_affiliatename || '',
+
+    visamatch_response_type: responseType || 'completed',
   };
 
   return Object.fromEntries(

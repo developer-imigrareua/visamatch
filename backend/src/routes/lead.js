@@ -65,6 +65,17 @@ router.post('/partial', async (req, res) => {
     }).select().single();
 
     if (error) throw error;
+
+    // Envia/atualiza contato no HubSpot como staged (parcial)
+    if (HUBSPOT_ENABLED && HUBSPOT_TOKEN && email) {
+      try {
+        const partialProps = buildHubSpotProperties(nome, email, phone, null, null, profile, utm, 'staged');
+        await upsertContact(HUBSPOT_TOKEN, partialProps);
+      } catch (e) {
+        console.warn('HubSpot partial sync error:', e.message);
+      }
+    }
+
     res.json({ success: true, lead_id: data.id, updated: false });
   } catch (err) {
     console.error('Partial lead error:', err);
@@ -106,7 +117,7 @@ router.post('/', async (req, res) => {
 
   if (HUBSPOT_ENABLED && HUBSPOT_TOKEN) {
     try {
-      const properties = buildHubSpotProperties(nome, email, phone, visto, score, profile, utm);
+      const properties = buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 'completed');
       const { hubspotId: hsId, error: hsErr } = await upsertContact(HUBSPOT_TOKEN, properties);
 
       if (hsId) {
