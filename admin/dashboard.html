@@ -391,11 +391,7 @@ td.nome{color:var(--txt);font-weight:500}
         </div>
         <div class="funnel-list" id="funnel-list"><div class="loading"><div class="spin"></div>Carregando funil...</div></div>
       </div>
-      <!-- Abandono granular (step a step) -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-title">🔍 Abandono por Step Específico</div>
-        <div id="abandon-steps" style="margin-top:4px"></div>
-      </div>
+
       <!-- Dispositivos -->
       <div class="card" style="margin-bottom:20px">
         <div class="card-title">📱 Dispositivos</div>
@@ -1009,8 +1005,7 @@ async function loadAnalytics() {
   ]);
 
   renderAnalyticsStats(funnelData, statsData);
-  renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0);
-  renderAbandonSteps(funnelData.topAbandonSteps || [], funnelData.total || 0);
+  renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0, funnelData.abandonMap || {});
   renderDeviceChart(funnelData.deviceMap || {});
 }
 
@@ -1038,7 +1033,62 @@ function renderAnalyticsStats(f, s) {
     </div>`;
 }
 
-function renderFunnel(funnel, total, completos) {
+const STEP_LABELS = {
+  welcome:'Boas-vindas', disclaimer_legal:'Aviso legal', check_email_exists:'Verificação e-mail',
+  contact_email:'E-mail', contact_name:'Nome', contact_phone:'Telefone', chat_confirm_data:'Confirmação dados',
+  path_select:'Seleção de caminho', path_select2:'Seleção de caminho (2)', path_niw:'Caminho NIW',
+  path_eb1:'Caminho EB-1A', path_o1:'Caminho O-1', path_l1:'Caminho L-1',
+  path_e2:'Caminho E-2', path_family:'Caminho Familiar', path_offramp_sem_perfil:'Offramp sem perfil',
+  pi_local:'Onde mora', pi_profissao:'Profissão', pi_casado:'Estado civil',
+  pi_filhos:'Filhos', pi_renda:'Renda', pi_planos:'Planos', pi_prazo:'Prazo', pi_fundos:'Fundos disponíveis',
+  ac_grau:'Grau de formação', ac_instituicao:'Instituição', ac_curso:'Área de formação',
+  ac_status:'Status acadêmico', ac_posgrad:'Pós-graduação', ac_conclusao:'Conclusão',
+  pe_emp1:'Emprego atual', pe_cargo1:'Cargo', pe_entrada1:'Início cargo', pe_saida1:'Saída cargo',
+  pe_segunda:'2ª experiência', pe_terceira:'3ª experiência', pe_gap_check:'Gaps de carreira', pe_projetos:'Projetos',
+  sc_niw_1:'Critérios NIW', sc_niw_hab:'Habilidades NIW', sc_eb1_intro:'Intro EB-1A',
+  sc_eb1_1:'Critérios EB-1A', sc_eb1_decide:'Decisão EB-1A',
+  sc_o1_1:'Critérios O-1', sc_o1_5:'Critérios O-1 (cont.)', resultado:'Resultado',
+  nurturing_contato:'Nutrição contato', contato:'Contato', desconhecido:'Step desconhecido',
+};
+
+function _funnelSubSteps(etapaId, abandonMap) {
+  const STEP_TO_FUNNEL = {
+    welcome:'contato', disclaimer_legal:'contato', check_email_exists:'contato',
+    contact_email:'contato', contact_name:'contato', contact_phone:'contato', chat_confirm_data:'contato',
+    nurturing_contato:'contato',
+    path_select:'triagem', path_select2:'triagem', path_niw:'triagem', path_eb1:'triagem',
+    path_o1:'triagem', path_l1:'triagem', path_e2:'triagem', path_family:'triagem',
+    path_offramp_sem_perfil:'offramp',
+    pi_local:'perfil_pessoal', pi_profissao:'perfil_pessoal', pi_casado:'perfil_pessoal',
+    pi_filhos:'perfil_pessoal', pi_renda:'perfil_pessoal', pi_planos:'perfil_pessoal',
+    pi_prazo:'perfil_pessoal', pi_fundos:'perfil_pessoal',
+    ac_grau:'formacao', ac_instituicao:'formacao', ac_curso:'formacao',
+    ac_status:'formacao', ac_posgrad:'formacao', ac_conclusao:'formacao',
+    pe_emp1:'experiencia', pe_cargo1:'experiencia', pe_entrada1:'experiencia',
+    pe_saida1:'experiencia', pe_segunda:'experiencia', pe_terceira:'experiencia',
+    pe_gap_check:'experiencia', pe_projetos:'experiencia',
+    sc_niw_1:'scoring', sc_niw_hab:'scoring', sc_eb1_intro:'scoring',
+    sc_eb1_1:'scoring', sc_eb1_decide:'scoring', sc_o1_1:'scoring', sc_o1_5:'scoring',
+    resultado:'resultado',
+  };
+  return Object.entries(abandonMap || {})
+    .filter(([step]) => (STEP_TO_FUNNEL[step] || step) === etapaId)
+    .sort((a, b) => b[1] - a[1]);
+}
+
+let _abandonMap = {};
+
+function toggleFunnelDetail(id) {
+  const el = document.getElementById('funnel-detail-' + id);
+  const arr = document.getElementById('funnel-arrow-' + id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arr) arr.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
+function renderFunnel(funnel, total, completos, abandonMap) {
+  _abandonMap = abandonMap || {};
   if (!funnel.length) { document.getElementById('funnel-list').innerHTML = '<div class="empty">Sem dados ainda.</div>'; return; }
   const maxVal = Math.max(...funnel.map(f => f.abandons + f.em_andamento), completos, 1);
   let chegaram = total;
@@ -1053,14 +1103,42 @@ function renderFunnel(funnel, total, completos) {
                     f.abandons > 0 ? 'background:linear-gradient(90deg,var(--blue2),var(--pink))' :
                     'background:linear-gradient(90deg,var(--blue2),var(--blue4))';
     if (i > 0) chegaram = Math.max(0, chegaram - funnel[i-1].abandons);
-    return `<div class="funnel-item" style="${isLast?'border-color:rgba(29,158,112,.3);background:rgba(29,158,112,.03)':''}">
-      <div class="funnel-label">${f.icon} ${f.label}</div>
-      <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${barW}%;${barColor}"></div></div>
-      <div class="funnel-num">${val}</div>
-      <div class="funnel-pct" style="color:var(--txt)">${pct}%</div>
-      <div style="text-align:right;font-size:11.5px;font-weight:700;color:${f.abandons>0?dropColor:'var(--txt3)'}">
-        ${f.abandons > 0 ? `↗ ${f.abandons} (${dropoff}%)` : '—'}
+
+    const subSteps = _funnelSubSteps(f.id, _abandonMap);
+    const hasDetail = subSteps.length > 0;
+    const maxSub = subSteps[0]?.[1] || 1;
+
+    const detailHtml = hasDetail ? `
+      <div id="funnel-detail-${f.id}" style="display:none;padding:10px 14px 4px;border-top:1px solid rgba(11,25,41,.05)">
+        ${subSteps.map(([step, count]) => {
+          const subPct = total > 0 ? Math.round((count / total) * 100) : 0;
+          const subW = Math.round((count / maxSub) * 100);
+          const label = STEP_LABELS[step] || step;
+          return `<div style="display:grid;grid-template-columns:180px 1fr 60px 50px;align-items:center;gap:8px;padding:5px 0">
+            <span style="font-size:11.5px;color:var(--txt2);padding-left:18px">↳ ${label}</span>
+            <div style="height:5px;background:rgba(11,25,41,.06);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${subW}%;background:var(--amber);border-radius:4px;transition:width .5s"></div>
+            </div>
+            <span style="font-size:11.5px;font-weight:700;color:var(--amber);text-align:right">${count}</span>
+            <span style="font-size:11px;color:var(--txt3);text-align:right">${subPct}%</span>
+          </div>`;
+        }).join('')}
+      </div>` : '';
+
+    return `<div class="funnel-item" style="${isLast?'border-color:rgba(29,158,112,.3);background:rgba(29,158,112,.03)':''}flex-direction:column;padding:0;overflow:hidden">
+      <div style="display:grid;grid-template-columns:180px 1fr 80px 60px 90px;align-items:center;gap:8px;padding:10px 14px;${hasDetail?'cursor:pointer;':''}" ${hasDetail?`onclick="toggleFunnelDetail('${f.id}')"`:''}>
+        <div class="funnel-label">
+          ${hasDetail ? `<span id="funnel-arrow-${f.id}" style="font-size:10px;color:var(--txt3);transition:transform .2s;display:inline-block;margin-right:2px">▶</span>` : '<span style="width:14px;display:inline-block"></span>'}
+          ${f.icon} ${f.label}
+        </div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${barW}%;${barColor}"></div></div>
+        <div class="funnel-num">${val}</div>
+        <div class="funnel-pct" style="color:var(--txt)">${pct}%</div>
+        <div style="text-align:right;font-size:11.5px;font-weight:700;color:${f.abandons>0?dropColor:'var(--txt3)'}">
+          ${f.abandons > 0 ? `↗ ${f.abandons} (${dropoff}%)` : '—'}
+        </div>
       </div>
+      ${detailHtml}
     </div>`;
   }).join('');
   document.getElementById('funnel-list').innerHTML = `
