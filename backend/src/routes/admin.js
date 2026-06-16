@@ -231,11 +231,120 @@ router.delete('/users/:id', auth, async (req, res) => {
 router.get('/users/:id/analyses', auth, async (req, res) => {
   const { data, error } = await supabase
     .from('user_analyses')
-    .select('id, created_at, visto, score, aprovacao_pct, classificacao')
+    .select('id, created_at, visto, score, aprovacao_pct, classificacao, analysis_json')
     .eq('user_id', req.params.id)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: 'Erro ao buscar análises.' });
   res.json(data || []);
+});
+
+// ── POST /api/admin/users/:userId/analyses/:analysisId/send-email ──
+router.post('/users/:userId/analyses/:analysisId/send-email', auth, async (req, res) => {
+  const nodemailer = require('nodemailer');
+
+  try {
+    // Buscar usuário
+    const { data: user } = await supabase
+      .from('users').select('nome, email').eq('id', req.params.userId).single();
+    if (!user?.email) return res.status(404).json({ error: 'Usuário não encontrado ou sem e-mail.' });
+
+    // Buscar análise
+    const { data: analysis } = await supabase
+      .from('user_analyses')
+      .select('visto, score, aprovacao_pct, classificacao, analysis_json, created_at')
+      .eq('id', req.params.analysisId).eq('user_id', req.params.userId).single();
+    if (!analysis) return res.status(404).json({ error: 'Análise não encontrada.' });
+
+    const nome = user.nome?.split(' ')[0] || 'candidato';
+    const pct = analysis.aprovacao_pct ?? analysis.score ?? 0;
+    const visto = analysis.visto || '—';
+    const cls = analysis.classificacao || '—';
+    const dt = new Date(analysis.created_at).toLocaleDateString('pt-BR');
+    const melhor = analysis.analysis_json?.melhor || {};
+    const pontosFortes = (melhor.pontos_fortes || []).map(p => `<li style="margin-bottom:6px">${p}</li>`).join('');
+    const planoAcao = (melhor.plano_acao || []).map((p,i) => `<li style="margin-bottom:6px"><b>${i+1}.</b> ${p}</li>`).join('');
+    const veredicto = melhor.veredicto || '';
+    const partner = melhor.recomendacao_parceiro === 'liv'
+      ? '<b style="color:#1A72F6">LIV Law</b> — Escritório licenciado nos EUA, especializado em vistos de Green Card.'
+      : '<b>Phoenix</b> — Especialista em fortalecimento de perfil para imigração.';
+
+    const clsColor = cls.includes('Alta') || cls.includes('Forte') ? '#1d9e70'
+      : cls.includes('Moderada') || cls.includes('Moderado') ? '#d97706'
+      : '#94a3b8';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  body{font-family:'Inter Tight',Arial,sans-serif;background:#f8fafc;margin:0;padding:0}
+  .wrap{max-width:600px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+  .header{background:linear-gradient(135deg,#0b1929,#1A72F6);padding:32px;text-align:center}
+  .header h1{color:#fff;margin:0;font-size:22px;font-weight:800}
+  .header p{color:rgba(255,255,255,.7);margin:6px 0 0;font-size:13px}
+  .body{padding:32px}
+  .score-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px}
+  .score-num{font-size:48px;font-weight:800;color:${clsColor};line-height:1}
+  .score-label{font-size:12px;color:#94a3b8;margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+  .badge{display:inline-block;background:${clsColor}22;color:${clsColor};border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;margin-top:8px}
+  h3{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin:20px 0 10px}
+  ul{margin:0;padding-left:18px;color:#334155;font-size:13.5px;line-height:1.7}
+  .verdict{background:#f0f9ff;border-left:3px solid #1A72F6;border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;color:#1e3a5f;line-height:1.6;margin-bottom:20px}
+  .partner-box{background:linear-gradient(135deg,#0b1929,#1A72F6);border-radius:12px;padding:20px;margin-top:24px;text-align:center}
+  .partner-box p{color:rgba(255,255,255,.8);font-size:13px;margin:6px 0 16px}
+  .cta-btn{display:inline-block;background:linear-gradient(135deg,#1A72F6,#e040fb);color:#fff;text-decoration:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:700}
+  .footer{padding:24px 32px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #f0f0f4}
+</style></head><body>
+<div class="wrap">
+  <div class="header">
+    <h1>Sua Análise Visa Match</h1>
+    <p>Relatório de ${visto} · ${dt}</p>
+  </div>
+  <div class="body">
+    <p style="color:#334155;font-size:14px">Olá, <b>${nome}</b>! Aqui está o resumo da sua análise de perfil para imigração aos EUA.</p>
+
+    <div class="score-box">
+      <div class="score-num">${pct}%</div>
+      <div class="score-label">Score de Pré-Elegibilidade · ${visto}</div>
+      <div class="badge">${cls}</div>
+    </div>
+
+    ${veredicto ? `<div class="verdict">${veredicto}</div>` : ''}
+
+    ${pontosFortes ? `<h3>Pontos Fortes</h3><ul>${pontosFortes}</ul>` : ''}
+
+    ${planoAcao ? `<h3>Próximos Passos Recomendados</h3><ul>${planoAcao}</ul>` : ''}
+
+    <div class="partner-box">
+      <p style="color:#fff;font-size:13px;font-weight:700;margin:0 0 4px">Parceiro Recomendado</p>
+      <p>${partner}</p>
+      <a href="https://wa.link/pxtk7k" class="cta-btn">💬 Falar com especialistas →</a>
+    </div>
+  </div>
+  <div class="footer">
+    Visa Match · ImigrarEUA · Este e-mail foi enviado pela equipe de atendimento.<br>
+    Para dúvidas, responda este e-mail.
+  </div>
+</div>
+</body></html>`;
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.office365.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      tls: { rejectUnauthorized: false }
+    });
+
+    await transporter.sendMail({
+      from: `"Visa Match · ImigrarEUA" <${process.env.SMTP_USER}>`,
+      to: user.email,
+      subject: `Sua análise ${visto} — ${pct}% de pré-elegibilidade`,
+      html
+    });
+
+    res.json({ ok: true, sent_to: user.email });
+  } catch (err) {
+    console.error('Send analysis email error:', err);
+    res.status(500).json({ error: err.message || 'Erro ao enviar e-mail.' });
+  }
 });
 
 // ── GET /api/admin/funnel ── funil de abandono por etapa
@@ -455,6 +564,34 @@ router.get('/health', auth, async (req, res) => {
   ]);
 
   res.json({ checks: results, ts: new Date().toISOString() });
+});
+
+// ── GET /api/admin/funnel-stats ── métricas do funil de eventos (view/start/complete)
+router.get('/funnel-stats', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('funnel_events')
+      .select('event, time_to_complete')
+      .gte('created_at', thirtyDaysAgo);
+
+    if (error) throw error;
+
+    const events = data || [];
+    const views = events.filter(e => e.event === 'view').length;
+    const starts = events.filter(e => e.event === 'start').length;
+    const completions = events.filter(e => e.event === 'complete').length;
+    const completion_rate = starts > 0 ? Math.round((completions / starts) * 100 * 10) / 10 : 0;
+    const times = events.filter(e => e.event === 'complete' && e.time_to_complete).map(e => e.time_to_complete);
+    const avg_time_to_complete = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+
+    res.json({ views, starts, completions, completion_rate, avg_time_to_complete });
+  } catch (err) {
+    console.error('Funnel stats error:', err);
+    res.status(500).json({ error: 'Erro ao buscar funil de eventos.' });
+  }
 });
 
 // ── GET /api/admin/hubspot-logs ── leads com problema no HubSpot

@@ -1054,7 +1054,7 @@ async function viewUserAnalyses(userId, userName) {
   document.getElementById('users-table-wrap').innerHTML = `
     <div style="padding:16px">
       <button class="view-btn" onclick="loadUsers(1)" style="margin-bottom:12px">← Voltar</button>
-      <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:12px">Análises de ${userName}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:12px">Análises de ${escHtml(userName)}</div>
       <div id="user-analyses-wrap"><div class="loading"><div class="spin"></div>Carregando...</div></div>
     </div>`;
   const analyses = await apiFetch(`/users/${userId}/analyses`);
@@ -1062,10 +1062,45 @@ async function viewUserAnalyses(userId, userName) {
   const rows = analyses.map(a => {
     const pct = a.aprovacao_pct ?? a.score ?? 0;
     const dt  = new Date(a.created_at).toLocaleDateString('pt-BR');
-    const sc  = a.classificacao?.includes('Alta') ? 'sc-alta' : a.classificacao?.includes('Moderada') ? 'sc-mod' : a.classificacao?.includes('Incompat') ? 'sc-inc' : 'sc-dev';
-    return `<tr><td class="nome">${a.visto||'—'}</td><td><span class="score-pill ${sc}">${pct}%</span></td><td>${a.classificacao||'—'}</td><td>${dt}</td></tr>`;
+    const sc  = a.classificacao?.includes('Alta') || a.classificacao?.includes('Forte') ? 'sc-alta' : a.classificacao?.includes('Moderada') || a.classificacao?.includes('Moderado') ? 'sc-mod' : a.classificacao?.includes('Incompat') ? 'sc-inc' : 'sc-dev';
+    return `<tr>
+      <td class="nome">${escHtml(a.visto||'—')}</td>
+      <td><span class="score-pill ${sc}">${pct}%</span></td>
+      <td>${escHtml(a.classificacao||'—')}</td>
+      <td style="font-size:12px;color:var(--txt3)">${dt}</td>
+      <td style="text-align:center">
+        <button onclick="sendAnalysisEmail('${userId}','${a.id}',this)"
+          style="background:var(--blue2);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11.5px;font-family:'Inter Tight',sans-serif;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px">
+          ✉️ Enviar
+        </button>
+      </td>
+    </tr>`;
   }).join('');
-  document.getElementById('user-analyses-wrap').innerHTML = `<table><thead><tr><th>Visto</th><th>Score</th><th>Classificação</th><th>Data</th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('user-analyses-wrap').innerHTML = `
+    <table><thead><tr><th>Visto</th><th>Score</th><th>Classificação</th><th>Data</th><th style="text-align:center">E-mail</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+async function sendAnalysisEmail(userId, analysisId, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const data = await apiFetch(`/users/${userId}/analyses/${analysisId}/send-email`, { method: 'POST' });
+    if (data?.ok) {
+      btn.textContent = '✅';
+      btn.style.background = '#1d9e70';
+      setTimeout(() => { btn.textContent = '✉️ Enviar'; btn.style.background = ''; btn.disabled = false; }, 3000);
+    } else {
+      btn.textContent = '❌ Erro';
+      btn.style.background = '#dc2626';
+      setTimeout(() => { btn.textContent = '✉️ Enviar'; btn.style.background = ''; btn.disabled = false; }, 3000);
+      alert('Erro: ' + (data?.error || 'Falha ao enviar'));
+    }
+  } catch(e) {
+    btn.textContent = '❌';
+    btn.disabled = false;
+    alert('Erro ao enviar: ' + e.message);
+  }
 }
 
 // ── SESSIONS ──
