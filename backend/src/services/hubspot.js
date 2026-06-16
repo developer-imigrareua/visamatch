@@ -213,37 +213,59 @@ async function resolveHubSpotId(token, email) {
   return null;
 }
 
-// Upsert contato + retorna { hubspotId, error }
-async function upsertContact(token, properties) {
-  const hsRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
-    method: 'POST',
+async function _doRequest(token, method, url, properties) {
+  const res = await fetch(url, {
+    method,
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ properties })
   });
+  if (res.ok) return { ok: true, body: await res.json() };
+  const text = await res.text();
+  let parsed = null;
+  try { parsed = JSON.parse(text); } catch (_) {}
+  // Strip read-only or invalid-option fields and retry once
+  if (res.status === 400 && parsed?.errors?.length) {
+    const badFields = parsed.errors
+      .filter(e => e.code === 'INVALID_OPTION' || e.code === 'READ_ONLY_VALUE')
+      .map(e => e.context?.propertyName?.[0]).filter(Boolean);
+    if (badFields.length) {
+      const stripped = Object.fromEntries(Object.entries(properties).filter(([k]) => !badFields.includes(k)));
+      console.warn('HubSpot: retrying without invalid fields:', badFields);
+      const res2 = await fetch(url, {
+        method,
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ properties: stripped })
+      });
+      if (res2.ok) return { ok: true, body: await res2.json() };
+      return { ok: false, status: res2.status, text: await res2.text() };
+    }
+  }
+  return { ok: false, status: res.status, text };
+}
 
-  if (hsRes.ok) return { hubspotId: (await hsRes.json()).id };
+// Upsert contato + retorna { hubspotId, error }
+async function upsertContact(token, properties) {
+  const postResult = await _doRequest(token, 'POST', 'https://api.hubapi.com/crm/v3/objects/contacts', properties);
 
-  if (hsRes.status === 409) {
-    const conflict = await hsRes.json();
+  if (postResult.ok) return { hubspotId: postResult.body.id };
+
+  if (postResult.status === 409) {
+    let conflict = null;
+    try { conflict = JSON.parse(postResult.text); } catch (_) {}
     const inlineId = conflict?.message?.match(/ID:\s*(\d+)/i)?.[1]
       || (conflict?.error === 'CONTACT_EXISTS' ? conflict?.identityProfile?.vid : null);
     const resolvedId = inlineId || await resolveHubSpotId(token, properties.email);
 
     if (!resolvedId) {
-      return { error: `409 + contato não localizado via search. Conflict: ${JSON.stringify(conflict)}` };
+      return { error: `409 + contato não localizado via search. Conflict: ${postResult.text}` };
     }
 
-    const upRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${resolvedId}`, {
-      method: 'PATCH',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ properties })
-    });
-
-    if (upRes.ok) return { hubspotId: resolvedId };
-    return { error: `PATCH ${resolvedId} HTTP ${upRes.status}: ${await upRes.text()}` };
+    const patchResult = await _doRequest(token, 'PATCH', `https://api.hubapi.com/crm/v3/objects/contacts/${resolvedId}`, properties);
+    if (patchResult.ok) return { hubspotId: resolvedId };
+    return { error: `PATCH ${resolvedId} HTTP ${patchResult.status}: ${patchResult.text}` };
   }
 
-  return { error: `HTTP ${hsRes.status}: ${await hsRes.text()}` };
+  return { error: `HTTP ${postResult.status}: ${postResult.text}` };
 }
 
 // Cria Note associada ao contato (não lança exceção se falhar)
