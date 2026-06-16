@@ -3980,7 +3980,7 @@ const flows = {
     // Se animação terminou mas API ainda não retornou, pulsa barra em 95%
     let _pulseInterval = null;
     let _pulseTick = 0;
-    const _pulseLabels = ['Aguardando resposta...', 'Processando com IA...', 'Quase lá...'];
+    const _pulseLabels = ['Finalizando sua análise...', 'Cruzando dados do seu perfil...', 'Quase pronto...'];
     _pulseInterval = setInterval(() => {
       if (!document.getElementById('loading-bar')) { clearInterval(_pulseInterval); return; }
       if (txtEl) txtEl.innerHTML = '⏳ ' + _pulseLabels[_pulseTick++ % _pulseLabels.length];
