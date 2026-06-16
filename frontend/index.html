@@ -3937,7 +3937,10 @@ const flows = {
       <div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap" style="max-width:88%">
         <div class="bubble bot-b" style="padding:14px 16px;min-width:220px">
-          <div id="loading-step-txt" style="font-size:13px;margin-bottom:10px;min-height:18px">🔍 Analisando o perfil de <strong>${S.nome}</strong>...</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div id="loading-spinner" style="width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(11,28,48,.12);border-top-color:var(--blue);flex-shrink:0;animation:vm-spin .8s linear infinite"></div>
+            <div id="loading-step-txt" style="font-size:13px;min-height:18px">🔍 Analisando o perfil de <strong>${S.nome}</strong>...</div>
+          </div>
           <div style="background:rgba(11,28,48,.08);border-radius:99px;height:6px;overflow:hidden">
             <div id="loading-bar" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--pink));transition:width .6s ease"></div>
           </div>
@@ -3980,9 +3983,8 @@ const flows = {
     const _pulseLabels = ['Aguardando resposta...', 'Processando com IA...', 'Quase lá...'];
     _pulseInterval = setInterval(() => {
       if (!document.getElementById('loading-bar')) { clearInterval(_pulseInterval); return; }
-      if (barEl) barEl.style.opacity = barEl.style.opacity === '0.5' ? '1' : '0.5';
       if (txtEl) txtEl.innerHTML = '⏳ ' + _pulseLabels[_pulseTick++ % _pulseLabels.length];
-    }, 1200);
+    }, 1400);
 
     try {
       const res = await analyzePromise;
