@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 
 function mapCaminho(v) {
   if (!v) return '';
-  if (v.includes('profissão')) return 'Green Card EB';
+  if (v.includes('profissão') || v.includes('formação acadêmica')) return 'Green Card EB';
   if (v.includes('familiares')) return 'Green Card Family-Based';
   if (v.includes('empresa que atua')) return 'Work Visa';
   if (v.includes('investimento')) return 'Investor Visa';
@@ -15,46 +15,56 @@ function mapGrau(v) {
   if (v.includes('Mestrado')) return "Master's degree / Mestrado";
   if (v.includes('Bacharelado') || v.includes('Licenciatura')) return "Bachelor's degree / Graduação";
   if (v.includes('Tecnólogo')) return "Associate's Degree / Tecnólogo";
-  if (v.includes('Superior incompleto')) return 'Outros';
-  return 'No degree / Não tenho graduação';
+  if (v.includes('Superior incompleto') || v.includes('incompleto')) return 'Outros';
+  if (v.includes('Não tenho') || v.includes('não tenho')) return 'No degree / Não tenho graduação';
+  return '';
 }
 
 function mapTempoExp(v) {
   if (!v) return '';
-  if (v.includes('recém-formado') || v.includes('3 e 5')) return 'Menos de 5 anos';
+  // Exact frontend options: 'Menos de 3 anos (recém-formado)', 'Entre 3 e 5 anos', 'Entre 5 e 10 anos', 'Mais de 10 anos'
+  if (v.includes('recém-formado') || v.includes('3 e 5') || v.includes('Menos de 3')) return 'Menos de 5 anos';
   if (v.includes('5 e 10') || v.includes('Mais de 10')) return 'Entre 5 e 15 anos';
-  return 'Menos de 5 anos';
+  return '';
 }
 
 function mapPrazoGC(v) {
   if (!v) return '';
-  if (v.includes('aguardar o tempo')) return 'I can wait as long as necessary';
+  // Exact frontend options: 'Estou disposto a aguardar o tempo necessário', 'Mais de 2 anos — mas quero planejar', 'Preciso estar nos EUA em menos de 2 anos'
+  if (v.includes('aguardar o tempo') || v.includes('necessário')) return 'I can wait as long as necessary';
   if (v.includes('Mais de 2 anos')) return 'More than 2 years';
-  return '6 months to 2 years';
+  if (v.includes('menos de 2 anos') || v.includes('Preciso estar')) return '6 months to 2 years';
+  return '';
 }
 
 function mapFundos(v) {
   if (!v) return '';
+  // Exact frontend options: 'Sim, tenho os fundos', 'Sim, mas prefiro parcelar', 'Talvez, preciso entender melhor', 'Não tenho disponibilidade'
   if (v.includes('tenho os fundos')) return 'Yes, I have the funds';
   if (v.includes('parcelar')) return 'Yes, but I need it to be in installments';
-  if (v.includes('preciso entender')) return 'Maybe, I need to understand it better.';
-  return 'No, I do not have the funds';
+  if (v.includes('preciso entender') || v.includes('Talvez')) return 'Maybe, I need to understand it better.';
+  if (v.includes('Não tenho disponibilidade') || v.includes('disponibilidade')) return 'No, I do not have the funds';
+  return '';
 }
 
 function mapLocalMora(v) {
   if (!v) return '';
-  if (v.toLowerCase().includes('brasil')) return 'true';
-  if (v.toLowerCase().includes('estados unidos') || v.toLowerCase().includes('eua')) return 'false';
+  // Exact frontend options: 'Brasil 🇧🇷', 'Estados Unidos 🇺🇸', 'Outro país 🌍'
+  if (v.includes('Brasil')) return 'Brasil';
+  if (v.includes('Estados Unidos') || v.includes('EUA')) return 'Estados Unidos';
   return 'Outro';
 }
 
 function mapRenda(v) {
   if (!v) return '';
-  if (v.includes('5.000') || v.includes('Até')) return 'Less than 5k';
-  if (v.includes('10.000')) return 'Between 5k and 10k';
+  // Exact frontend options: 'Até R$ 5.000', 'R$ 5.001 a R$ 10.000', 'R$ 10.001 a R$ 20.000', 'R$ 20.001 a R$ 50.000', 'Acima de R$ 50.000'
+  // NOTE: check 'Acima' BEFORE '50.000' to avoid 'Acima de R$ 50.000' matching the wrong bucket
+  if (v.includes('Acima') || v.includes('acima')) return 'More than 50k';
+  if (v.includes('Até') || (v.includes('5.000') && !v.includes('50.000'))) return 'Less than 5k';
+  if (v.includes('10.000') && !v.includes('50.000')) return 'Between 5k and 10k';
   if (v.includes('20.000')) return 'Between 10k and 20k';
   if (v.includes('50.000')) return 'Between 20k and 50k';
-  return 'More than 50k';
+  return '';
 }
 
 function mapSimNao(v) {
@@ -76,17 +86,21 @@ function mapDependentes(v) {
 
 function mapHistoricoEUA(v) {
   if (!v) return '';
+  // Exact frontend options: 'Sim, legalmente', 'Sim, mas fiquei fora de status...', 'Sim, entrei sem inspeção...', 'Não, nunca estive nos EUA'
   if (v.includes('legalmente')) return 'Yes, legally';
   if (v.includes('fora de status')) return 'Yes, out of status';
   if (v.includes('sem inspeção')) return 'Yes, no inspection';
-  return 'Never';
+  if (v.includes('nunca') || v.includes('Não,')) return 'Never';
+  return '';
 }
 
 function mapAreaFormacao(v) {
   if (!v) return '';
+  // Exact frontend options: 'Sim, atuo na minha área de formação', 'Não, atuo em uma área diferente', 'Parcialmente'
+  if (v.includes('Parcial') || v.includes('parcial')) return 'Partial';
   if (v.includes('Sim')) return 'Yes';
-  if (v.includes('Parcial')) return 'Partial';
-  return 'No';
+  if (v.includes('Não') || v.includes('diferente')) return 'No';
+  return '';
 }
 
 function mapScoreThreshold(score) {
@@ -125,7 +139,6 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm) 
     firstname,
     lastname,
     phone: phone || '',
-    date_of_birth: p.dataNasc || '',
     visamatch_age: p.idade ? Number(p.idade) : undefined,
 
     first_immigration_path: mapCaminho(p.caminhoPrincipal),
