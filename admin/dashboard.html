@@ -886,15 +886,25 @@ function renderLeadsTable({ leads, total, page, pages }) {
       utm.utm_medium   ? `<span style="background:rgba(124,58,237,.08);color:#7c3aed;font-size:10px;padding:1px 6px;border-radius:4px;white-space:nowrap">${utm.utm_medium}</span>` : '',
       utm.utm_campaign ? `<span style="background:rgba(5,150,105,.08);color:var(--green);font-size:10px;padding:1px 6px;border-radius:4px;white-space:nowrap" title="${utm.utm_campaign}">${utm.utm_campaign.length>20?utm.utm_campaign.slice(0,20)+'…':utm.utm_campaign}</span>` : '',
     ].filter(Boolean).join(' ');
+    const isCompleto = l.score != null;
+    const tipoBadge = isCompleto
+      ? `<span style="background:rgba(29,158,112,.12);color:#1d9e70;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">Completo</span>`
+      : `<span style="background:rgba(217,119,6,.12);color:#d97706;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">Parcial</span>`;
+    const hsBadge = l.hubspot_synced
+      ? `<span class="hs-badge hs-ok">Sincronizado</span>`
+      : l.hubspot_error
+        ? `<span class="hs-badge hs-no" title="${escHtml(l.hubspot_error)}" style="cursor:help">Erro ↗</span>`
+        : `<span class="hs-badge" style="background:rgba(100,116,139,.1);color:#64748b;font-size:10.5px;padding:3px 9px;border-radius:99px;font-weight:600">${isCompleto ? 'Não enviado' : 'Parcial'}</span>`;
     return `<tr>
       <td class="nome">${l.nome || '—'}</td>
       <td>${l.email}</td>
       <td>${l.visto_recomendado || '—'}</td>
       <td><span class="score-pill ${sc.cls}">${l.score ?? '—'} pts</span></td>
+      <td style="text-align:center">${tipoBadge}</td>
       <td style="max-width:160px">${utmBadges || '<span style="font-size:11px;color:var(--txt3)">—</span>'}</td>
       <td>${dt}</td>
       <td style="font-size:12px;color:var(--txt3)">${l.updated_at ? new Date(l.updated_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
-      <td><span class="hs-badge ${l.hubspot_synced ? 'hs-ok' : 'hs-no'}">${l.hubspot_synced ? 'Sincronizado' : 'Pendente'}</span></td>
+      <td>${hsBadge}</td>
       <td><button class="view-btn" onclick="viewLead('${l.id}')">Ver</button></td>
     </tr>`;
   }).join('');
@@ -902,7 +912,7 @@ function renderLeadsTable({ leads, total, page, pages }) {
   document.getElementById('leads-table-wrap').innerHTML = `
     <table>
       <thead><tr>
-        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th style="max-width:160px">UTM</th><th>Criado</th><th>Última interação</th><th>HubSpot</th><th></th>
+        <th>Nome</th><th>E-mail</th><th>Visto</th><th>Score</th><th style="text-align:center">Tipo</th><th style="max-width:160px">UTM</th><th>Criado</th><th>Última interação</th><th>HubSpot</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;

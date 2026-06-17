@@ -142,7 +142,7 @@ router.get('/leads', auth, async (req, res) => {
   try {
     let query = supabase
       .from('leads')
-      .select('id, created_at, updated_at, nome, email, phone, visto_recomendado, score, hubspot_synced, hubspot_contact_id, profile', { count: 'exact' })
+      .select('id, created_at, updated_at, nome, email, phone, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error, profile', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
