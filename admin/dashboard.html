@@ -887,9 +887,20 @@ function renderLeadsTable({ leads, total, page, pages }) {
       utm.utm_campaign ? `<span style="background:rgba(5,150,105,.08);color:var(--green);font-size:10px;padding:1px 6px;border-radius:4px;white-space:nowrap" title="${utm.utm_campaign}">${utm.utm_campaign.length>20?utm.utm_campaign.slice(0,20)+'…':utm.utm_campaign}</span>` : '',
     ].filter(Boolean).join(' ');
     const isCompleto = l.score != null;
+    const etapaAbandono = !isCompleto ? (l.profile?._etapa_abandono || '') : '';
+    const etapaLabel = {
+      contato:'Contato', nurturing_contato:'Contato', welcome:'Boas-vindas',
+      path_select:'Triagem', path_select2:'Triagem', path_niw:'Triagem', path_eb1:'Triagem',
+      path_o1:'Triagem', path_l1:'Triagem', path_e2:'Triagem', path_family:'Triagem',
+      pi_local:'Perfil pessoal', pi_profissao:'Perfil pessoal', pi_casado:'Perfil pessoal',
+      pi_filhos:'Perfil pessoal', pi_renda:'Perfil pessoal', pi_fundos:'Perfil pessoal',
+      ac_grau:'Formação', ac_curso:'Formação', ac_status:'Formação', ac_conclusao:'Formação',
+      pe_emp1:'Experiência', pe_cargo1:'Experiência', pe_segunda:'Experiência',
+      sc_niw_1:'Scoring', sc_eb1_1:'Scoring', sc_o1_1:'Scoring',
+    }[etapaAbandono] || etapaAbandono;
     const tipoBadge = isCompleto
       ? `<span style="background:rgba(29,158,112,.12);color:#1d9e70;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">Completo</span>`
-      : `<span style="background:rgba(217,119,6,.12);color:#d97706;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">Parcial</span>`;
+      : `<span style="background:rgba(217,119,6,.12);color:#d97706;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">Parcial</span>${etapaLabel ? `<br><span style="font-size:10px;color:var(--txt3);margin-top:2px;display:inline-block">↳ ${etapaLabel}</span>` : ''}`;
     const hsBadge = l.hubspot_synced
       ? `<span class="hs-badge hs-ok">Sincronizado</span>`
       : l.hubspot_error
