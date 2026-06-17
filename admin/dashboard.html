@@ -380,6 +380,11 @@ td.nome{color:var(--txt);font-weight:500}
       <div class="stat-row" id="analytics-stats">
         <div class="loading"><div class="spin"></div></div>
       </div>
+      <!-- KPIs estilo Typeform: pageview / start / complete / taxas -->
+      <div id="funnel-event-stats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px">
+        <div class="loading"><div class="spin"></div></div>
+      </div>
+
       <!-- Funil principal -->
       <div class="card" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -591,7 +596,8 @@ async function loadStats() {
   const qs = dateQs();
   const [data, overview] = await Promise.all([
     apiFetch('/stats?' + qs.slice(1)),
-    apiFetch('/overview').catch(() => ({}))
+    apiFetch('/overview').catch(() => ({})),
+    apiFetch('/funnel-stats?' + qs.slice(1)).catch(() => ({}))
   ]);
   Object.assign(data, overview);
   _utmData = {
@@ -1015,16 +1021,43 @@ function debounceSearch() {
 }
 
 // ── ANALYTICS ──
+function _fmtTime(s) {
+  if (!s) return '—';
+  if (s < 60) return s + 's';
+  return Math.floor(s/60) + 'm ' + (s%60) + 's';
+}
+
+function renderFunnelEventStats(d) {
+  const startRate = d.views > 0 ? Math.round((d.starts / d.views) * 100) : 0;
+  const completeRate = d.starts > 0 ? Math.round((d.completions / d.starts) * 100) : 0;
+  const abandonRate = 100 - completeRate;
+  const kpis = [
+    { icon:'👁️', label:'Visualizações', val: d.views ?? '—', sub:'Pageviews únicos' },
+    { icon:'▶️', label:'Iniciaram', val: d.starts ?? '—', sub:`${startRate}% das visualizações` },
+    { icon:'✅', label:'Completaram', val: d.completions ?? '—', sub:`${completeRate}% dos iniciados`, color:'#1d9e70' },
+    { icon:'⏳', label:'Abandonaram', val: d.starts > 0 ? (d.starts - d.completions) : '—', sub:`${abandonRate}% dos iniciados`, color:'#d97706' },
+    { icon:'⏱️', label:'Tempo médio', val: _fmtTime(d.avg_time_to_complete), sub:'Para completar a análise' },
+  ];
+  document.getElementById('funnel-event-stats').innerHTML = kpis.map(k => `
+    <div class="card" style="padding:16px 18px">
+      <div style="font-size:18px;margin-bottom:6px">${k.icon}</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">${k.label}</div>
+      <div style="font-size:26px;font-weight:800;color:${k.color||'var(--txt)'};line-height:1">${k.val}</div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:5px">${k.sub}</div>
+    </div>`).join('');
+}
+
 async function loadAnalytics() {
   document.getElementById('analytics-stats').innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
   document.getElementById('funnel-list').innerHTML = '<div class="loading"><div class="spin"></div></div>';
 
   const qs = dateQs();
-  const [funnelData, statsData] = await Promise.all([
+  const [funnelData, statsData, eventStats] = await Promise.all([
     apiFetch('/funnel?' + qs.slice(1)).catch(() => ({})),
     apiFetch('/stats?' + qs.slice(1)).catch(() => ({}))
   ]);
 
+  renderFunnelEventStats(eventStats || {});
   renderAnalyticsStats(funnelData, statsData);
   renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0, funnelData.abandonMap || {});
   renderDeviceChart(funnelData.deviceMap || {});

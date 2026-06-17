@@ -575,12 +575,15 @@ router.get('/health', auth, async (req, res) => {
 router.get('/funnel-stats', auth, async (req, res) => {
   try {
     const now = new Date();
-    const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const defaultFrom = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const from = req.query.from ? new Date(req.query.from).toISOString() : defaultFrom;
+    const to   = req.query.to   ? new Date(req.query.to + 'T23:59:59').toISOString() : now.toISOString();
 
     const { data, error } = await supabase
       .from('funnel_events')
       .select('event, time_to_complete')
-      .gte('created_at', thirtyDaysAgo);
+      .gte('created_at', from)
+      .lte('created_at', to);
 
     if (error) throw error;
 
