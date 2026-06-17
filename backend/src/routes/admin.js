@@ -650,4 +650,36 @@ router.post('/hubspot-retry/:id', auth, async (req, res) => {
   }
 });
 
+// ── DELETE /api/admin/leads/bulk ── delete leads by email list
+router.delete('/leads/bulk', auth, async (req, res) => {
+  try {
+    const { emails, keepOnly } = req.body;
+    if (!emails && !keepOnly) return res.status(400).json({ error: 'Forneça emails ou keepOnly.' });
+
+    let leadsDeleted = 0;
+
+    if (keepOnly && keepOnly.length > 0) {
+      // Delete leads whose email is NOT in keepOnly list
+      const { data, error } = await supabase.from('leads').delete().not('email', 'in', `(${keepOnly.join(',')})`)
+        .select('id');
+      if (error) return res.status(500).json({ error: error.message });
+      leadsDeleted = data?.length || 0;
+
+      // Clean sessions with named emails not in keepOnly
+      await supabase.from('sessions').delete()
+        .not('email', 'is', null)
+        .not('email', 'in', `(${keepOnly.join(',')})`);
+    } else if (emails && emails.length > 0) {
+      const { data, error } = await supabase.from('leads').delete().in('email', emails).select('id');
+      if (error) return res.status(500).json({ error: error.message });
+      leadsDeleted = data?.length || 0;
+      await supabase.from('sessions').delete().in('email', emails);
+    }
+
+    res.json({ success: true, deleted: leadsDeleted });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

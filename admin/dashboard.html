@@ -347,6 +347,7 @@ td.nome{color:var(--txt);font-weight:500}
           <select class="filter-sel" id="filter-source" onchange="loadLeads(1)">
             <option value="">Todos os sources</option>
           </select>
+          <button class="filter-sel" onclick="cleanupTestLeads()" style="margin-left:auto;background:#fff0f0;color:#c0392b;border:1px solid #f5c6c6;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:6px;font-weight:600">🗑 Limpar testes</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div id="leads-table-wrap"></div>
@@ -1018,6 +1019,24 @@ function scoreClass(score) {
 function debounceSearch() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => loadLeads(1), 400);
+}
+
+async function cleanupTestLeads() {
+  const keepOnly = ['yallycampos@gmail.com'];
+  if (!confirm(`Isso vai apagar TODOS os leads exceto ${keepOnly.join(', ')}.\n\nTem certeza?`)) return;
+  try {
+    const r = await fetch(`${API}/admin/leads/bulk`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ keepOnly })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    alert(`✅ ${d.deleted ?? 'Vários'} lead(s) de teste removidos.`);
+    loadAll();
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
 }
 
 // ── ANALYTICS ──
