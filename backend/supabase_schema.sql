@@ -86,3 +86,21 @@ CREATE INDEX IF NOT EXISTS idx_user_analyses_user_id ON user_analyses(user_id);
 
 -- Migração: IP nas sessões
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ip_address TEXT;
+
+-- ── FUNNEL EVENTS (pageview / start / complete tracking) ──
+CREATE TABLE IF NOT EXISTS funnel_events (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  session_id        TEXT NOT NULL,
+  event             TEXT NOT NULL CHECK (event IN ('view','start','complete')),
+  visto             TEXT,
+  score             INTEGER,
+  time_to_complete  INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_funnel_events_created_at ON funnel_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_funnel_events_event      ON funnel_events(event);
+CREATE INDEX IF NOT EXISTS idx_funnel_events_session_id ON funnel_events(session_id);
+
+-- Migrações HubSpot
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS hubspot_error   TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS hubspot_payload JSONB;
