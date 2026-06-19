@@ -89,20 +89,41 @@ router.post('/', async (req, res) => {
 
   if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
 
-  // 1. Salvar no Supabase
-  const { data: savedLead, error: dbError } = await supabase
+  // 1. Salvar no Supabase — atualiza partial existente se houver, senão insere
+  let savedLead, dbError;
+
+  const { data: existingPartial } = await supabase
     .from('leads')
-    .insert({
-      nome,
-      email,
-      phone,
-      visto_recomendado: visto,
-      score,
-      profile: { ...profile, _utm: utm || undefined },
-      hubspot_synced: false
-    })
-    .select()
+    .select('id')
+    .eq('email', email)
+    .is('score', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .single();
+
+  if (existingPartial) {
+    const { data, error } = await supabase
+      .from('leads')
+      .update({
+        nome, phone,
+        visto_recomendado: visto,
+        score,
+        profile: { ...profile, _utm: utm || undefined },
+        hubspot_synced: false,
+        hubspot_error: null
+      })
+      .eq('id', existingPartial.id)
+      .select()
+      .single();
+    savedLead = data; dbError = error;
+  } else {
+    const { data, error } = await supabase
+      .from('leads')
+      .insert({ nome, email, phone, visto_recomendado: visto, score, profile: { ...profile, _utm: utm || undefined }, hubspot_synced: false })
+      .select()
+      .single();
+    savedLead = data; dbError = error;
+  }
 
   if (dbError) {
     console.error('Supabase insert error:', dbError);
