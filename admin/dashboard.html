@@ -974,7 +974,10 @@ async function viewLead(id) {
     ['HubSpot ID', l.hubspot_contact_id || '—'],
     ...(l.score == null ? [['Abandonou em', (() => {
       const step = l.profile?._step_atual || l.profile?._etapa_abandono;
-      return step ? `${STEP_LABELS[step] || step} <span style="font-size:10px;color:var(--txt3);font-weight:400">(${step})</span>` : '—';
+      if (!step) return '—';
+      const label = STEP_LABELS[step] || step;
+      const question = STEP_QUESTIONS[step];
+      return `<div style="font-size:12.5px;font-weight:600;color:var(--txt)">${label}</div>${question ? `<div style="font-size:11.5px;color:var(--txt3);margin-top:3px">❓ ${question}</div>` : ''}<div style="font-size:10px;color:rgba(11,25,41,.3);margin-top:2px;font-family:monospace">${step}</div>`;
     })()]] : []),
   ];
   dv.innerHTML = `
@@ -1157,6 +1160,85 @@ function renderAnalyticsStats(f, s) {
       <div class="stat-sub">${topStep ? topStep.count + ' abandonos neste step' : 'Sem dados ainda'}</div>
     </div>`;
 }
+
+const STEP_QUESTIONS = {
+  welcome: 'Qual é o seu e-mail?',
+  explain: 'Apresentação do quiz',
+  disclaimer_legal: 'Aviso legal / termos',
+  check_email_exists: 'Verificando se e-mail já existe',
+  contact_email: 'Qual é o seu e-mail?',
+  contact_name: 'Qual é o seu nome completo?',
+  contact_phone: 'Qual é o seu WhatsApp?',
+  chat_confirm_data: 'Confirmação dos dados de contato',
+  path_select: 'Através de qual caminho você acredita que pode chegar ao visto americano?',
+  path_prof_formacao: 'Qual é o seu nível de formação mais alto já concluído?',
+  path_sem_formacao: 'Sem formação superior — redirecionamento',
+  path_prof_experiencia: 'Quantos anos de experiência profissional você tem?',
+  path_niw: 'Área de atuação para NIW',
+  path_eb1: 'Critérios EB-1A',
+  path_o1: 'Área de atuação para O-1',
+  path_l1: 'Tipo de transferência L-1',
+  path_e2: 'País de cidadania para E-2',
+  path_e2_check: 'Você tem cidadania de país elegível para E-2?',
+  path_e2_fundos: 'Qual o volume de investimento disponível para o E-2?',
+  path_work: 'Você tem ou vai ter empresa atuando nos EUA?',
+  path_work_o1: 'Você tem um empregador nos EUA disposto a patrocinar?',
+  path_family: 'Qual é o vínculo familiar com cidadão/residente americano?',
+  path_family_aviso: 'Aviso sobre processo familiar',
+  path_family_fundos: 'Fundos disponíveis para o processo familiar',
+  path_family_beneficiario: 'Dados do beneficiário',
+  path_family_aplicante: 'Dados do aplicante',
+  path_family_status_ap: 'Status do aplicante (cidadão ou residente)',
+  path_family_status_ben: 'Status do beneficiário',
+  path_diagnostico: 'Diagnóstico geral de perfil',
+  path_prazo_gc: 'Qual é o seu prazo para obter o Green Card?',
+  path_fundos_gc: 'Você tem fundos disponíveis para o processo?',
+  path_cidadania: 'Qual é a sua cidadania?',
+  path_l1_intro: 'Você trabalha em empresa multinacional?',
+  path_l1_empresa: 'Nome da empresa para L-1',
+  path_l1_funcionarios: 'Número de funcionários na empresa',
+  path_l1_faturamento: 'Faturamento anual da empresa',
+  path_l1_fundos: 'Fundos disponíveis para L-1',
+  path_offramp_sem_perfil: 'Sem perfil definido — offramp',
+  pi_local: 'Em qual país e estado você mora atualmente?',
+  pi_profissao: 'Qual é a sua profissão ou área de atuação?',
+  pi_casado: 'Qual é o seu estado civil?',
+  pi_filhos: 'Você tem filhos?',
+  pi_renda: 'Qual é a sua renda mensal atual?',
+  pi_planos: 'Quais são seus planos nos EUA?',
+  pi_prazo: 'Em quanto tempo você pretende se mudar para os EUA?',
+  pi_fundos: 'Qual o volume de fundos disponíveis para o processo?',
+  ac_grau: 'Qual é o seu grau de formação acadêmica?',
+  ac_instituicao: 'Em qual instituição você se formou?',
+  ac_curso: 'Qual foi a área/curso da sua formação?',
+  ac_status: 'Qual é o status da sua formação?',
+  ac_posgrad: 'Você possui pós-graduação (especialização, MBA, mestrado, doutorado)?',
+  ac_conclusao: 'Em que ano você concluiu sua formação?',
+  pe_emp1: 'Onde você trabalha atualmente?',
+  pe_cargo1: 'Qual é o seu cargo atual?',
+  pe_entrada1: 'Quando você entrou neste cargo?',
+  pe_saida1: 'Quando você saiu deste cargo?',
+  pe_segunda: 'Você tem experiência em outra empresa relevante?',
+  pe_terceira: 'Você tem uma terceira experiência relevante?',
+  pe_gap_check: 'Você teve períodos sem trabalho formal?',
+  pe_projetos: 'Você tem projetos, publicações ou contribuições notáveis?',
+  sc_niw_1: 'Critérios de mérito para NIW',
+  sc_niw_hab: 'Habilidades específicas para NIW',
+  sc_eb1_intro: 'Introdução aos critérios EB-1A',
+  sc_eb1_1: 'Critérios de excelência para EB-1A',
+  sc_eb1_decide: 'Decisão final EB-1A',
+  sc_o1_1: 'Critérios O-1 (prêmios, publicações, mídia...)',
+  sc_o1_5: 'Critérios O-1 continuação (salário, liderança...)',
+  sc_diag_intro: 'Introdução ao diagnóstico',
+  sc_diag_form: 'Formação para diagnóstico',
+  resultado: 'Resultado da análise',
+  resultado_nurturing: 'Resultado — pediu contato manual',
+  nurturing_contato: 'Solicitou contato da equipe',
+  contato: 'Preencheu contato completo (nome + e-mail + telefone)',
+  contato_completo: 'Contato completo confirmado',
+  abandono_fundos: 'Fundos insuficientes declarados — abandono',
+  abandono_sem_perfil: 'Sem perfil definido — abandono',
+};
 
 const STEP_LABELS = {
   welcome:'Boas-vindas (email)', disclaimer_legal:'Aviso legal', check_email_exists:'Verificação e-mail',
