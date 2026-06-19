@@ -125,11 +125,7 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .send-b:hover{opacity:.9;transform:scale(1.04)}
 .send-b:active{transform:scale(.96)}
 .send-b svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mic-b{background:var(--surface3);border:1.5px solid var(--border)}
-.mic-b:hover{background:var(--pink-soft);border-color:var(--pink)}
-.mic-b svg{width:15px;height:15px;fill:none;stroke:var(--txt2);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.mic-b.recording{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3);animation:recPulse 1s infinite}
-.mic-b.recording svg{stroke:var(--red)}
+.mic-b{display:none!important}
 @keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
 .in-hint{font-size:11px;color:var(--txt3);margin-top:8px;text-align:center;display:flex;align-items:center;justify-content:center;gap:16px}
 
