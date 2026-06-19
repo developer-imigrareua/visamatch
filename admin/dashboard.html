@@ -972,6 +972,10 @@ async function viewLead(id) {
     ['Idade', idadeExibir || '—'],
     ['Data Cadastro', dt], ['HubSpot', l.hubspot_synced ? '✓ Sincronizado' : 'Pendente'],
     ['HubSpot ID', l.hubspot_contact_id || '—'],
+    ...(l.score == null ? [['Abandonou em', (() => {
+      const step = l.profile?._step_atual || l.profile?._etapa_abandono;
+      return step ? `${STEP_LABELS[step] || step} <span style="font-size:10px;color:var(--txt3);font-weight:400">(${step})</span>` : '—';
+    })()]] : []),
   ];
   dv.innerHTML = `
     <button class="back-btn" onclick="backToList()">← Voltar para lista</button>
@@ -1155,11 +1159,24 @@ function renderAnalyticsStats(f, s) {
 }
 
 const STEP_LABELS = {
-  welcome:'Boas-vindas', disclaimer_legal:'Aviso legal', check_email_exists:'Verificação e-mail',
-  contact_email:'E-mail', contact_name:'Nome', contact_phone:'Telefone', chat_confirm_data:'Confirmação dados',
-  path_select:'Seleção de caminho', path_select2:'Seleção de caminho (2)', path_niw:'Caminho NIW',
-  path_eb1:'Caminho EB-1A', path_o1:'Caminho O-1', path_l1:'Caminho L-1',
-  path_e2:'Caminho E-2', path_family:'Caminho Familiar', path_offramp_sem_perfil:'Offramp sem perfil',
+  welcome:'Boas-vindas (email)', disclaimer_legal:'Aviso legal', check_email_exists:'Verificação e-mail',
+  contact_email:'Digitando e-mail', contact_name:'Digitando nome', contact_phone:'Digitando telefone',
+  chat_confirm_data:'Confirmação dados', explain:'Introdução',
+  path_select:'Seleção de caminho', path_select2:'Seleção de caminho (2)',
+  path_prof_formacao:'Caminho profissão/formação', path_sem_formacao:'Sem formação superior',
+  path_prof_experiencia:'Caminho experiência profissional',
+  path_niw:'Caminho NIW', path_eb1:'Caminho EB-1A', path_o1:'Caminho O-1', path_l1:'Caminho L-1',
+  path_e2:'Caminho E-2', path_work:'Caminho empresa EUA', path_family:'Caminho Familiar',
+  path_diagnostico:'Diagnóstico geral', path_offramp_sem_perfil:'Sem perfil definido',
+  path_prazo_gc:'Prazo green card', path_fundos_gc:'Fundos green card',
+  path_cidadania:'Cidadania', path_redireciona_temporario:'Redirecionamento',
+  path_work_o1:'O-1 via empresa', path_l1_intro:'L-1 introdução',
+  path_l1_empresa:'L-1 empresa', path_l1_funcionarios:'L-1 funcionários',
+  path_l1_faturamento:'L-1 faturamento', path_l1_fundos:'L-1 fundos',
+  path_e2_check:'E-2 elegibilidade', path_e2_fundos:'E-2 fundos',
+  path_family_aviso:'Aviso família', path_family_fundos:'Fundos família',
+  path_family_beneficiario:'Beneficiário', path_family_aplicante:'Aplicante',
+  path_family_status_ap:'Status aplicante', path_family_status_ben:'Status beneficiário',
   pi_local:'Onde mora', pi_profissao:'Profissão', pi_casado:'Estado civil',
   pi_filhos:'Filhos', pi_renda:'Renda', pi_planos:'Planos', pi_prazo:'Prazo', pi_fundos:'Fundos disponíveis',
   ac_grau:'Grau de formação', ac_instituicao:'Instituição', ac_curso:'Área de formação',
@@ -1168,32 +1185,53 @@ const STEP_LABELS = {
   pe_segunda:'2ª experiência', pe_terceira:'3ª experiência', pe_gap_check:'Gaps de carreira', pe_projetos:'Projetos',
   sc_niw_1:'Critérios NIW', sc_niw_hab:'Habilidades NIW', sc_eb1_intro:'Intro EB-1A',
   sc_eb1_1:'Critérios EB-1A', sc_eb1_decide:'Decisão EB-1A',
-  sc_o1_1:'Critérios O-1', sc_o1_5:'Critérios O-1 (cont.)', resultado:'Resultado',
-  nurturing_contato:'Nutrição contato', contato:'Contato', desconhecido:'Step desconhecido',
+  sc_o1_1:'Critérios O-1', sc_o1_5:'Critérios O-1 (cont.)',
+  sc_diag_intro:'Diagnóstico intro', sc_diag_form:'Diagnóstico formação',
+  resultado:'Resultado', resultado_nurturing:'Resultado nurturing',
+  nurturing_contato:'Nutrição — pediu contato',
+  contato:'Contato completo (nome+email+tel)',
+  contato_completo:'Contato completo',
+  abandono_fundos:'Abandono — fundos insuficientes',
+  abandono_sem_perfil:'Abandono — sem perfil',
+  desconhecido:'Step desconhecido',
+};
+
+const STEP_TO_FUNNEL = {
+  welcome:'contato', explain:'contato', disclaimer_legal:'contato', check_email_exists:'contato',
+  contact_email:'contato', contact_name:'contato', contact_phone:'contato',
+  chat_confirm_data:'contato', chat_login_password:'contato', chat_verify_code:'contato',
+  chat_post_login:'contato', chat_set_new_password:'contato', chat_confirm_phone:'contato',
+  contato:'contato', contato_completo:'contato', nurturing_contato:'contato',
+  path_select:'triagem', path_select2:'triagem',
+  path_prof_formacao:'triagem', path_sem_formacao:'triagem', path_prof_experiencia:'triagem',
+  path_niw:'triagem', path_eb1:'triagem', path_o1:'triagem', path_l1:'triagem',
+  path_e2:'triagem', path_work:'triagem', path_family:'triagem', path_diagnostico:'triagem',
+  path_prazo_gc:'triagem', path_fundos_gc:'triagem', path_cidadania:'triagem',
+  path_redireciona_temporario:'triagem', path_work_o1:'triagem',
+  path_l1_intro:'triagem', path_l1_empresa:'triagem', path_l1_funcionarios:'triagem',
+  path_l1_faturamento:'triagem', path_l1_fundos:'triagem',
+  path_e2_check:'triagem', path_e2_fundos:'triagem',
+  path_family_aviso:'triagem', path_family_fundos:'triagem', path_family_beneficiario:'triagem',
+  path_family_aplicante:'triagem', path_family_status_ap:'triagem', path_family_status_ben:'triagem',
+  path_offramp_sem_perfil:'offramp', abandono_sem_perfil:'offramp',
+  abandono_fundos:'perfil_pessoal',
+  pi_local:'perfil_pessoal', pi_profissao:'perfil_pessoal', pi_casado:'perfil_pessoal',
+  pi_filhos:'perfil_pessoal', pi_renda:'perfil_pessoal', pi_planos:'perfil_pessoal',
+  pi_prazo:'perfil_pessoal', pi_fundos:'perfil_pessoal',
+  ac_grau:'formacao', ac_instituicao:'formacao', ac_curso:'formacao',
+  ac_status:'formacao', ac_posgrad:'formacao', ac_conclusao:'formacao',
+  pe_emp1:'experiencia', pe_cargo1:'experiencia', pe_entrada1:'experiencia',
+  pe_saida1:'experiencia', pe_segunda:'experiencia', pe_terceira:'experiencia',
+  pe_gap_check:'experiencia', pe_projetos:'experiencia',
+  sc_niw_1:'scoring', sc_niw_hab:'scoring', sc_eb1_intro:'scoring',
+  sc_eb1_1:'scoring', sc_eb1_decide:'scoring', sc_o1_1:'scoring', sc_o1_5:'scoring',
+  sc_diag_intro:'scoring', sc_diag_form:'scoring',
+  resultado:'resultado', resultado_nurturing:'resultado',
 };
 
 function _funnelSubSteps(etapaId, abandonMap) {
-  const STEP_TO_FUNNEL = {
-    welcome:'contato', disclaimer_legal:'contato', check_email_exists:'contato',
-    contact_email:'contato', contact_name:'contato', contact_phone:'contato', chat_confirm_data:'contato',
-    nurturing_contato:'contato',
-    path_select:'triagem', path_select2:'triagem', path_niw:'triagem', path_eb1:'triagem',
-    path_o1:'triagem', path_l1:'triagem', path_e2:'triagem', path_family:'triagem',
-    path_offramp_sem_perfil:'offramp',
-    pi_local:'perfil_pessoal', pi_profissao:'perfil_pessoal', pi_casado:'perfil_pessoal',
-    pi_filhos:'perfil_pessoal', pi_renda:'perfil_pessoal', pi_planos:'perfil_pessoal',
-    pi_prazo:'perfil_pessoal', pi_fundos:'perfil_pessoal',
-    ac_grau:'formacao', ac_instituicao:'formacao', ac_curso:'formacao',
-    ac_status:'formacao', ac_posgrad:'formacao', ac_conclusao:'formacao',
-    pe_emp1:'experiencia', pe_cargo1:'experiencia', pe_entrada1:'experiencia',
-    pe_saida1:'experiencia', pe_segunda:'experiencia', pe_terceira:'experiencia',
-    pe_gap_check:'experiencia', pe_projetos:'experiencia',
-    sc_niw_1:'scoring', sc_niw_hab:'scoring', sc_eb1_intro:'scoring',
-    sc_eb1_1:'scoring', sc_eb1_decide:'scoring', sc_o1_1:'scoring', sc_o1_5:'scoring',
-    resultado:'resultado',
-  };
   return Object.entries(abandonMap || {})
-    .filter(([step]) => (STEP_TO_FUNNEL[step] || step) === etapaId)
+    .filter(([step]) => (STEP_TO_FUNNEL[step] || 'desconhecido') === etapaId)
     .sort((a, b) => b[1] - a[1]);
 }
 

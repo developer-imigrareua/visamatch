@@ -2076,15 +2076,14 @@ function showTab(t) {
 async function go(id) {
   saveHistory(id);
   S.step = id;
-  // remove stale undo row
+  S.profile._step_atual = id;
   const ur = document.getElementById('undo-row'); if (ur) ur.remove();
   await flows[id]();
 }
 
-// goSilent: transição automática sem salvar no histórico
-// Usar para auto-steps que não esperam input do usuário (evita loop no undo)
 async function goSilent(id) {
   S.step = id;
+  S.profile._step_atual = id;
   const ur = document.getElementById('undo-row'); if (ur) ur.remove();
   await flows[id]();
 }
@@ -4496,8 +4495,15 @@ document.addEventListener('mouseleave', e => {
 
 // Mobile: detecta quando a aba fica em background
 document.addEventListener('visibilitychange', () => {
-  if (!_exitEnabled || _exitShown) return;
   if (S.prog >= 100) return;
+  if (document.hidden && S.email && S.step && S.prog > 5 && !_funnelCompleted) {
+    // Salva abandono granular com o step exato onde o usuário saiu
+    fetch(`${API_BASE}/lead/partial`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone || null, etapa: S.step, profile: { ...S.profile, _step_atual: S.step }, utm: window._vmUtms || {} })
+    }).catch(()=>{});
+  }
+  if (!_exitEnabled || _exitShown) return;
   if (document.hidden && S.prog > 10) showExitPopup();
 });
 
