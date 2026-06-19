@@ -602,15 +602,13 @@ router.get('/funnel-stats', auth, async (req, res) => {
   }
 });
 
-// ── GET /api/admin/hubspot-logs ── leads com problema no HubSpot
+// ── GET /api/admin/hubspot-logs ── leads não sincronizados (erro OU nunca enviado)
 router.get('/hubspot-logs', auth, async (req, res) => {
   try {
-    // Mostra leads não sincronizados que tiveram erro (inclui parciais e completos com falha)
     const { data, error } = await supabase
       .from('leads')
-      .select('id, created_at, nome, email, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error, hubspot_payload')
+      .select('id, created_at, nome, email, visto_recomendado, score, hubspot_synced, hubspot_contact_id, hubspot_error, hubspot_payload, profile')
       .eq('hubspot_synced', false)
-      .not('hubspot_error', 'is', null)
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) throw error;
