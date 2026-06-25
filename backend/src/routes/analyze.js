@@ -34,6 +34,24 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
   const bestVisto   = analysis.melhor?.visto ?? null;
   const bestClassif = analysis.melhor?.classificacao ?? null;
 
+  // Localiza o parcial existente ANTES de montar o payload, para MESCLAR o
+  // profile e preservar campos gravados no lead (ex: _utm, _etapa_abandono)
+  // que podem não vir no profile do request.
+  const { data: existing } = await supabase
+    .from('leads').select('id, profile').eq('email', email)
+    .eq('completo', false).order('created_at', { ascending: false }).limit(1).single();
+
+  const prevProfile = (existing && existing.profile) || {};
+  // UTM: prioriza o recebido, senão preserva o que já existia no lead.
+  const finalUtm = utm || prevProfile._utm || (profile && profile._utm) || undefined;
+  const mergedProfile = {
+    ...prevProfile,
+    ...(profile || {}),
+    ai_analysis: analysis,
+    _completo: true,
+  };
+  if (finalUtm) mergedProfile._utm = finalUtm;
+
   const payload = {
     nome, phone,
     visto_recomendado: bestVisto,
@@ -42,14 +60,9 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
     classificacao: bestClassif,
     completo: true,
     etapa_abandono: null,
-    profile: { ...profile, ai_analysis: analysis, _completo: true, _utm: utm || undefined },
+    profile: mergedProfile,
     updated_at: new Date().toISOString(),
   };
-
-  // Atualiza o parcial existente (mesmo e-mail, ainda não concluído) ou insere
-  const { data: existing } = await supabase
-    .from('leads').select('id').eq('email', email)
-    .eq('completo', false).order('created_at', { ascending: false }).limit(1).single();
 
   let leadId;
   if (existing) {
@@ -65,7 +78,7 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
   // Sincroniza no HubSpot como 'completed'
   if (HUBSPOT_TOKEN && leadId) {
     try {
-      const props = buildHubSpotProperties(nome, email, phone, bestVisto, bestScore, profile, utm, 'completed');
+      const props = buildHubSpotProperties(nome, email, phone, bestVisto, bestScore, mergedProfile, finalUtm, 'completed');
       const { hubspotId, error: hsErr } = await upsertContact(HUBSPOT_TOKEN, props);
       if (hubspotId) {
         await supabase.from('leads')
