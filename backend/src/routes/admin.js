@@ -15,6 +15,57 @@ function auth(req, res, next) {
   }
 }
 
+// ── Classifica um step real do fluxo em um grupo de etapa do funil ──
+// Fonte da verdade do progresso é a tabela `sessions` (state.step), pois o
+// lead só registra a etapa em momentos pontuais (contato / exit-intent).
+const FUNNEL_GROUPS = [
+  { id: 'contato',        label: 'Contato' },
+  { id: 'triagem',        label: 'Triagem / Caminho' },
+  { id: 'offramp',        label: 'Offramp (sem perfil)' },
+  { id: 'perfil_pessoal', label: 'Perfil Pessoal' },
+  { id: 'formacao',       label: 'Formação Acadêmica' },
+  { id: 'experiencia',    label: 'Experiência' },
+  { id: 'scoring',        label: 'Scoring / Critérios' },
+  { id: 'resultado',      label: 'Análise Completa' },
+];
+
+function classifyStep(step) {
+  if (!step) return { id: 'contato', label: 'Contato' };
+  const s = String(step);
+  let id;
+  // Marcadores legados / etapas nomeadas gravadas no lead
+  if (['contato', 'contato_completo', 'nurturing_contato', 'exit_intent'].includes(s)) id = 'contato';
+  else if (s.startsWith('resultado')) id = 'resultado';
+  else if (s.startsWith('path_offramp') || s.startsWith('path_redireciona') || s === 'path_e2_bloqueio' || s.startsWith('path_family_aviso')) id = 'offramp';
+  else if (s.startsWith('path_') || s.startsWith('e2_') || s.startsWith('l1_')) id = 'triagem';
+  else if (s === 'personal_info' || s.startsWith('pi_') || s === 'prazo_mudanca' || s === 'hist_em_solo') id = 'perfil_pessoal';
+  else if (s === 'academic_start' || s.startsWith('ac_')) id = 'formacao';
+  else if (s === 'prof_exp_start' || s.startsWith('pe_')) id = 'experiencia';
+  else if (s === 'scoring_intro' || s.startsWith('sc_')) id = 'scoring';
+  else if (['welcome', 'explain', 'disclaimer_legal', 'contact_email', 'check_email_exists',
+            'contact_name', 'contact_phone'].includes(s) || s.startsWith('chat_')) id = 'contato';
+  else id = 'contato';
+  const g = FUNNEL_GROUPS.find(x => x.id === id);
+  return { id, label: g ? g.label : id };
+}
+
+// Busca o step real (mais avançado) por e-mail a partir das sessões
+async function fetchRealStepsByEmail(emails) {
+  const map = {};
+  const list = [...new Set((emails || []).filter(Boolean))];
+  if (!list.length) return map;
+  const { data } = await supabase
+    .from('sessions')
+    .select('email, state->step, state->prog, updated_at')
+    .in('email', list)
+    .order('updated_at', { ascending: false });
+  (data || []).forEach(r => {
+    if (!r.email || map[r.email]) return; // já ordenado desc → primeiro é o mais recente
+    map[r.email] = { step: r.step, prog: r.prog || 0 };
+  });
+  return map;
+}
+
 // ── POST /api/admin/login ──
 router.post('/login', (req, res) => {
   const { password } = req.body;
@@ -155,6 +206,21 @@ router.get('/leads', auth, async (req, res) => {
 
     const { data, count, error } = await query;
     if (error) throw error;
+
+    // Enriquece os parciais com a etapa REAL alcançada (lida da sessão).
+    // O lead congela a etapa em 'contato'; a jornada real vive em `sessions`.
+    const incompleteEmails = (data || []).filter(l => l.score == null).map(l => l.email);
+    const realSteps = await fetchRealStepsByEmail(incompleteEmails);
+    (data || []).forEach(l => {
+      if (l.score != null) return;
+      const real = realSteps[l.email];
+      if (!real || !real.step) return;
+      const g = classifyStep(real.step);
+      l.profile = l.profile || {};
+      l.profile._etapa_abandono = g.label;   // exibido no admin como "↳ <etapa real>"
+      l.profile._etapa_real_step = real.step; // step bruto para referência
+      l.profile._prog_real = real.prog;       // % de progresso da sessão
+    });
 
     res.json({ leads: data, total: count, page: +page, pages: Math.ceil(count / limit) });
   } catch (err) {
@@ -360,9 +426,9 @@ router.get('/funnel', auth, async (req, res) => {
     const from = req.query.from ? new Date(req.query.from).toISOString() : defaultFrom;
     const to   = req.query.to   ? new Date(req.query.to + 'T23:59:59').toISOString() : now.toISOString();
 
-    // Todos os leads no período com profile (para extrair etapa de abandono granular)
+    // Todos os leads incompletos no período (com e-mail p/ cruzar com a sessão real)
     const { data: allLeads } = await supabase
-      .from('leads').select('completo, etapa_abandono, profile, created_at')
+      .from('leads').select('completo, email, etapa_abandono, profile, created_at')
       .gte('created_at', from).lte('created_at', to);
 
     const { count: total } = await supabase
@@ -373,11 +439,18 @@ router.get('/funnel', auth, async (req, res) => {
       .from('leads').select('*', { count: 'exact', head: true })
       .eq('completo', true).gte('created_at', from).lte('created_at', to);
 
-    // Abandono granular: lê profile._etapa_abandono ou etapa_abandono
-    const abandonMap = {};
-    (allLeads || []).filter(l => !l.completo).forEach(l => {
-      const etapa = l.profile?._etapa_abandono || l.etapa_abandono || 'desconhecido';
-      abandonMap[etapa] = (abandonMap[etapa] || 0) + 1;
+    // Abandono granular pela etapa REAL alcançada (lida da sessão).
+    // Fallback: etapa registrada no lead, se não houver sessão.
+    const incompletos = (allLeads || []).filter(l => !l.completo);
+    const realSteps = await fetchRealStepsByEmail(incompletos.map(l => l.email));
+    const abandonMap = {};        // raw step → count (granular)
+    const funnelAbandonMap = {};  // grupo do funil → count
+    incompletos.forEach(l => {
+      const real = realSteps[l.email];
+      const rawStep = (real && real.step) || l.profile?._etapa_abandono || l.etapa_abandono || 'desconhecido';
+      abandonMap[rawStep] = (abandonMap[rawStep] || 0) + 1;
+      const g = classifyStep(rawStep);
+      funnelAbandonMap[g.id] = (funnelAbandonMap[g.id] || 0) + 1;
     });
 
     // Sessões em andamento (últimos 7 dias para "quentes")
@@ -386,60 +459,19 @@ router.get('/funnel', auth, async (req, res) => {
       .gte('updated_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
     const stepMap = {};
+    const funnelStepMap = {};
     (sessions || []).forEach(r => {
       const k = r.step || 'welcome';
       stepMap[k] = (stepMap[k] || 0) + 1;
+      const g = classifyStep(k);
+      funnelStepMap[g.id] = (funnelStepMap[g.id] || 0) + 1;
     });
-
-    // Mapeamento step → etapa do funil (granular, cobrindo todos os steps reais do fluxo)
-    const STEP_TO_FUNNEL = {
-      welcome: 'contato', disclaimer_legal: 'contato', check_email_exists: 'contato',
-      contact_email: 'contato', contact_name: 'contato', contact_phone: 'contato',
-      chat_confirm_data: 'contato',
-      path_select: 'triagem', path_select2: 'triagem',
-      path_niw: 'triagem', path_eb1: 'triagem', path_o1: 'triagem',
-      path_l1: 'triagem', path_e2: 'triagem', path_family: 'triagem',
-      path_offramp_sem_perfil: 'offramp',
-      pi_local: 'perfil_pessoal', pi_profissao: 'perfil_pessoal', pi_casado: 'perfil_pessoal',
-      pi_filhos: 'perfil_pessoal', pi_renda: 'perfil_pessoal', pi_planos: 'perfil_pessoal',
-      pi_prazo: 'perfil_pessoal', pi_fundos: 'perfil_pessoal',
-      ac_grau: 'formacao', ac_instituicao: 'formacao', ac_curso: 'formacao',
-      ac_status: 'formacao', ac_posgrad: 'formacao', ac_conclusao: 'formacao',
-      pe_emp1: 'experiencia', pe_cargo1: 'experiencia', pe_entrada1: 'experiencia',
-      pe_saida1: 'experiencia', pe_segunda: 'experiencia', pe_terceira: 'experiencia',
-      pe_gap_check: 'experiencia', pe_projetos: 'experiencia',
-      sc_niw_1: 'scoring', sc_niw_hab: 'scoring', sc_eb1_intro: 'scoring',
-      sc_eb1_1: 'scoring', sc_eb1_decide: 'scoring',
-      sc_o1_1: 'scoring', sc_o1_5: 'scoring',
-      resultado: 'resultado',
-    };
 
     // Funil com dados reais de abandono por etapa
-    const funnelSteps = [
-      { id: 'contato',         label: 'Contato',           icon: '📧' },
-      { id: 'triagem',         label: 'Triagem / Caminho', icon: '🔀' },
-      { id: 'offramp',         label: 'Offramp (sem perfil)', icon: '🚪' },
-      { id: 'perfil_pessoal',  label: 'Perfil Pessoal',    icon: '👤' },
-      { id: 'formacao',        label: 'Formação Acadêmica',icon: '🎓' },
-      { id: 'experiencia',     label: 'Experiência',       icon: '💼' },
-      { id: 'scoring',         label: 'Scoring / Critérios', icon: '📊' },
-      { id: 'resultado',       label: 'Análise Completa',  icon: '✅' },
-    ];
-
-    // Agrega abandono por etapa do funil (usando mapa de steps)
-    const funnelAbandonMap = {};
-    Object.entries(abandonMap).forEach(([step, count]) => {
-      const etapa = STEP_TO_FUNNEL[step] || step;
-      funnelAbandonMap[etapa] = (funnelAbandonMap[etapa] || 0) + count;
-    });
-    const funnelStepMap = {};
-    Object.entries(stepMap).forEach(([step, count]) => {
-      const etapa = STEP_TO_FUNNEL[step] || step;
-      funnelStepMap[etapa] = (funnelStepMap[etapa] || 0) + count;
-    });
-
-    const funnel = funnelSteps.map(s => ({
+    const ICONS = { contato:'📧', triagem:'🔀', offramp:'🚪', perfil_pessoal:'👤', formacao:'🎓', experiencia:'💼', scoring:'📊', resultado:'✅' };
+    const funnel = FUNNEL_GROUPS.map(s => ({
       ...s,
+      icon: ICONS[s.id] || '•',
       abandons:    funnelAbandonMap[s.id] || 0,
       em_andamento: funnelStepMap[s.id] || 0,
     }));

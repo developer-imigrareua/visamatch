@@ -165,6 +165,7 @@ async function runAgent(visto, profile, nome, email, localScore) {
 
   // Sobrescreve score/classificacao com valores locais (fonte da verdade)
   if (localScore !== undefined) {
+    result.visto = visto; // normaliza para a forma canônica (evita "E-2 — Treaty Investor" etc.)
     result.score = localScore;
     result.aprovacao_pct = Math.max(0, Math.min(100, localScore));
     result.classificacao = localScore >= 70 ? 'Alta' : localScore >= 40 ? 'Moderada' : localScore >= 0 ? 'Em Desenvolvimento' : 'Incompatível';
