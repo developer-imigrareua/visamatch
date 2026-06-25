@@ -10,6 +10,7 @@ const adminRoute = require('./routes/admin');
 const analyzeRoute = require('./routes/analyze');
 const authRoute = require('./routes/auth');
 const userRoute = require('./routes/user');
+const eventsRoute = require('./routes/events');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/admin', adminRoute);
 app.use('/analyze', analyzeRoute);
 app.use('/auth', authRoute);
 app.use('/user', userRoute);
+app.use('/events', eventsRoute);
 
 // Arquivos estáticos — depois de todas as rotas de API
 app.use('/admin', express.static(path.join(__dirname, '../admin')));

@@ -187,7 +187,7 @@ router.get('/stats', auth, async (req, res) => {
 
 // ── GET /api/admin/leads ──
 router.get('/leads', auth, async (req, res) => {
-  const { page = 1, limit = 20, visto, score_min, score_max, search, utm_source, from, to } = req.query;
+  const { page = 1, limit = 20, visto, score_min, score_max, search, utm_source, tipo, from, to } = req.query;
   const offset = (page - 1) * limit;
 
   try {
@@ -200,6 +200,9 @@ router.get('/leads', auth, async (req, res) => {
     if (visto) query = query.eq('visto_recomendado', visto);
     if (score_min) query = query.gte('score', score_min);
     if (score_max) query = query.lte('score', score_max);
+    // Tipo: completo (tem score) ou parcial (sem score) — espelha o badge do admin
+    if (tipo === 'completo') query = query.not('score', 'is', null);
+    if (tipo === 'parcial')  query = query.is('score', null);
     if (search) query = query.or(`nome.ilike.%${search}%,email.ilike.%${search}%`);
     if (from) query = query.gte('created_at', new Date(from).toISOString());
     if (to)   query = query.lte('created_at', new Date(to + 'T23:59:59').toISOString());

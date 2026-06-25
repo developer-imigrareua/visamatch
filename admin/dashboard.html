@@ -347,6 +347,11 @@ td.nome{color:var(--txt);font-weight:500}
           <select class="filter-sel" id="filter-source" onchange="loadLeads(1)">
             <option value="">Todos os sources</option>
           </select>
+          <select class="filter-sel" id="filter-tipo" onchange="loadLeads(1)">
+            <option value="">Todos os tipos</option>
+            <option value="completo">Completo</option>
+            <option value="parcial">Parcial</option>
+          </select>
           <button class="filter-sel" onclick="cleanupTestLeads()" style="margin-left:auto;background:#fff0f0;color:#c0392b;border:1px solid #f5c6c6;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:6px;font-weight:600">🗑 Limpar testes</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
@@ -863,12 +868,14 @@ async function loadLeads(page = 1) {
   const visto = document.getElementById('filter-visto')?.value || '';
   const scoreRange = document.getElementById('filter-score')?.value || '';
   const source = document.getElementById('filter-source')?.value || '';
+  const tipo = document.getElementById('filter-tipo')?.value || '';
   const { from, to } = getDateRange();
   let qs = `?page=${page}&limit=15`;
   if (search) qs += `&search=${encodeURIComponent(search)}`;
   if (visto) qs += `&visto=${encodeURIComponent(visto)}`;
   if (scoreRange) { const [mn, mx] = scoreRange.split(','); qs += `&score_min=${mn}&score_max=${mx}`; }
   if (source) qs += `&utm_source=${encodeURIComponent(source)}`;
+  if (tipo) qs += `&tipo=${encodeURIComponent(tipo)}`;
   if (from) qs += `&from=${from}`;
   if (to)   qs += `&to=${to}`;
 
