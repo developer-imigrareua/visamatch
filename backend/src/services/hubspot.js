@@ -11,12 +11,13 @@ function mapCaminho(v) {
 
 function mapGrau(v) {
   if (!v) return '';
-  if (v.includes('Doutorado')) return 'PhD';
-  if (v.includes('Mestrado')) return "Master's degree";
-  if (v.includes('Bacharelado') || v.includes('Licenciatura')) return "Bachelor's degree";
-  if (v.includes('Tecnólogo')) return "Associate's Degree";
+  // Valores EXATOS das opções do select nonimmigrant_visas__level_of_education
+  if (v.includes('Doutorado')) return 'PhD / Doutorado';
+  if (v.includes('Mestrado')) return 'Master’s degree / Mestrado';
+  if (v.includes('Bacharelado') || v.includes('Licenciatura')) return 'Bachelor’s degree / Graduação';
+  if (v.includes('Tecnólogo')) return "Associate's Degree / Tecnólogo";
   if (v.includes('Superior incompleto') || v.includes('incompleto')) return 'Outros';
-  if (v.includes('Não tenho') || v.includes('não tenho') || v.includes('Sem formação')) return 'No degree';
+  if (v.includes('Não tenho') || v.includes('não tenho') || v.includes('Sem formação')) return 'No degree / Não tenho graduação';
   return '';
 }
 
@@ -49,10 +50,23 @@ function mapFundos(v) {
 
 function mapLocalMora(v) {
   if (!v) return '';
-  // Exact frontend options: 'Brasil 🇧🇷', 'Estados Unidos 🇺🇸', 'Outro país 🌍'
-  if (v.includes('Brasil')) return 'Brazil';
-  if (v.includes('Estados Unidos') || v.includes('EUA')) return 'United States';
-  return 'Other';
+  // Opções EXATAS do checkbox nonimmigrant__onde_voce_mora_atualmente_:
+  // value "true"=Brasil, "false"=Estados Unidos, "Outro"=outro país.
+  if (v.includes('Brasil')) return 'true';
+  if (v.includes('Estados Unidos') || v.includes('EUA')) return 'false';
+  return 'Outro';
+}
+
+// when_do_you_plan_to_start... (checkbox): Immediately / In the next 6 months /
+// In the next 12 months / Not sure yet. As opções do chat são por semestre,
+// então o encaixe é aproximado (2+ anos cai em "Not sure yet").
+function mapPrazoMudanca(v) {
+  if (!v) return '';
+  if (/n[ãa]o sei/i.test(v)) return 'Not sure yet';
+  const ano = new Date().getFullYear();
+  if (v.includes(String(ano)))     return 'In the next 6 months';   // "ainda este ano"
+  if (v.includes(String(ano + 1))) return 'In the next 12 months';  // próximo ano
+  return 'Not sure yet';                                            // 2+ anos: sem bucket exato
 }
 
 function mapRenda(v) {
@@ -75,6 +89,15 @@ function mapSimNao(v) {
 function mapSimNaoBool(v) {
   if (!v) return '';
   return v === 'Sim' ? 'true' : 'false';
+}
+
+// Datas são propriedades de texto no HubSpot → envia a string como está.
+// "atual"/"current" (emprego em andamento) → sem data de saída.
+function mapData(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  if (/atual|current|presente|em andamento/i.test(s)) return '';
+  return s;
 }
 
 function mapDependentes(v) {
@@ -182,28 +205,58 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     nonimmigrant__provas_de_que_voce_foi_solicitado_para_avaliar_o_trabalho_de_outras_pessoas: p.eb1_avaliador || p.o1_avaliador || '',
 
 
-    // Experiência profissional
+    // Data de nascimento (idade já vai em visamatch_age)
+    date_of_birth: p.dataNasc || '',
+
+    // Cidadania de país com tratado (checkbox: opções Yes/No)
+    liv__e_2_treaty_country_citizenship_: mapSimNao(p.tratadoCidadania),
+
+    // Experiência profissional — empresa atual (1ª)
     company:  p.emp1Nome  || '',
     industry: p.emp1Ramo  || '',
     jobtitle: p.emp1Cargo || p.profissao || '',
+    company_start_date: mapData(p.emp1Entrada),
+    company_leave_date: mapData(p.emp1Saida),
 
-    // 2ª e 3ª empresa
+    // 2ª empresa (Previous Company #1)
     previous_company__1:                p.emp2Nome  || '',
     previous_company_industry:          p.emp2Ramo  || '',
     job_title_at_previous_company:      p.emp2Cargo || '',
+    start_date__previous_company__1:    mapData(p.emp2Entrada),
+    leave_date__previous_company__1:    mapData(p.emp2Saida),
 
-    // Formação acadêmica
+    // 3ª empresa (Previous Company #2)
+    previous_company__2:                p.emp3Nome  || '',
+    job_title__previous_company__2:     p.emp3Cargo || p.emp3Info || '',
+    previous_company__2_industry:       p.emp3Ramo  || '',
+    start_date__previous_company__2:    mapData(p.emp3Entrada),
+    previous_company__2__leave_date:    mapData(p.emp3Saida),
+
+    // Experiência adicional / texto livre
+    nonimmigrant__descricao_da_formacao_academica_e_profissional: p.expNaoListada || '',
+
+    // Formação acadêmica (1ª)
     school:          p.instAcad1 || '',
     field_of_study:  p.curso1    || '',
     graduation_status: p.acStatus1   ? (p.acStatus1.includes('conclu') ? 'Completed' : p.acStatus1) : '',
     graduation_date: p.acConclusao1  || '',
+    education_start_date: mapData(p.acInicio1),
+
+    // Formação acadêmica (2ª)
+    school_2:           p.instAcad2 || '',
+    field_of_study_2:   p.curso2    || '',
+    graduation_2_status: p.acStatus2 ? (p.acStatus2.includes('conclu') ? 'Completed' : p.acStatus2) : '',
+    graduation_date_2:  p.acConclusao2 || '',
+    school_2_start_date: mapData(p.acInicio2),
+    postgraduate_type_2: p.nivelAcad2 || '',
 
     // Prazo de mudança
-    when_do_you_plan_to_start_your_immigration_process_: p.prazoMudanca || '',
+    when_do_you_plan_to_start_your_immigration_process_: mapPrazoMudanca(p.prazoMudanca),
 
     // EB-1A critérios adicionais
     nonimmigrant__comprovacoes_de_que_seu_trabalho_foi_exibido_em_exposicoes_ou_mostras_artisticas: p.eb1_exposicoes || p.eb1_artes || p.o1_exposicoes || '',
     nonimmigrant__evidencias_de_suas_contribuicoes_originais_cientificas__academicas__artisticas__atlet: p.eb1_contrib || p.eb1_artigos || p.o1_contrib || '',
+    evidence_of_material_published_about_you_in_professional_publications_or_other_major_media: p.eb1_midia || p.o1_midia || '',
 
     utm_source:       utm?.utm_source       || '',
     utm_medium:       utm?.utm_medium       || '',
