@@ -382,4 +382,50 @@ async function createNote(token, hubspotId, body) {
   }
 }
 
-module.exports = { buildHubSpotProperties, upsertContact, createNote, resolveHubSpotId };
+// Upload de arquivo para o HubSpot Files API → retorna fileId
+async function uploadFile(token, buffer, filename) {
+  try {
+    const FormData = require('form-data');
+    const form = new FormData();
+    form.append('file', buffer, { filename, contentType: 'application/pdf' });
+    form.append('folderPath', '/visamatch-relatorios');
+    form.append('options', JSON.stringify({ access: 'PRIVATE', overwrite: true }));
+    const r = await fetch('https://api.hubapi.com/files/v3/files', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, ...form.getHeaders() },
+      body: form
+    });
+    if (!r.ok) { console.error('HubSpot file upload HTTP:', r.status, await r.text()); return null; }
+    const data = await r.json();
+    return data.id || null;
+  } catch (e) {
+    console.error('HubSpot file upload error:', e.message);
+    return null;
+  }
+}
+
+// Cria nota com anexo (hs_attachment_ids) associada ao contato
+async function createNoteWithAttachment(token, hubspotId, body, fileId) {
+  try {
+    const props = { hs_note_body: body, hs_timestamp: new Date().toISOString() };
+    if (fileId) props.hs_attachment_ids = String(fileId);
+    const r = await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        properties: props,
+        associations: [{
+          to: { id: String(hubspotId) },
+          types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }]
+        }]
+      })
+    });
+    if (!r.ok) { console.error('HubSpot note+attachment HTTP:', r.status, await r.text()); return false; }
+    return true;
+  } catch (e) {
+    console.error('HubSpot note+attachment error:', e.message);
+    return false;
+  }
+}
+
+module.exports = { buildHubSpotProperties, upsertContact, createNote, resolveHubSpotId, uploadFile, createNoteWithAttachment };

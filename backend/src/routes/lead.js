@@ -1,6 +1,7 @@
 const express = require('express');
 const supabase = require('../lib/supabase');
-const { buildHubSpotProperties, upsertContact, createNote } = require('../services/hubspot');
+const { buildHubSpotProperties, upsertContact, createNote, uploadFile, createNoteWithAttachment } = require('../services/hubspot');
+const { generateReportPdf } = require('../services/pdfReport');
 const router = express.Router();
 
 const HUBSPOT_ENABLED = true;
@@ -147,7 +148,26 @@ router.post('/', async (req, res) => {
           .update({ hubspot_synced: true, hubspot_contact_id: String(hsId), hubspot_error: null })
           .eq('id', savedLead.id);
         const noteBody = [`✅ Preencheu VisaMatch`, `Visto: ${visto || '—'}`, `Score: ${score ?? '—'}`, `Caminho: ${profile?.caminho || '—'}`].join('\n');
-        await createNote(HUBSPOT_TOKEN, hsId, noteBody);
+
+        // Leads que concluíram (score definido) recebem o relatório em PDF anexado ao contato.
+        // Fire-and-forget: não bloqueia a resposta ao usuário.
+        if (score !== undefined && score !== null) {
+          (async () => {
+            try {
+              const pdf = await generateReportPdf({ nome, email, phone, visto, vistos: req.body.vistos, score, profile });
+              const safeName = `VisaMatch_${(nome || 'Lead').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')}.pdf`;
+              const fileId = await uploadFile(HUBSPOT_TOKEN, pdf, safeName);
+              const ok = await createNoteWithAttachment(HUBSPOT_TOKEN, hsId, `📎 Relatório VisaMatch — ${visto || '—'} (score ${score}).`, fileId);
+              if (!ok || !fileId) console.error('PDF report attach falhou para', email, '| fileId:', fileId);
+            } catch (e) {
+              console.error('PDF report generation/attach error:', e.message);
+              // fallback: garante ao menos a nota de texto
+              createNote(HUBSPOT_TOKEN, hsId, noteBody).catch(() => {});
+            }
+          })();
+        } else {
+          await createNote(HUBSPOT_TOKEN, hsId, noteBody);
+        }
       } else {
         console.error('HubSpot sync failed:', hsErr);
         await supabase.from('leads')
