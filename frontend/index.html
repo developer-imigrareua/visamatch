@@ -3035,7 +3035,7 @@ const flows = {
   async l1_gate_complementar() {
     setProgress(32);
     await think(600);
-    await botMsg('Além do L-1, seu perfil pode também se qualificar para os vistos <strong>E-2</strong> (investidor) e <strong>O-1</strong> (profissional de destaque). Gostaria de uma avaliação completa incluindo esses caminhos?');
+    await botMsg('Seu perfil também pode se qualificar para os vistos <strong>E-2</strong> (investidor) e <strong>O-1</strong> (profissional de destaque). Gostaria de uma avaliação completa incluindo esses caminhos?');
     showOpts(['Sim, quero avaliação completa', 'Não, apenas o L-1'], val => {
       userMsg(val);
       if (val.includes('Sim')) {
