@@ -171,9 +171,6 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
 
     nonimmigrant__onde_voce_mora_atualmente_: mapLocalMora(p.localMora),
     monthly_income: mapRenda(p.renda),
-    is_married: mapSimNao(p.casado),
-    has_children: mapSimNao(p.filhos),
-    dependents_applying_for_visa: mapDependentes(p.conjugeVisto),
 
     has_applied_for_us_visa: mapSimNao(p.solicitouVisto),
     nonimmigrant__voce_ja_teve_algum_visto_negado_: p.vistoNegado || '',

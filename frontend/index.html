@@ -2579,19 +2579,36 @@ const flows = {
     await botMsg(`${S.nome}, através de qual caminho você acredita que pode chegar ao visto americano?`);
     await pause(200);
     showOpts([
-      'Através da minha profissão e formação acadêmica',
+      'Através do meu perfil profissional',
       'Através de familiares que são cidadãos americanos ou têm Green Card',
-      'Através de uma empresa que atua ou vai atuar nos EUA',
       'Através de investimento nos EUA',
-      'Não sei ao certo / não me encaixo nos perfis acima'
+      'Não tenho certeza'
     ], val => {
       userMsg(val);
       S.profile.caminhoPrincipal = val;
-      if (val.includes('profissão')) go('path_prof_formacao');
+      if (val.includes('perfil profissional')) go('path_perfil_profissional');
       else if (val.includes('familiares')) go('path_family');
-      else if (val.includes('empresa que atua')) go('path_work');
       else if (val.includes('investimento')) go('path_e2_check');
       else go('path_diagnostico');
+    });
+  },
+
+  // ──────── PERFIL PROFISSIONAL (umbrella) ────────
+  async path_perfil_profissional() {
+    setSideStep(1); setProgress(14);
+    await think(600);
+    await botMsg('Como você imagina esse caminho?');
+    await pause(200);
+    showOpts([
+      'Tenho conquistas e reconhecimento acima da média na minha área',
+      'Trabalho em uma empresa que atua ou vai atuar nos EUA',
+      'Sou profissional graduado buscando emprego ou oferta nos EUA'
+    ], val => {
+      userMsg(val);
+      S.profile.perfilProfissional = val;
+      if (val.includes('conquistas')) go('path_prof_formacao');
+      else if (val.includes('empresa')) go('path_work');
+      else go('path_offramp_hib_info');
     });
   },
 
@@ -2768,8 +2785,23 @@ const flows = {
     showOpts(['Não está presente nos EUA','Visto não-imigratório (turismo, estudante etc.)','Sem status definido'], val => {
       userMsg(val);
       S.profile.statusBeneficiario = val;
-      go('resultado');
+      go('gate_family_para_work');
     });
+  },
+
+  // ──────── GATE CRUZADO: FAMILY → WORK (O-1) ────────
+  async gate_family_para_work() {
+    await think(600);
+    await botMsg('Mais uma coisa antes de fechar: o seu perfil profissional pode abrir portas independentes do vínculo familiar. Vale analisar as duas opções. Incluo nessa análise?');
+    showOpts(['Sim, quero uma avaliação completa','Não, quero finalizar a avaliação por aqui'], val => {
+      userMsg(val);
+      if (val.includes('Sim')) { S._afterO1 = 'gate_family_o1_fim'; go('sc_o1_1'); }
+      else go('resultado');
+    });
+  },
+  async gate_family_o1_fim() {
+    S.vistos = [...new Set(['Family Based', ...(S.vistos || []), 'O-1'])];
+    go('resultado');
   },
 
   // ──────── WORK VISTOS ────────
@@ -2931,7 +2963,7 @@ const flows = {
       userMsg(val);
       S.profile.avaliacaoComplementarE2 = val;
       if (val.includes('Sim')) go('e2_l1_posicao');
-      else go('resultado');
+      else { S.vistos = [...new Set([...(S.vistos || []), 'E-2'])]; go('gate_work_para_gc'); }
     });
   },
 
@@ -3011,7 +3043,7 @@ const flows = {
         go('l1_gate_e2');
       } else {
         S.vistos = ['L-1'];
-        go('resultado');
+        go('gate_work_para_gc');
       }
     });
   },
@@ -3233,14 +3265,14 @@ const flows = {
       userMsg(val);
       S.profile.profissao = val;
       if (val === 'Outra') go('pi_profissao_outra');
-      else go('pi_casado');
+      else go('pi_hist_1');
     });
   },
 
   async pi_profissao_outra() {
     await think(300);
     await botMsg('Qual é a sua profissão?');
-    waitInput(val => { S.profile.profissao = val; go('pi_casado'); });
+    waitInput(val => { S.profile.profissao = val; go('pi_hist_1'); });
   },
 
   async pi_renda() {
@@ -3249,36 +3281,8 @@ const flows = {
     showOpts(['Até R$ 5.000','R$ 5.001 a R$ 10.000','R$ 10.001 a R$ 20.000','R$ 20.001 a R$ 50.000','Acima de R$ 50.000'], val => {
       userMsg(val);
       S.profile.renda = val;
-      go('pi_casado');
+      go('pi_hist_1');
     });
-  },
-
-  async pi_casado() {
-    await think(400);
-    await botMsg('Você é <strong>casado(a)</strong>?');
-    showOpts(['Sim','Não'], val => {
-      userMsg(val);
-      S.profile.casado = val;
-      if (val === 'Sim') go('pi_filhos');
-      else { S.profile.filhos = 'Não'; go('pi_hist_1'); }
-    });
-  },
-
-  async pi_filhos() {
-    await think(350);
-    await botMsg('Você possui <strong>filhos</strong>?');
-    showOpts(['Sim','Não'], val => {
-      userMsg(val);
-      S.profile.filhos = val;
-      if (val === 'Sim') go('pi_conjuge_visto');
-      else go('pi_conjuge_visto');
-    });
-  },
-
-  async pi_conjuge_visto() {
-    await think(350);
-    await botMsg('Seu <strong>cônjuge e filhos</strong> também solicitarão visto americano?');
-    showOpts(['Sim','Não','Não se aplica'], val => { userMsg(val); S.profile.conjugeVisto = val; go('pi_hist_1'); });
   },
 
   async pi_hist_1() {
@@ -3841,11 +3845,28 @@ const flows = {
     // Always show BOTH EB-2 NIW and EB-1A results when EB-1A criteria were collected
     const keysEb1 = ['eb1_premios','eb1_assoc','eb1_midia','eb1_avaliador','eb1_contrib','eb1_lideranca','eb1_salario'];
     const simCount = keysEb1.filter(k => S.profile[k] === 'Sim').length;
-    // Store both for dual result
-    S.vistos = ['EB-2 NIW', 'EB-1A'];
+    // Merge (dedup) para não sobrescrever vistos já coletados em gates anteriores
+    S.vistos = [...new Set([...(S.vistos || []), 'EB-2 NIW', 'EB-1A'])];
     // Primary visto for sidebar
     if (simCount >= 3) { setSideVisto('EB-1A'); S.visto = 'EB-1A'; }
     else { setSideVisto('EB-2 NIW'); S.visto = 'EB-2 NIW'; }
+    // Hook: quando vindo do gate de trabalho→GC, retorna ao fim do gate; senão oferece o cruzamento para work visas
+    go(S._afterEb1 || 'gate_niw_para_work');
+  },
+
+  // ──────── GATE CRUZADO: NIW/EB-1A → WORK (O-1) ────────
+  async gate_niw_para_work() {
+    setProgress(94);
+    await think(600);
+    await botMsg('Antes de seguir para o resultado: dependendo do seu perfil, pode existir um caminho seguro e rápido para os EUA. Vale a pena verificar. Posso incluir essa análise aqui?');
+    showOpts(['Sim, quero uma avaliação completa','Não, quero finalizar a avaliação por aqui'], val => {
+      userMsg(val);
+      if (val.includes('Sim')) { S._afterO1 = 'gate_niw_o1_fim'; go('sc_o1_1'); }
+      else go('resultado');
+    });
+  },
+  async gate_niw_o1_fim() {
+    S.vistos = [...new Set([...(S.vistos || []), 'O-1'])];
     go('resultado');
   },
 
@@ -3898,7 +3919,67 @@ const flows = {
   async sc_o1_10() {
     await think(400);
     await botMsg('Você é <strong>autor de artigos acadêmicos</strong> publicados em revistas ou publicações profissionais?');
-    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_artigos = val; go(S._afterO1 || 'resultado'); });
+    showOpts(['Sim','Não','Não possuo, mas posso obter'], val => { userMsg(val); S.profile.o1_artigos = val; go(S._afterO1 || 'gate_work_para_gc'); });
+  },
+
+  // ──────── GATE CRUZADO: WORK → GREEN CARD ────────
+  async gate_work_para_gc() {
+    await think(600);
+    await botMsg('Uma última verificação antes do resultado: dependendo da sua trajetória, pode existir um caminho para morar permanentemente nos EUA sem depender de patrocínio. Quer que eu cheque?');
+    showOpts(['Sim, quero uma avaliação completa','Não, quero finalizar a avaliação por aqui'], val => {
+      userMsg(val);
+      // Garante que os vistos de trabalho já coletados fiquem na lista
+      if (!S.vistos || !S.vistos.length) S.vistos = S.visto ? [S.visto] : [];
+      if (val.includes('Sim')) { S._afterEb1 = 'gate_work_gc_fim'; go('gate_gc_formacao'); }
+      else go('resultado');
+    });
+  },
+
+  // Chain enxuto de Green Card (só scoring; sem re-perguntar dados pessoais)
+  async gate_gc_formacao() {
+    await think(500);
+    await botMsg('Para essa análise, qual é o seu <strong>nível de formação mais alto</strong> já concluído?');
+    showOpts([
+      'Doutorado','Mestrado',
+      'Bacharelado/Licenciatura concluído há mais de 5 anos',
+      'Bacharelado/Licenciatura concluído há menos de 5 anos',
+      'Tecnólogo com mais de 10 anos de experiência',
+      'Tecnólogo com menos de 10 anos de experiência',
+      'Superior incompleto com mais de 10 anos',
+      'Ensino Médio / Sem Formação Superior'
+    ], val => {
+      userMsg(val);
+      S.profile.grauFormacao = val;
+      go('gate_gc_prazo');
+    });
+  },
+  async gate_gc_prazo() {
+    await think(500);
+    await botMsg('Qual é o <strong>tempo que você estaria disposto a aguardar</strong> pela residência permanente?');
+    showOpts([
+      'Estou disposto a aguardar o tempo necessário',
+      'Mais de 2 anos — mas quero planejar',
+      'Preciso estar nos EUA em menos de 2 anos'
+    ], val => {
+      userMsg(val);
+      S.profile.prazoGC = val;
+      go('gate_gc_fundos');
+    });
+  },
+  async gate_gc_fundos() {
+    await think(500);
+    setSideVisto('EB-2 NIW');
+    await botMsg('Você está <strong>financeiramente preparado</strong> para investir no processo? O investimento total para o EB-2 NIW ou EB-1A (honorários + documentação) é de aproximadamente <strong>R$ 85.000</strong>.');
+    showOpts(['Sim, tenho os fundos','Sim, mas prefiro parcelar','Talvez, preciso entender melhor','Não tenho disponibilidade'], val => {
+      userMsg(val);
+      S.profile.fundos = val;
+      S._afterEb1 = 'gate_work_gc_fim';
+      go('sc_niw_1');
+    });
+  },
+  async gate_work_gc_fim() {
+    // sc_eb1_decide já fez merge de EB-2 NIW/EB-1A em S.vistos preservando os vistos de trabalho
+    go('resultado');
   },
 
   // ──────── RESULTADO ────────

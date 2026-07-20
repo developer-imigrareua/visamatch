@@ -26,8 +26,6 @@ DADOS DO CANDIDATO:
 - Tempo de experiência: ${p.tempoExp || 'Não informado'}
 - Renda mensal: ${p.renda || 'Não informada'}
 - Local de residência: ${p.localMora || 'Não informado'}
-- Casado(a): ${p.casado || 'Não informado'}
-- Filhos: ${p.filhos || 'Não informado'}
 
 CAMINHO E OBJETIVOS:
 - Caminho principal escolhido: ${p.caminhoPrincipal || 'Não informado'}
