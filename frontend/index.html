@@ -2958,7 +2958,7 @@ const flows = {
   async e2_gate_complementar() {
     setProgress(32);
     await think(600);
-    await botMsg(`Além do E-2, muitos investidores também se qualificam para os vistos <strong>L-1</strong> (empresa com operação nos EUA) e <strong>O-1</strong> (profissionais com realizações de destaque). Gostaria de uma <strong>avaliação completa</strong> incluindo esses caminhos?`);
+    await botMsg(`Seu perfil também pode se qualificar para os vistos <strong>L-1</strong> (empresa com operação nos EUA) e <strong>O-1</strong> (profissionais com realizações de destaque). Gostaria de uma <strong>avaliação completa</strong> incluindo esses caminhos?`);
     showOpts(['Sim, quero avaliação completa','Não, apenas o E-2'], val => {
       userMsg(val);
       S.profile.avaliacaoComplementarE2 = val;
