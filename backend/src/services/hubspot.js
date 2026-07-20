@@ -100,6 +100,15 @@ function mapData(v) {
   return s;
 }
 
+// Data de saída da empresa: se o emprego é o atual ("atual"), envia "Present"
+// em vez de deixar o campo vazio no HubSpot.
+function mapLeaveDate(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  if (/atual|current|presente|em andamento/i.test(s)) return 'Present';
+  return s;
+}
+
 function mapDependentes(v) {
   if (!v) return '';
   if (v === 'Sim') return 'Yes';
@@ -213,7 +222,7 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     industry: p.emp1Ramo  || '',
     jobtitle: p.emp1Cargo || p.profissao || '',
     company_start_date: mapData(p.emp1Entrada),
-    company_leave_date: mapData(p.emp1Saida),
+    company_leave_date: mapLeaveDate(p.emp1Saida),
 
     // 2ª empresa (Previous Company #1)
     previous_company__1:                p.emp2Nome  || '',
@@ -233,6 +242,7 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     nonimmigrant__descricao_da_formacao_academica_e_profissional: p.expNaoListada || '',
 
     // Formação acadêmica (1ª)
+    degree:          p.grauFormacao || p.grauFormacaoDiag || '',
     school:          p.instAcad1 || '',
     field_of_study:  p.curso1    || '',
     graduation_status: p.acStatus1   ? (p.acStatus1.includes('conclu') ? 'Completed' : p.acStatus1) : '',
