@@ -990,9 +990,12 @@ async function viewLead(id) {
   dv.innerHTML = `
     <button class="back-btn" onclick="backToList()">← Voltar para lista</button>
     <div class="card" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap">
         <div style="font-family:'Manrope',sans-serif;font-size:22px;color:var(--txt);font-weight:700">${l.nome || 'Lead'}</div>
-        <span class="score-pill ${sc.cls}" style="font-size:13px">${l.score ?? '—'} pts · ${sc.label}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${l.score != null ? `<button onclick="downloadReport('${l.id}', ${JSON.stringify(l.nome || 'Lead').replace(/"/g, '&quot;')})" style="background:linear-gradient(135deg,#0053d0,#ff4b82);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">📄 Baixar relatório PDF</button>` : ''}
+          <span class="score-pill ${sc.cls}" style="font-size:13px">${l.score ?? '—'} pts · ${sc.label}</span>
+        </div>
       </div>
       <div class="detail-grid">
         ${fields.map(([lb, v]) => `<div class="detail-field"><div class="detail-label">${lb}</div><div class="detail-val">${v || '—'}</div></div>`).join('')}
@@ -1017,6 +1020,22 @@ async function viewLead(id) {
       <div class="card-title">Perfil Completo (JSON)</div>
       <div class="json-block">${JSON.stringify(l.profile || {}, null, 2)}</div>
     </div>`;
+}
+
+async function downloadReport(id, nome) {
+  try {
+    const res = await fetch(API + '/leads/' + id + '/report', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) { alert('Erro ao gerar o PDF do relatório.'); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `VisaMatch_${(nome || 'Lead').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Erro ao baixar o PDF: ' + e.message);
+  }
 }
 
 function renderAiAnalysis(ai) {

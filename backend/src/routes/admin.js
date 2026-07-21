@@ -244,6 +244,29 @@ router.get('/leads/:id', auth, async (req, res) => {
   res.json(data);
 });
 
+// ── GET /api/admin/leads/:id/report ── regenera o relatório em PDF do lead
+router.get('/leads/:id/report', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('leads').select('*').eq('id', req.params.id).single();
+    if (error || !data) return res.status(404).json({ error: 'Lead não encontrado.' });
+
+    const { generateReportPdf } = require('../services/pdfReport');
+    const pdf = await generateReportPdf({
+      nome: data.nome, email: data.email, phone: data.phone,
+      visto: data.visto_recomendado, vistos: data.profile?._vistos || data.profile?.vistos,
+      score: data.score, profile: data.profile || {}
+    });
+
+    const safe = `VisaMatch_${(data.nome || 'Lead').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${safe}"`);
+    res.send(pdf);
+  } catch (err) {
+    console.error('Admin report PDF error:', err);
+    res.status(500).json({ error: 'Erro ao gerar PDF.' });
+  }
+});
+
 // ── GET /api/admin/users ──
 router.get('/users', auth, async (req, res) => {
   const { page = 1, limit = 20, search } = req.query;
