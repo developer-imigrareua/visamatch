@@ -1,6 +1,7 @@
 const express = require('express');
 const { analyzeProfile } = require('../services/analyzer');
-const { buildHubSpotProperties, upsertContact, createNote } = require('../services/hubspot');
+const { buildHubSpotProperties, upsertContact, createNote, uploadFile, createNoteWithAttachment } = require('../services/hubspot');
+const { generateReportPdf } = require('../services/pdfReport');
 const supabase = require('../lib/supabase');
 const router = express.Router();
 
@@ -84,8 +85,29 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
         await supabase.from('leads')
           .update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null })
           .eq('id', leadId);
-        await createNote(HUBSPOT_TOKEN, hubspotId,
-          `✅ Preencheu VisaMatch\nVisto: ${bestVisto || '—'}\nScore: ${bestScore ?? '—'}${analysis._fallback ? '\n(análise via fallback local — IA indisponível no momento)' : ''}`);
+        const noteBody = `✅ Preencheu VisaMatch\nVisto: ${bestVisto || '—'}\nScore: ${bestScore ?? '—'}${analysis._fallback ? '\n(análise via fallback local — IA indisponível no momento)' : ''}`;
+
+        // Anexa o PDF de respostas (perguntas → respostas) ao contato.
+        // Fire-and-forget: não bloqueia a resposta da análise ao usuário.
+        (async () => {
+          try {
+            const pdf = await generateReportPdf({
+              nome, email, phone, visto: bestVisto,
+              vistos: (analysis.resultados || []).map(r => r.visto),
+              score: bestScore, profile: mergedProfile
+            });
+            const safeName = `VisaMatch_${(nome || 'Lead').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')}.pdf`;
+            const fileId = await uploadFile(HUBSPOT_TOKEN, pdf, safeName);
+            const ok = await createNoteWithAttachment(HUBSPOT_TOKEN, hubspotId, noteBody, fileId);
+            if (!ok || !fileId) {
+              console.error('PDF respostas attach falhou para', email, '| fileId:', fileId);
+              await createNote(HUBSPOT_TOKEN, hubspotId, noteBody);
+            }
+          } catch (e) {
+            console.error('PDF respostas generation/attach error:', e.message);
+            createNote(HUBSPOT_TOKEN, hubspotId, noteBody).catch(() => {});
+          }
+        })();
       } else {
         console.error('HubSpot sync failed (analyze):', hsErr);
         await supabase.from('leads').update({ hubspot_error: hsErr, hubspot_payload: props }).eq('id', leadId);

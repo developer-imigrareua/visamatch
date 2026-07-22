@@ -210,12 +210,11 @@ function generateReportPdf({ nome, visto, vistos, score, profile }) {
         ['Artigos acadêmicos', p.o1_artigos],
       ]);
 
-      // ── Rodapé ──
+      // ── Rodapé ── (documento interno de respostas — sem score/diagnóstico)
       doc.moveDown(0.8);
-      const vistosTxt = vistoLista.length ? vistoLista.join(', ') : '—';
       doc.fillColor(MUTED).font('Helvetica').fontSize(8.5)
-         .text(`Visto(s) recomendado(s): ${vistosTxt}${score !== undefined && score !== null ? `  ·  Score: ${score}` : ''}. ` +
-               `Resultado gerado e apresentado ao lead. Esta análise é informativa e não constitui aconselhamento jurídico.`,
+         .text('Documento interno com as respostas informadas pelo lead no VisaMatch. ' +
+               'Registro fiel de perguntas e respostas — não constitui aconselhamento jurídico.',
                M, doc.y, { width: CONTENT_W });
 
       doc.end();
