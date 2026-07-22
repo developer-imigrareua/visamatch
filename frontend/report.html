@@ -20,10 +20,15 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 
 /* ── PRINT ── */
 @media print{
-  body{background:#fff;padding:0}
+  html,body{background:#fff!important;padding:0}
+  /* Preserva cores/gradientes/fundos no PDF (chave para manter a identidade visual) */
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .no-print{display:none!important}
   .page{box-shadow:none;margin:0;border-radius:0;max-width:100%}
-  @page{margin:12mm;size:A4}
+  /* Evita cortar blocos no meio da página */
+  .header,.destaques,.side-card,.acao-item,.doc-item,.parceiro-card,.criterios-table tr{break-inside:avoid;page-break-inside:avoid}
+  .body{grid-template-columns:1fr 260px}
+  @page{margin:10mm;size:A4}
 }
 
 /* ── TOOLBAR ── */
@@ -247,12 +252,9 @@ function renderReport(a, candidato) {
         ${renderPlanoAcao(a.plano_acao)}
       </div>
       <div class="side-col">
-        ${renderFundamentoLegal(a.fundamento_legal)}
         ${renderComoFunciona(a.como_funciona)}
         ${renderScorecard(a.scorecard)}
         ${renderVeredicto(a.veredicto, a.estrategia_adicional)}
-        ${renderCusto(a.custo_estimado)}
-        ${renderProcesso(a.processo)}
         ${renderParceiro(a.recomendacao_parceiro, a.visto)}
       </div>
     </div>
