@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Visa Match · ImigrarEUA</title>
-<link rel="icon" type="image/jpeg" href="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg"/>
+<link rel="icon" type="image/webp" href="https://lp.imigrareua.com/wp-content/uploads/2026/07/Visamatch-imigrareua.webp"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200&display=swap" rel="stylesheet">
 <style>
@@ -17,9 +17,12 @@
   --pink:#ff4b82;--pink2:#ff7aaa;--pink-soft:rgba(255,75,130,.08);
   --surface:#ffffff;--surface2:#f8faff;--surface3:#f0f4ff;--surface4:#e5eeff;
   --txt:#0b1c30;--txt2:#424655;--txt3:#737687;
-  --border:rgba(194,198,216,.5);--border2:rgba(194,198,216,.8);
+  --border:rgba(203,213,235,.55);--border2:rgba(191,201,224,.85);
   --green:#1d9e70;--amber:#d97706;--red:#dc2626;
-  --r:16px;--sh:0 2px 12px rgba(11,28,48,.08);--sh2:0 8px 32px rgba(11,28,48,.12)
+  --cyan:#38bdf8;
+  --r:18px;
+  --sh:0 1px 2px rgba(11,28,48,.04), 0 6px 20px rgba(11,28,48,.06);
+  --sh2:0 4px 12px rgba(11,28,48,.06), 0 18px 48px rgba(11,28,48,.13)
 }
 
 html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:var(--surface2);color:var(--txt);overflow:hidden}
@@ -28,47 +31,53 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .app{display:grid;grid-template-columns:288px 1fr;height:100vh;overflow:hidden}
 
 /* ── SIDEBAR ── */
-.sidebar{background:linear-gradient(180deg,#1A72F6 0%,#002b70 100%);display:flex;flex-direction:column;overflow:hidden;position:relative}
-.sb-glow{position:absolute;bottom:0;left:0;right:0;height:55%;background-image:url('https://lp.imigrareua.com/wp-content/uploads/2026/06/bandeira-eua-desfoque-visamatch.png');background-size:cover;background-position:center top;opacity:.38;pointer-events:none;z-index:0}
+.sidebar{background:#081127;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sb-glow{position:absolute;inset:0;background-image:url('https://lp.imigrareua.com/wp-content/uploads/2026/07/Visamatch-Imigrar-EUA-Descubra-seu-visto.webp');background-size:cover;background-position:center top;opacity:1;pointer-events:none;z-index:0}
+.sb-glow::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,15,36,.94) 0%,rgba(7,15,36,.72) 30%,rgba(7,15,36,.42) 55%,rgba(7,15,36,.55) 78%,rgba(7,15,36,.82) 100%)}
 .sb-inner{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;padding:28px 20px}
 
-.brand{display:flex;align-items:center;gap:12px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.1)}
-.brand-ico{width:44px;height:44px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Manrope,sans-serif;font-size:18px;color:var(--blue);font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.2);border:2px solid rgba(255,255,255,.4)}
-.brand-name{font-family:Manrope,sans-serif;font-size:18px;color:#fff;line-height:1.2;font-weight:700}
-.brand-by{font-size:10px;color:rgba(255,255,255,.6);letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-top:1px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:26px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.1)}
+.brand-logo{width:155px;max-width:74%;height:auto;display:block}
 
-.sb-section{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600;margin-bottom:10px;padding-left:4px}
+.sb-section{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);font-weight:700;margin-bottom:12px;padding-left:4px}
 
-.steps{display:flex;flex-direction:column;gap:4px;flex:1}
-.step{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;transition:all .25s;cursor:default;border:1px solid transparent}
-.step.active{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.2)}
-.step.done{opacity:.7}
-.step.idle{opacity:.35}
-.step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;transition:all .25s}
-.step.active .step-num{background:#fff;color:var(--blue);font-size:11px}
-.step.done .step-num{background:rgba(255,255,255,.15);color:#fff;font-size:14px}
-.step.idle .step-num{background:transparent;color:rgba(255,255,255,.4);border:1.5px solid rgba(255,255,255,.2)}
-.step-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.9);line-height:1.2}
+.steps{display:flex;flex-direction:column;gap:5px;flex:1}
+.step{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:14px;transition:all .25s;cursor:default;border:1px solid transparent;position:relative}
+.step:not(:last-child)::after{content:'';position:absolute;left:25px;top:41px;bottom:-3px;width:2px;background:repeating-linear-gradient(rgba(255,255,255,.28) 0 3px,transparent 3px 8px)}
+.step.active{background:linear-gradient(135deg,rgba(56,189,248,.30),rgba(26,114,246,.40));border-color:rgba(255,255,255,.30);box-shadow:0 8px 22px rgba(0,40,120,.35),inset 0 1px 0 rgba(255,255,255,.22)}
+.step.done{opacity:.85}
+.step.idle{opacity:.62}
+.step-num{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0;transition:all .25s}
+.step.active .step-num{background:#fff;color:var(--blue);box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.step.done .step-num{background:rgba(255,255,255,.18);color:#fff;font-size:14px}
+.step.idle .step-num{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1.5px solid rgba(255,255,255,.28)}
+.step-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.92);line-height:1.2}
 .step.active .step-label{color:#fff;font-weight:700}
-.step-desc{font-size:10.5px;color:rgba(255,255,255,.45);margin-top:1px}
+.step-desc{font-size:10.5px;color:rgba(255,255,255,.5);margin-top:2px}
 
-.sb-card{background:rgba(255,255,255,.1);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:16px;margin-top:20px}
-.sb-card-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px;font-weight:600}
-.sb-visto{font-family:Manrope,sans-serif;font-size:17px;color:#fff;min-height:22px;transition:all .4s;font-weight:700}
-.sb-bar-bg{height:4px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;margin-top:10px}
-.sb-bar{height:100%;background:var(--pink);border-radius:4px;transition:width .7s cubic-bezier(.4,0,.2,1);width:0%}
+.sb-card{background:rgba(255,255,255,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:15px 17px;margin-top:18px;box-shadow:0 12px 34px rgba(0,10,40,.35),inset 0 1px 0 rgba(255,255,255,.14)}
+.sb-card-top{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.sb-card-spark{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--blue2),var(--cyan));display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-shrink:0;box-shadow:0 3px 10px rgba(26,114,246,.45)}
+.sb-card-lbl{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.78);font-weight:700;line-height:1.35}
+.sb-step-count{font-size:10px;color:rgba(255,255,255,.55);margin-top:9px;font-weight:600;letter-spacing:.05em}
+.sb-visto{font-family:Manrope,sans-serif;font-size:16px;color:#fff;min-height:0;transition:all .4s;font-weight:700}
+.sb-visto:empty{display:none}
+.sb-bar-bg{height:6px;background:rgba(255,255,255,.14);border-radius:99px;overflow:hidden;margin-top:2px}
+.sb-bar{height:100%;background:linear-gradient(90deg,var(--blue2),var(--blue3));border-radius:99px;transition:width .7s cubic-bezier(.4,0,.2,1);width:8%;box-shadow:0 0 10px rgba(26,114,246,.55)}
 
 /* ── MAIN ── */
-.main{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:var(--surface2)}
+.main{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:linear-gradient(180deg,#ffffff 0%,var(--surface2) 42%)}
 .main-head{padding:18px 36px;background:rgba(255,255,255,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:40}
-.head-title{font-family:Manrope,sans-serif;font-size:20px;color:var(--txt);font-weight:700;letter-spacing:-.01em}
-.head-sub{font-size:12px;color:var(--txt3);margin-top:2px;font-weight:500}
-.online-badge{display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:6px 16px;font-size:12px;color:var(--txt2);font-weight:600;box-shadow:var(--sh)}
+.head-title{font-family:Manrope,sans-serif;font-size:24px;color:var(--txt);font-weight:800;letter-spacing:-.02em}
+.head-sub{font-size:12.5px;color:var(--txt3);margin-top:3px;font-weight:500}
+.head-pill{display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:8px 17px;font-size:12.5px;color:var(--blue);font-weight:700;cursor:pointer;transition:all .2s;font-family:"Inter Tight",sans-serif;box-shadow:var(--sh)}
+.head-pill:hover{border-color:var(--blue2);transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,83,208,.14)}
+.online-badge{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:8px 17px;font-size:12.5px;color:var(--txt2);font-weight:600;box-shadow:var(--sh)}
 .green-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* ── CHAT ── */
-.chat{flex:1;overflow-y:auto;padding:28px 32px 16px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth;width:100%;box-sizing:border-box}
+.chat{flex:1;overflow-y:auto;padding:28px 32px 16px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth;width:100%;box-sizing:border-box;background-image:radial-gradient(rgba(11,28,48,.035) 1px,transparent 1px);background-size:26px 26px}
 .chat::-webkit-scrollbar{width:4px}
 .chat::-webkit-scrollbar-thumb{background:rgba(115,118,135,.2);border-radius:4px}
 
@@ -80,11 +89,11 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .ava-bot{background:#fff;border:2px solid rgba(0,83,208,.15);overflow:hidden;padding:0}
 .ava-bot-img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
 .ava-bot-t{font-family:Manrope,sans-serif;font-size:13px;font-weight:800;color:#fff}
-.ava-user{background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;font-size:12px;font-weight:700}
+.ava-user{background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;font-size:12px;font-weight:700}
 .msg-wrap{max-width:68%}
-.bubble{padding:14px 18px;border-radius:18px;font-size:14px;line-height:1.65;font-weight:400}
-.bot-b{background:#fff;border:1px solid var(--border);border-radius:4px 18px 18px 18px;color:var(--txt);box-shadow:var(--sh)}
-.user-b{background:var(--surface2);border:1px solid var(--border);border-radius:18px 18px 4px 18px;color:var(--txt)}
+.bubble{padding:15px 19px;border-radius:20px;font-size:14px;line-height:1.65;font-weight:400}
+.bot-b{background:#fff;border:1px solid var(--border);border-radius:6px 20px 20px 20px;color:var(--txt);box-shadow:var(--sh)}
+.user-b{background:linear-gradient(135deg,#eef4ff,#e6eeff);border:1px solid rgba(0,83,208,.12);border-radius:20px 20px 6px 20px;color:var(--txt)}
 .bubble b,.bubble strong{font-weight:700;color:var(--blue)}
 .user-b b,.user-b strong{color:var(--pink)}
 .ts{font-size:10px;color:var(--txt3);margin-top:4px;padding:0 4px;opacity:.6}
@@ -109,19 +118,21 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 /* ── OPTIONS ── */
 .opts-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;padding-left:48px;animation:optIn .3s ease .08s both}
 @keyframes optIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-.opt{background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:9px 18px;font-size:13px;font-family:"Inter Tight","Inter",sans-serif;cursor:pointer;color:var(--txt);font-weight:600;transition:all .15s ease;white-space:normal;text-align:left;line-height:1.3}
-.opt:hover{border-color:var(--blue);background:var(--surface3);color:var(--blue);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,83,208,.12)}
+.opt{background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:10px 20px;font-size:13px;font-family:"Inter Tight","Inter",sans-serif;cursor:pointer;color:var(--txt);font-weight:600;transition:all .18s ease;white-space:normal;text-align:left;line-height:1.3;box-shadow:0 1px 2px rgba(11,28,48,.05)}
+.opt:hover{border-color:var(--blue2);background:#fff;color:var(--blue);transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,83,208,.16)}
 .opt:active{transform:scale(.97)}
 .opt.sel{background:var(--surface3);border-color:var(--blue);color:var(--blue);opacity:.5;pointer-events:none}
 
 /* ── INPUT ── */
 .input-zone{padding:14px 36px calc(18px + env(safe-area-inset-bottom, 0px));background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-top:1px solid var(--border);flex-shrink:0}
-.input-row{display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:16px;padding:6px 6px 6px 18px;transition:border-color .2s,box-shadow .2s}
-.input-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,83,208,.06)}
+.input-row{display:flex;gap:9px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:18px;padding:7px 7px 7px 9px;transition:border-color .2s,box-shadow .2s;box-shadow:var(--sh)}
+.input-row:focus-within{border-color:var(--blue2);box-shadow:0 0 0 4px rgba(26,114,246,.1),var(--sh)}
 .txt-in{flex:1;background:none;border:none;outline:none;font-family:"Inter Tight","Inter",sans-serif;font-size:16px;color:var(--txt);padding:7px 0;font-weight:400}
 .txt-in::placeholder{color:var(--txt3)}
-.in-btn{width:40px;height:40px;border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
-.send-b{background:linear-gradient(135deg,var(--blue),var(--pink))}
+.input-spark{width:36px;height:36px;border-radius:11px;background:var(--surface3);display:flex;align-items:center;justify-content:center;color:var(--blue2);font-size:15px;flex-shrink:0;margin-right:2px}
+.in-btn{width:44px;height:44px;border:none;border-radius:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.send-b{background:linear-gradient(135deg,var(--blue2),var(--blue));box-shadow:0 4px 14px rgba(0,83,208,.35)}
+.send-b:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(0,83,208,.42)}
 .send-b:hover{opacity:.9;transform:scale(1.04)}
 .send-b:active{transform:scale(.96)}
 .send-b svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -138,7 +149,7 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 
 /* ── PROGRESS BAR ── */
 .prog-strip{height:3px;background:var(--surface4);flex-shrink:0}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--pink));transition:width .6s ease;width:0%}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue2),var(--blue3));transition:width .6s ease;width:0%}
 
 /* ── POPUP ── */
 .popup-overlay{position:fixed;inset:0;background:rgba(11,28,48,.4);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeO .2s ease}
@@ -149,7 +160,7 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .popup-title{font-family:Manrope,sans-serif;font-size:20px;color:var(--txt);margin-bottom:8px;font-weight:700}
 .popup-body{font-size:14px;color:var(--txt2);line-height:1.75;margin-bottom:20px}
 .popup-body b{color:var(--blue);font-weight:600}
-.popup-close{width:100%;background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;border:none;border-radius:12px;padding:13px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.popup-close{width:100%;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:12px;padding:13px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
 .popup-close:hover{opacity:.9}
 
 /* ── RESULT CARD ── */
@@ -187,7 +198,7 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .act-n{width:20px;height:20px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
 .act-t{font-size:13px;color:var(--txt2);line-height:1.55}
 .ctas{display:flex;gap:10px;margin-bottom:14px}
-.cta1{flex:1;background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;border:none;border-radius:12px;padding:13px 18px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.cta1{flex:1;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:12px;padding:13px 18px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
 .cta1:hover{opacity:.9;transform:translateY(-1px)}
 .cta2{background:#fff;color:var(--txt2);border:1.5px solid var(--border);border-radius:12px;padding:13px 18px;font-family:"Inter Tight",sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;white-space:normal}
 .cta2:hover{border-color:var(--blue);color:var(--blue)}
@@ -203,7 +214,7 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .dual-results{display:flex;flex-direction:column;gap:16px}
 .dual-tab-row{display:flex;gap:8px;margin-bottom:4px}
 .dual-tab{flex:1;padding:9px 14px;border-radius:99px;font-size:12.5px;font-weight:600;font-family:"Inter Tight",sans-serif;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--txt2);transition:all .2s;text-align:center}
-.dual-tab.active{background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;border-color:transparent}
+.dual-tab.active{background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border-color:transparent}
 
 /* ── LEGAL DISCLAIMER ── */
 .legal-disc{background:var(--surface3);border:1px solid var(--border);border-radius:12px;padding:13px 16px;font-size:11.5px;color:var(--txt3);line-height:1.7;margin-bottom:16px}
@@ -214,12 +225,12 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .partner-cta.liv{background:linear-gradient(135deg,rgba(0,43,112,.05),rgba(0,83,208,.08));border:1.5px solid rgba(0,83,208,.15)}
 .partner-cta.phoenix{background:rgba(0,83,208,.04);border:1.5px solid rgba(0,83,208,.12)}
 .partner-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.partner-ico.liv{background:linear-gradient(135deg,var(--blue),var(--pink))}
+.partner-ico.liv{background:linear-gradient(135deg,var(--blue2),var(--blue3))}
 .partner-ico.phoenix{background:linear-gradient(135deg,var(--blue4),var(--blue3))}
 .partner-info{flex:1}
 .partner-name{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:2px}
 .partner-desc{font-size:12px;color:var(--txt2);line-height:1.55}
-.partner-btn{margin-top:9px;display:inline-block;background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;font-family:"Inter Tight",sans-serif;cursor:pointer;transition:all .2s}
+.partner-btn{margin-top:9px;display:inline-block;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;font-family:"Inter Tight",sans-serif;cursor:pointer;transition:all .2s}
 .partner-btn:hover{opacity:.9}
 .partner-btn.phoenix-btn{background:var(--blue4)}
 
@@ -327,13 +338,9 @@ hot('account','85de63a8-a79a-3eaf-836a-fea0d0805232');
   <div class="sb-glow"></div>
   <div class="sb-inner">
     <div class="brand">
-      <div class="brand-ico" style="overflow:hidden;padding:0"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" style="width:100%;height:100%;object-fit:cover" alt="ImigrarEUA"/></div>
-      <div>
-        <div class="brand-name">Visa Match</div>
-        <div class="brand-by">ImigrarEUA</div>
-      </div>
+      <img class="brand-logo" src="https://lp.imigrareua.com/wp-content/uploads/2026/07/VISA-MATCH-LOGO-HORIZONTAL-SIMBOLO-AZUL@2x.png" alt="VisaMatch"/>
     </div>
-    <div class="sb-section">Etapas</div>
+    <div class="sb-section">Etapas da Análise</div>
     <div class="steps" id="sb-steps">
       <div class="step active" data-s="0"><div class="step-num">1</div><div><div class="step-label">Contato</div><div class="step-desc">Identificação inicial</div></div></div>
       <div class="step idle"  data-s="1"><div class="step-num">2</div><div><div class="step-label">Triagem</div><div class="step-desc">Caminho de visto</div></div></div>
@@ -344,9 +351,13 @@ hot('account','85de63a8-a79a-3eaf-836a-fea0d0805232');
       <div class="step idle"  data-s="6"><div class="step-num">7</div><div><div class="step-label">Resultado</div><div class="step-desc">Análise completa</div></div></div>
     </div>
     <div class="sb-card">
-      <div class="sb-card-lbl">Avaliando seu perfil para o Visto</div>
+      <div class="sb-card-top">
+        <div class="sb-card-spark">✦</div>
+        <div class="sb-card-lbl">Avaliando seu perfil para o visto americano</div>
+      </div>
       <div class="sb-visto" id="sb-visto"></div>
       <div class="sb-bar-bg"><div class="sb-bar" id="sb-bar"></div></div>
+      <div class="sb-step-count" id="sb-step-count">Etapa 1 de 7</div>
     </div>
   </div>
 </aside>
@@ -356,11 +367,11 @@ hot('account','85de63a8-a79a-3eaf-836a-fea0d0805232');
   <div class="main-head">
     <div>
       <div class="head-title">Análise de Critérios</div>
-      <div class="head-sub">Avaliação de perfil • Assistente IA</div>
+      <div class="head-sub">Avaliação de perfil com inteligência artificial</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <button id="my-analyses-btn" onclick="toggleAnalysesPanel()" style="display:none;align-items:center;gap:7px;background:var(--surface3);border:1.5px solid var(--border);border-radius:99px;padding:6px 15px;font-size:12px;color:var(--blue);font-weight:700;cursor:pointer;transition:all .2s;font-family:"Inter Tight",sans-serif">
-        📊 Minhas Análises
+      <button id="my-analyses-btn" onclick="toggleAnalysesPanel()" class="head-pill" style="display:none">
+        <span style="color:var(--blue2)">📊</span> Minhas Análises
       </button>
       <div class="online-badge"><div class="green-dot"></div>Assistente Online</div>
     </div>
@@ -370,6 +381,7 @@ hot('account','85de63a8-a79a-3eaf-836a-fea0d0805232');
   <div id="structured-zone" style="display:none;padding:14px 32px calc(14px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.95);border-top:1px solid rgba(194,198,216,.4)"></div>
   <div class="input-zone">
     <div class="input-row">
+      <div class="input-spark">✦</div>
       <input class="txt-in" id="ti" type="search" placeholder="Digite sua resposta ou use os botões acima..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"/>
       <button class="in-btn mic-b" id="mic-btn" title="Gravar áudio">
         <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
@@ -412,7 +424,7 @@ hot('account','85de63a8-a79a-3eaf-836a-fea0d0805232');
         <label style="display:block;font-size:11.5px;font-weight:600;color:var(--txt2);margin-bottom:5px;letter-spacing:.04em">DEFINA UMA SENHA</label>
         <input id="rm-pwd" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:"Inter Tight",sans-serif;font-size:16px;outline:none;color:var(--txt)"/>
       </div>
-      <button id="rm-btn" onclick="doRegisterModal()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:13px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">Criar conta e salvar análise</button>
+      <button id="rm-btn" onclick="doRegisterModal()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:11px;padding:13px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">Criar conta e salvar análise</button>
     </div>
     <button onclick="closeRegModal()" style="width:100%;background:none;border:none;font-family:"Inter Tight",sans-serif;font-size:13px;color:var(--txt3);cursor:pointer;padding:6px">Agora não</button>
   </div>
@@ -581,6 +593,8 @@ function setSideStep(n) {
     el.className = 'step ' + (s < n ? 'done' : s === n ? 'active' : 'idle');
     el.querySelector('.step-num').textContent = s < n ? '✓' : s + 1;
   });
+  const _sc = document.getElementById('sb-step-count');
+  if (_sc) _sc.textContent = `Etapa ${Math.min(n + 1, 7)} de 7`;
 }
 
 function setSideVisto(v) {
@@ -669,7 +683,7 @@ document.getElementById('mic-btn').onclick = async () => {
       const waveRow = document.createElement('div');
       waveRow.id = 'waveform-row';
       waveRow.className = 'row';
-      waveRow.innerHTML = `<div class="ava ava-user" style="background:linear-gradient(135deg,var(--blue),var(--pink))">🎙</div>
+      waveRow.innerHTML = `<div class="ava ava-user" style="background:linear-gradient(135deg,var(--blue2),var(--blue3))">🎙</div>
         <div class="msg-wrap">
           <div style="background:#fff;border:1.5px solid var(--border);border-radius:18px 18px 4px 18px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh)">
             <canvas id="waveform-canvas" width="160" height="36" style="display:block"></canvas>
@@ -765,7 +779,7 @@ async function botMsg(html, delay = 0) {
   return new Promise(r => setTimeout(() => {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="bubble bot-b">${html}</div><div class="ts">${ts()}</div></div>`;
     chat.appendChild(row); scrollBottom(true); r();
   }, delay));
@@ -785,7 +799,7 @@ function addUserMsg(txt) { userMsg(txt); }
 function showTyping() {
   const row = document.createElement('div');
   row.id = 'typ'; row.className = 'row';
-  row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+  row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>
     <div class="msg-wrap"><div class="typing-bub"><span></span><span></span><span></span></div></div>`;
   chat.appendChild(row); scrollBottom(true); return row;
 }
@@ -795,7 +809,7 @@ function showFact(ico, body, delay = 200) {
   return new Promise(r => setTimeout(() => {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="fact-card"><span class="fact-ico">${ico}</span>${body}</div></div>`;
     chat.appendChild(row); scrollBottom(true); r();
   }, delay));
@@ -805,7 +819,7 @@ function showAlert(body, delay = 100) {
   return new Promise(r => setTimeout(() => {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+    row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap"><div class="alert">${body}</div></div>`;
     chat.appendChild(row); scrollBottom(true); r();
   }, delay));
@@ -889,7 +903,7 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
       <input id="${inputId}" type="text" maxlength="7" autocomplete="off" placeholder="MM/AAAA"
         style="border:none;outline:none;font-size:16px;font-family:"Inter Tight",sans-serif;color:var(--txt);width:110px;background:none;letter-spacing:.04em"/>
       ${currentBtn}
-      <button id="${sendId}" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <button id="${sendId}" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>`;
@@ -1313,7 +1327,7 @@ async function doRegisterModal() {
           '</div>' +
           '<input id="rm-login-pwd" type="password" placeholder="Sua senha" autocomplete="current-password" ' +
             'style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:Manrope,sans-serif;font-size:15px;outline:none;margin-bottom:10px"/>' +
-          '<button onclick="doLoginModal()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:12px;font-family:\'Inter Tight\',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Entrar e salvar análise</button>';
+          '<button onclick="doLoginModal()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:11px;padding:12px;font-family:\'Inter Tight\',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Entrar e salvar análise</button>';
         document.getElementById('reg-form-wrap').style.display = '';
         setTimeout(() => document.getElementById('rm-login-pwd')?.focus(), 100);
         return;
@@ -1347,7 +1361,7 @@ async function doRegisterModal() {
         '<input id="rm-code" type="text" maxlength="6" placeholder="000000" autocomplete="one-time-code" ' +
         'style="border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:Manrope,sans-serif;font-size:22px;font-weight:700;color:var(--blue);letter-spacing:8px;text-align:center;width:160px;outline:none"/>' +
       '</div>' +
-      '<button onclick="doVerifyRegistration()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:11px;padding:12px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer">Confirmar código</button>' +
+      '<button onclick="doVerifyRegistration()" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:11px;padding:12px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer">Confirmar código</button>' +
       '<div style="text-align:center;margin-top:8px"><button onclick="doResendCode()" style="background:none;border:none;font-size:12px;color:var(--blue);cursor:pointer;font-family:"Inter Tight",sans-serif">Reenviar código</button></div>';
     document.getElementById('reg-form-wrap').style.display = '';
 
@@ -1588,7 +1602,7 @@ async function sendReportEmail(btn) {
       // Feedback visual no estilo do chat
       await botMsg(
         '<div style="display:flex;align-items:center;gap:10px">' +
-        '<div style="width:36px;height:36px;background:linear-gradient(135deg,var(--blue2),var(--pink));border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">📧</div>' +
+        '<div style="width:36px;height:36px;background:linear-gradient(135deg,var(--blue2),var(--blue3));border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">📧</div>' +
         '<div><div style="font-weight:700;color:var(--txt);margin-bottom:3px">Relatório enviado com sucesso!</div>' +
         '<div style="font-size:12.5px;color:var(--txt2)">Verifique a caixa de entrada de <strong>' + email + '</strong>. Pode cair no spam.</div></div></div>'
       );
@@ -1882,13 +1896,13 @@ function singleFullCard(a) {
           <div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px">${a.recomendacao_parceiro==='liv'?'Escritório licenciado nos EUA':'Phoenix · Fortalecimento de Perfil'}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:10px">${a.recomendacao_parceiro==='liv'?`Especializado em ${a.visto} e vistos de trabalho e Green Card.`:'Especialista em melhoria de perfil para imigração.'}</div>
           ${a.recomendacao_parceiro==='liv' && (a.score||0) >= 40 ? `
-  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
+  <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
     💬 Falar com nossos especialistas, sem custo
   </button>
   <button onclick="window.open('https://wa.link/pxtk7k','_blank')" style="width:100%;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 12px;font-family:'Inter Tight',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">
     📅 Agendar consulta com advogado licenciado
   </button>` : `
-  <button onclick="window.open('${a.recomendacao_parceiro==='liv'?'https://wa.link/pxtk7k':'https://lp.imigrareua.com/novos-caminhos-imigrareua/'}','_blank')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'linear-gradient(135deg,var(--blue2),var(--pink))':'rgba(255,255,255,.15)'};color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+  <button onclick="window.open('${a.recomendacao_parceiro==='liv'?'https://wa.link/pxtk7k':'https://lp.imigrareua.com/novos-caminhos-imigrareua/'}','_blank')" style="width:100%;background:${a.recomendacao_parceiro==='liv'?'linear-gradient(135deg,var(--blue2),var(--blue3))':'rgba(255,255,255,.15)'};color:#fff;border:none;border-radius:7px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
     ${a.recomendacao_parceiro==='liv'?'💬 Falar com especialistas →':'Conhecer a Phoenix →'}
   </button>`}
           </div>
@@ -2096,7 +2110,7 @@ const flows = {
     await think(600);
     await botMsg('Olá! 👋 Bem-vindo ao <strong>Visa Match</strong> da ImigrarEUA.');
     await pause(400);
-    await botMsg('Sou seu assistente de <strong>avaliação de perfil</strong> para vistos americanos. Em poucos minutos, identificamos o caminho mais promissor para o seu perfil e geramos uma análise personalizada. Pronto para começar?');
+    await botMsg('Sou a <strong>Mari</strong>, sua assistente de <strong>avaliação de perfil</strong> para vistos americanos. Em poucos minutos, identificamos o caminho mais promissor para o seu perfil e geramos uma análise personalizada. Pronto para começar?');
     showOpts(['Sim, vamos! 🚀','Como funciona a análise?'], val => {
       userMsg(val);
       if (val.includes('funciona')) go('explain');
@@ -2221,7 +2235,7 @@ const flows = {
     row.innerHTML = '<div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;min-width:280px">' +
       '<input id="' + inputId + '" type="password" placeholder="Sua senha" autocomplete="current-password" ' +
       'style="border:none;outline:none;font-size:15px;font-family:\'Inter Tight\',sans-serif;color:var(--txt);flex:1;background:none"/>' +
-      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>' +
       '<div style="margin-top:8px"><button onclick="chatForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--blue);cursor:pointer;padding:0;font-family:\'Inter Tight\',sans-serif">Esqueceu a senha? Receber código por e-mail</button></div>';
     sz.appendChild(row);
@@ -2284,7 +2298,7 @@ const flows = {
     row.innerHTML = '<div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;min-width:240px">' +
       '<input id="' + inputId + '" type="text" maxlength="6" placeholder="000000" autocomplete="one-time-code" ' +
       'style="border:none;outline:none;font-size:20px;font-family:\'Manrope\',sans-serif;color:var(--blue);width:100px;background:none;letter-spacing:6px;font-weight:700"/>' +
-      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>';
     sz.appendChild(row);
 
@@ -2376,7 +2390,7 @@ const flows = {
     row.innerHTML = '<div style="display:inline-flex;gap:8px;align-items:center;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:6px 8px 6px 16px;min-width:280px">' +
       '<input id="' + inputId + '" type="password" placeholder="Nova senha (mín. 6 caracteres)" autocomplete="new-password" ' +
       'style="border:none;outline:none;font-size:16px;font-family:"Inter Tight",sans-serif;color:var(--txt);flex:1;background:none"/>' +
-      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+      '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>';
     sz.appendChild(row);
 
@@ -2500,7 +2514,7 @@ const flows = {
         </select>
         <div style="width:1px;height:20px;background:rgba(11,25,41,.1)"></div>
         <input id="phone-num" type="tel" autocomplete="off" placeholder="(11) 99999-9999" style="border:none;outline:none;font-size:16px;font-family:"Inter Tight",sans-serif;color:var(--blue4);flex:1;background:none"/>
-        <button id="phone-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <button id="phone-send" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>`;
@@ -2600,15 +2614,15 @@ const flows = {
     await botMsg('Como você imagina esse caminho?');
     await pause(200);
     showOpts([
-      'Tenho conquistas e reconhecimento acima da média na minha área',
-      'Trabalho em uma empresa que atua ou vai atuar nos EUA',
-      'Sou profissional graduado buscando emprego ou oferta nos EUA'
+      'Através da minha profissão e/ou formação acadêmica',
+      'Através de alguma empresa nos EUA (founder, sócio, empregador ou parceiro comercial) disposta a apoiar a aplicação do visto',
+      'Através da abertura de uma empresa nos EUA'
     ], val => {
       userMsg(val);
       S.profile.perfilProfissional = val;
-      if (val.includes('conquistas')) go('path_prof_formacao');
-      else if (val.includes('empresa')) go('path_work');
-      else go('path_offramp_hib_info');
+      if (val.includes('profissão')) go('path_prof_formacao');
+      else if (val.includes('abertura')) { S.profile.l1Contexto = 'expansao'; go('path_work'); }
+      else go('path_work');
     });
   },
 
@@ -3190,7 +3204,7 @@ const flows = {
       <div style="display:flex;gap:8px;align-items:center;background:#fff;border:1.5px solid rgba(11,25,41,.1);border-radius:12px;padding:6px 14px;max-width:260px;transition:border-color .2s" id="date-wrap">
         <input id="date-in" type="text" maxlength="10" autocomplete="off" placeholder="DD/MM/AAAA"
           style="border:none;outline:none;font-size:16px;font-family:"Inter Tight",sans-serif;color:var(--blue4);width:130px;background:none;letter-spacing:.04em"/>
-        <button id="date-send" style="background:linear-gradient(135deg,var(--blue),var(--pink));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <button id="date-send" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>`;
@@ -3763,7 +3777,7 @@ const flows = {
     });
     const conf = document.createElement('button');
     conf.className = 'opt';
-    conf.style.cssText = 'background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;border-color:transparent;margin-top:4px;font-weight:700';
+    conf.style.cssText = 'background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border-color:transparent;margin-top:4px;font-weight:700';
     conf.textContent = '✓ Confirmar seleção';
     conf.onclick = () => {
       w.remove();
@@ -3850,24 +3864,9 @@ const flows = {
     // Primary visto for sidebar
     if (simCount >= 3) { setSideVisto('EB-1A'); S.visto = 'EB-1A'; }
     else { setSideVisto('EB-2 NIW'); S.visto = 'EB-2 NIW'; }
-    // Hook: quando vindo do gate de trabalho→GC, retorna ao fim do gate; senão oferece o cruzamento para work visas
-    go(S._afterEb1 || 'gate_niw_para_work');
-  },
-
-  // ──────── GATE CRUZADO: NIW/EB-1A → WORK (O-1) ────────
-  async gate_niw_para_work() {
-    setProgress(94);
-    await think(600);
-    await botMsg('Antes de seguir para o resultado: dependendo do seu perfil, pode existir um caminho seguro e rápido para os EUA. Vale a pena verificar. Posso incluir essa análise aqui?');
-    showOpts(['Sim, quero uma avaliação completa','Não, quero finalizar a avaliação por aqui'], val => {
-      userMsg(val);
-      if (val.includes('Sim')) { S._afterO1 = 'gate_niw_o1_fim'; go('sc_o1_1'); }
-      else go('resultado');
-    });
-  },
-  async gate_niw_o1_fim() {
-    S.vistos = [...new Set([...(S.vistos || []), 'O-1'])];
-    go('resultado');
+    // Hook: quando vindo do gate de trabalho→GC, retorna ao fim do gate; senão vai direto ao resultado.
+    // (Gate cruzado NIW/EB-1A → O-1 removido: as perguntas do O-1 duplicam as do EB-1A.)
+    go(S._afterEb1 || 'resultado');
   },
 
   // ── O-1 CRITERIA ──
@@ -4010,7 +4009,7 @@ const flows = {
     loadRow.className = 'row';
     loadRow.id = 'analysis-loading-row';
     loadRow.innerHTML = `
-      <div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+      <div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap" style="max-width:88%">
         <div class="bubble bot-b" style="padding:14px 16px;min-width:220px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -4018,7 +4017,7 @@ const flows = {
             <div id="loading-step-txt" style="font-size:13px;min-height:18px">🔍 Analisando o perfil de <strong>${S.nome}</strong>...</div>
           </div>
           <div style="background:rgba(11,28,48,.08);border-radius:99px;height:6px;overflow:hidden">
-            <div id="loading-bar" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--pink));transition:width .6s ease"></div>
+            <div id="loading-bar" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--blue2),var(--blue3));transition:width .6s ease"></div>
           </div>
           <div id="loading-pct" style="font-size:10.5px;color:var(--txt3);margin-top:5px;text-align:right">0%</div>
         </div>
@@ -4092,7 +4091,7 @@ const flows = {
 
       const row = document.createElement('div');
       row.className = 'row result-row';
-      row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+      row.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>
         <div class="msg-wrap" style="max-width:96%">${buildFullAICard(analysis)}</div>`;
       chat.appendChild(row);
       // Rola até o resultado com destaque visual
@@ -4152,7 +4151,7 @@ const flows = {
       } else {
         resultHtml = buildResult(best.visto, best.score, S.profile);
       }
-      row.innerHTML = '<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>' +
+      row.innerHTML = '<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>' +
         '<div class="msg-wrap" style="max-width:92%">' + resultHtml + '</div>';
       chat.appendChild(row);
       scrollBottom();
@@ -4280,7 +4279,7 @@ async function checkSessionInBackground() {
     await think(400);
     const resumeRow = document.createElement('div');
     resumeRow.className = 'row';
-    resumeRow.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" class="ava-bot-img" alt="Visa Match"/></div>
+    resumeRow.innerHTML = `<div class="ava ava-bot"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/Marinna-Damasio-Imigrar-EUA-VisaMatch.webp" class="ava-bot-img" alt="Visa Match"/></div>
       <div class="msg-wrap" style="max-width:88%">
         <div class="bubble bot-b">
           👋 Olá! Você tem uma análise em andamento.<br>
@@ -4420,7 +4419,7 @@ if (localStorage.getItem('vm_session_id')) {
     </div>
   </div>
   <div style="padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px">
-    <a href="/" style="flex:1;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border:none;border-radius:10px;padding:10px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block">+ Nova Análise</a>
+    <a href="/" style="flex:1;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border:none;border-radius:10px;padding:10px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block">+ Nova Análise</a>
     <a id="minhas-analises-portal-btn" href="/portal/dashboard.html" style="background:var(--surface3);color:var(--blue);border:none;border-radius:10px;padding:10px 14px;font-family:"Inter Tight",sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;display:block">Portal →</a>
   </div>
 </div>
@@ -4547,7 +4546,7 @@ localStorage.setItem = function(key, val) {
       Você está a <strong id="exit-prog-txt">poucos passos</strong>. Continue para descobrir seu caminho para os EUA.
     </p>
     <div style="display:flex;flex-direction:column;gap:9px">
-      <button onclick="exitContinue()" style="width:100%;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;border:none;border-radius:11px;padding:13px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer">
+      <button onclick="exitContinue()" style="width:100%;background:linear-gradient(135deg,#1A72F6,#003fa3);color:#fff;border:none;border-radius:11px;padding:13px;font-family:"Inter Tight",sans-serif;font-size:14px;font-weight:700;cursor:pointer">
         ▶ Continuar a análise
       </button>
       <button onclick="exitWithout()" style="width:100%;background:none;border:1.5px solid rgba(194,198,216,.6);border-radius:11px;padding:11px;font-family:"Inter Tight",sans-serif;font-size:13px;color:#737687;cursor:pointer">
