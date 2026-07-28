@@ -906,7 +906,8 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
       <button id="${sendId}" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
-    </div>`;
+    </div>
+    <div id="${inputId}-hint" style="font-size:11px;color:var(--red);margin-top:6px;display:none">Data inválida — use MM/AAAA com mês entre 01 e 12.</div>`;
 
   sz.appendChild(row);
 
@@ -922,21 +923,30 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   };
   setValid(false); // começa desabilitado
 
-  const isComplete = (v) => /^\d{2}\/\d{4}$/.test(v);
+  // Valida formato MM/AAAA com mês 01-12 e ano plausível
+  const isValid = (v) => {
+    const m = /^(\d{2})\/(\d{4})$/.exec(v);
+    if (!m) return false;
+    const mo = +m[1], yr = +m[2];
+    return mo >= 1 && mo <= 12 && yr >= 1940 && yr <= 2035;
+  };
 
-  // Auto-formata MM/AAAA e atualiza botão
+  // Auto-formata MM/AAAA, atualiza botão e mostra aviso de mês inválido
   inputEl.addEventListener('input', function() {
     let v = this.value.replace(/\D/g,'');
     if (v.length > 6) v = v.slice(0,6);
     if (v.length > 2) v = `${v.slice(0,2)}/${v.slice(2)}`;
     this.value = v;
-    setValid(isComplete(v));
+    const ok = isValid(v);
+    setValid(ok);
+    const hintEl = document.getElementById(inputId + '-hint');
+    if (hintEl) hintEl.style.display = (/^\d{2}\/\d{4}$/.test(v) && !ok) ? 'block' : 'none';
   });
   wrapEl.addEventListener('focusin',  () => { wrapEl.style.borderColor='var(--blue)'; wrapEl.style.boxShadow='0 0 0 4px rgba(0,83,208,.06)'; });
   wrapEl.addEventListener('focusout', () => { wrapEl.style.borderColor='var(--border2)'; wrapEl.style.boxShadow=''; });
 
   const submit = (val) => {
-    if (val !== 'atual' && !isComplete(val)) return; // exige MM/AAAA completo (ex: 03/2021)
+    if (val !== 'atual' && !isValid(val)) return; // exige MM/AAAA válido (mês 01-12, ex: 03/2021)
     row.remove();
     hideStructuredZone();
     document.querySelector('.input-zone').style.display = '';
@@ -990,7 +1000,11 @@ function parseMesAno(str) {
   const s = str.trim().toLowerCase();
   if (s === 'atual' || s === 'present' || s === 'atualmente') return new Date();
   const m = s.match(/^(\d{1,2})\/(\d{4})$/);
-  if (m) return new Date(parseInt(m[2]), parseInt(m[1]) - 1, 1);
+  if (m) {
+    const mo = parseInt(m[1]);
+    if (mo < 1 || mo > 12) return null; // mês inválido → não "rola" para outro ano
+    return new Date(parseInt(m[2]), mo - 1, 1);
+  }
   return null;
 }
 
