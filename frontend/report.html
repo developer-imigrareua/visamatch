@@ -44,6 +44,13 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 /* ── PAGE ── */
 .page{max-width:960px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12)}
 
+/* ── TABS DE VISTO ── */
+.rep-tabs{display:flex;gap:8px;padding:18px 32px 0;flex-wrap:wrap}
+.rep-tab{padding:9px 18px;border-radius:99px;font-size:12.5px;font-weight:700;font-family:'Inter Tight',sans-serif;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--txt2);transition:all .2s}
+.rep-tab:hover{border-color:var(--blue2);color:var(--blue)}
+.rep-tab.active{background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border-color:transparent}
+@media print{.rep-tab:not(.active){display:none}.rep-tabs{padding:10px 32px 0}}
+
 /* ── HEADER ── */
 .header{background:linear-gradient(135deg,#1A72F6 0%,#002b70 100%);padding:0;display:grid;grid-template-columns:1fr auto;min-height:160px}
 .header-left{padding:28px 32px;display:flex;flex-direction:column;justify-content:center}
@@ -231,18 +238,40 @@ if (!raw) {
         <div class="error-sub">Os dados desta análise expiraram. Volte ao Visa Match e clique em <b>"Ver relatório completo"</b> novamente.</div>
       </div>`;
   } else {
-    const analysis = data.melhor || data;
+    const resultados = (data.resultados && data.resultados.length) ? data.resultados : [data.melhor || data];
     const candidato = data.candidato || {};
-    renderReport(analysis, candidato);
+    // Seleciona por padrão o "melhor" visto
+    const bestVisto = (data.melhor || {}).visto;
+    let sel = resultados.findIndex(r => r.visto === bestVisto);
+    if (sel < 0) sel = 0;
+    window._REP = { resultados, candidato, sel };
+    paintReport();
   }
 }
 
-function renderReport(a, candidato) {
+function selectVisa(i) {
+  window._REP.sel = i;
+  paintReport();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function paintReport() {
+  const { resultados, candidato, sel } = window._REP;
+  const tabs = resultados.length > 1
+    ? `<div class="rep-tabs">${resultados.map((r, i) =>
+        `<button class="rep-tab${i === sel ? ' active' : ''}" onclick="selectVisa(${i})">${r.visto} · ${r.aprovacao_pct ?? r.score ?? 0}%</button>`
+      ).join('')}</div>`
+    : '';
+  renderReport(resultados[sel], candidato, tabs);
+}
+
+function renderReport(a, candidato, tabs) {
   const pct = a.aprovacao_pct ?? a.score ?? 0;
   const cls = getClass(a.classificacao);
 
   const html = `
     ${renderHeader(a, candidato, pct, cls)}
+    ${tabs || ''}
     ${renderDestaques(a.destaques)}
     <div class="body">
       <div class="main-col">
