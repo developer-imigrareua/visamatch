@@ -36,7 +36,7 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 .toolbar-brand{font-family:'Manrope',sans-serif;font-size:16px;color:var(--blue3);opacity:.6}
 .toolbar-btns{display:flex;gap:8px}
 .tbtn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
-.tbtn-print{background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff}
+.tbtn-print{background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff}
 .tbtn-print:hover{opacity:.9}
 .tbtn-back{background:#fff;color:var(--txt2);border:1.5px solid rgba(11,25,41,.12)}
 .tbtn-back:hover{border-color:var(--blue2);color:var(--blue)}
@@ -190,6 +190,35 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 .error-ico{font-size:40px}
 .error-title{font-family:'Manrope',sans-serif;font-size:22px;color:var(--blue4)}
 .error-sub{font-size:13.5px;color:var(--txt3);text-align:center}
+
+/* ── LOGO NO HEADER ── */
+.report-logo{height:30px;width:auto;display:block;margin-bottom:14px}
+
+/* ── MOBILE ── */
+@media(max-width:760px){
+  body{padding:0}
+  .toolbar{padding:12px 14px;margin:0 0 0;flex-wrap:wrap;gap:8px}
+  .page{border-radius:0;max-width:100%}
+  .report-logo{height:26px;margin-bottom:11px}
+  .header{grid-template-columns:1fr}
+  .header-left{padding:22px 20px}
+  .visto-nome{font-size:30px}
+  .header-right{border-left:none;border-top:1px solid rgba(255,255,255,.08);flex-direction:row;align-items:center;justify-content:space-between;min-width:0;padding:16px 20px;gap:12px}
+  .aprovacao-pct{font-size:44px}
+  .destaques{padding:12px 18px}
+  .rep-tabs{padding:14px 18px 0}
+  .body{grid-template-columns:1fr}
+  .main-col{padding:20px 18px;border-right:none;border-bottom:1px solid rgba(11,25,41,.07)}
+  .side-col{padding:20px 18px}
+  .criterios-table th:nth-child(4),.criterios-table td:nth-child(4){display:none}
+  .criterios-table th:nth-child(1),.criterios-table td:nth-child(1){width:26px}
+  .criterios-table{font-size:12px}
+  .criterios-table td{padding:9px 6px}
+  .crit-nome{font-size:12.5px}
+  .status-pill{font-size:10.5px;padding:3px 8px}
+  .doc-item,.acao-item{font-size:12.5px}
+  .footer{flex-direction:column;gap:10px;align-items:flex-start;padding:16px 18px}
+}
 </style>
 </head>
 <body>
@@ -301,6 +330,7 @@ function renderHeader(a, candidato, pct, cls) {
   return `
   <div class="header">
     <div class="header-left">
+      <img class="report-logo" src="https://lp.imigrareua.com/wp-content/uploads/2026/07/VISA-MATCH-LOGO-HORIZONTAL-SIMBOLO-AZUL@2x.png" alt="VisaMatch"/>
       <div class="visto-tag">✦ Avaliação de Pré-Elegibilidade</div>
       <div class="visto-nome">${a.visto}</div>
       <div class="visto-subtitulo">${getSubtitulo(a.visto)}</div>
@@ -512,27 +542,28 @@ function renderParceiro(a) {
   const score = a.score ?? a.aprovacao_pct ?? 0;
   const isLiv = parceiro === 'liv';
   const WA = 'https://wa.link/pxtk7k';
+  const WA_CONSULTA = 'https://api.whatsapp.com/send?phone=12054015605&text=Gostaria%20de%20adquirir%20uma%20consulta%20com%20um%20advogado%20licenciado';
   const LP = 'https://lp.imigrareua.com/novos-caminhos-imigrareua/';
 
   const banner = isLiv ? `
-    <div style="width:100%;height:90px;position:relative;overflow:hidden">
-      <img src="https://liv.law/wp-content/uploads/2026/05/LIV-Advogados-Licenciados-scaled.webp" style="width:100%;height:100%;object-fit:cover;object-position:center top" alt="Time LIV Immigration Law" onerror="this.style.display='none'"/>
+    <div style="width:100%;height:128px;position:relative;overflow:hidden">
+      <img src="https://liv.law/wp-content/uploads/2026/05/LIV-Advogados-Licenciados-scaled.webp" style="width:100%;height:100%;object-fit:cover;object-position:center 22%" alt="Time LIV Immigration Law" onerror="this.style.display='none'"/>
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,43,112,.7) 100%)"></div>
       <div style="position:absolute;bottom:8px;left:12px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em">LIV Immigration Law · Parceiro Oficial ImigrarEUA</div>
     </div>` : '';
 
-  const btnPrimary = 'display:block;text-align:center;text-decoration:none;background:linear-gradient(135deg,var(--blue2),var(--pink));color:#fff;border-radius:7px;padding:9px 12px;font-size:12px;font-weight:700;margin-bottom:6px';
+  const btnPrimary = 'display:block;text-align:center;text-decoration:none;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border-radius:7px;padding:9px 12px;font-size:12px;font-weight:700;margin-bottom:6px';
   const btnGhost = 'display:block;text-align:center;text-decoration:none;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:8px 12px;font-size:11.5px;font-weight:600';
 
   let botoes;
   if (isLiv && score >= 40) {
     botoes = `
       <a href="${WA}" target="_blank" rel="noopener" style="${btnPrimary}">💬 Falar com nossos especialistas, sem custo</a>
-      <a href="${WA}" target="_blank" rel="noopener" style="${btnGhost}">📅 Agendar consulta com advogado licenciado</a>`;
+      <a href="${WA_CONSULTA}" target="_blank" rel="noopener" style="${btnGhost}">📅 Agendar consulta com advogado licenciado</a>`;
   } else if (isLiv) {
     botoes = `<a href="${WA}" target="_blank" rel="noopener" style="${btnPrimary}">💬 Falar com especialistas →</a>`;
   } else {
-    botoes = `<a href="${LP}" target="_blank" rel="noopener" style="${btnPrimary.replace('linear-gradient(135deg,var(--blue2),var(--pink))','rgba(255,255,255,.15)')}">Conhecer a Phoenix →</a>`;
+    botoes = `<a href="${LP}" target="_blank" rel="noopener" style="${btnPrimary.replace('linear-gradient(135deg,var(--blue2),var(--blue3))','rgba(255,255,255,.15)')}">Conhecer a Phoenix →</a>`;
   }
 
   return `
