@@ -660,6 +660,66 @@ router.get('/funnel-stats', auth, async (req, res) => {
   }
 });
 
+// ── GET /api/admin/timeseries ── série temporal diária (tendências) ──
+// Métricas por dia: pageviews, starts, leads, completes, partials, conversion %, abandonment %
+// + volume diário por utm_source (top fontes). Aceita ?from&to (YYYY-MM-DD).
+router.get('/timeseries', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    const defaultFrom = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const from = req.query.from ? new Date(req.query.from).toISOString() : defaultFrom;
+    const to   = req.query.to   ? new Date(req.query.to + 'T23:59:59').toISOString() : now.toISOString();
+
+    const [{ data: ev }, { data: ld }] = await Promise.all([
+      supabase.from('funnel_events').select('event, created_at').gte('created_at', from).lte('created_at', to),
+      supabase.from('leads').select('created_at, score, profile').gte('created_at', from).lte('created_at', to),
+    ]);
+
+    // Lista de dias (YYYY-MM-DD) do intervalo
+    const days = [];
+    const dStart = new Date(from.slice(0, 10) + 'T00:00:00');
+    const dEnd = new Date(to.slice(0, 10) + 'T00:00:00');
+    for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
+      days.push(d.toISOString().slice(0, 10));
+    }
+    const idx = {}; days.forEach((d, i) => { idx[d] = i; });
+    const zeros = () => days.map(() => 0);
+
+    const pageviews = zeros(), starts = zeros();
+    (ev || []).forEach(e => {
+      const i = idx[(e.created_at || '').slice(0, 10)];
+      if (i == null) return;
+      if (e.event === 'view') pageviews[i]++;
+      else if (e.event === 'start') starts[i]++;
+    });
+
+    const leads = zeros(), completes = zeros(), partials = zeros();
+    const utmDaily = {};
+    (ld || []).forEach(r => {
+      const i = idx[(r.created_at || '').slice(0, 10)];
+      if (i == null) return;
+      leads[i]++;
+      if (r.score != null) completes[i]++; else partials[i]++;
+      const src = (r.profile && r.profile._utm && r.profile._utm.utm_source) || '(direto)';
+      if (!utmDaily[src]) utmDaily[src] = zeros();
+      utmDaily[src][i]++;
+    });
+
+    const conversion = days.map((_, i) => pageviews[i] > 0 ? Math.round((completes[i] / pageviews[i]) * 1000) / 10 : 0);
+    const abandonment = days.map((_, i) => leads[i] > 0 ? Math.round((partials[i] / leads[i]) * 1000) / 10 : 0);
+
+    // top fontes de UTM por volume total
+    const totals = Object.entries(utmDaily).map(([k, arr]) => [k, arr.reduce((a, b) => a + b, 0)]).sort((a, b) => b[1] - a[1]);
+    const utm = {};
+    totals.slice(0, 6).forEach(([k]) => { utm[k] = utmDaily[k]; });
+
+    res.json({ days, pageviews, starts, leads, completes, partials, conversion, abandonment, utm, from, to });
+  } catch (err) {
+    console.error('Timeseries error:', err);
+    res.status(500).json({ error: 'Erro ao buscar série temporal.' });
+  }
+});
+
 // ── GET /api/admin/hubspot-logs ── leads não sincronizados (erro OU nunca enviado)
 router.get('/hubspot-logs', auth, async (req, res) => {
   try {
