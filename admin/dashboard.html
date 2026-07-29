@@ -6,6 +6,8 @@
 <title>Visa Match · Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/webp" href="https://lp.imigrareua.com/wp-content/uploads/2026/07/Visamatch-imigrareua.webp"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -76,7 +78,7 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 .bar-item{display:flex;align-items:center;gap:10px}
 .bar-label{font-size:12.5px;color:var(--txt2);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-track{flex:1;height:8px;background:rgba(11,25,41,.05);border-radius:4px;overflow:hidden}
-.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue2),var(--pink));transition:width .6s ease}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue2),var(--blue3));transition:width .6s ease}
 .bar-num{font-size:12px;font-weight:600;color:var(--txt);min-width:28px;text-align:right}
 
 /* ── DONUT ── */
@@ -153,6 +155,12 @@ td.nome{color:var(--txt);font-weight:500}
 .utm-tab{background:none;border:1.5px solid var(--border);border-radius:7px;padding:4px 12px;font-size:11.5px;font-family:'Inter Tight',sans-serif;color:var(--txt3);cursor:pointer;transition:all .15s}
 .utm-tab:hover{border-color:var(--blue2);color:var(--txt)}
 .utm-tab.active{background:var(--blue2);border-color:var(--blue2);color:#fff}
+/* ── TREND PILLS ── */
+.trend-pill{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:6px 13px;font-size:11.5px;font-family:'Inter Tight',sans-serif;font-weight:600;color:var(--txt3);cursor:pointer;transition:all .15s}
+.trend-pill:hover{border-color:var(--blue2);color:var(--txt2)}
+.trend-pill.active{background:var(--surface3);border-color:var(--pc,var(--blue2));color:var(--txt)}
+.trend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;opacity:.35;transition:opacity .15s}
+.trend-pill.active .trend-dot{opacity:1}
 /* ── KPI CHANGE ── */
 .kpi-change{font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:8px;display:inline-flex;align-items:center;gap:3px;margin-top:6px}
 .change-up{background:rgba(29,158,112,.09);color:var(--green)}
@@ -177,18 +185,19 @@ td.nome{color:var(--txt);font-weight:500}
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sb-glow"></div>
-  <div class="brand">
-    <div class="brand-ico"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/01/612990932_18427147024116839_8350086382818301433_n.jpg" style="width:100%;height:100%;object-fit:cover" alt="ImigrarEUA"/></div>
-    <div>
-      <div class="brand-name">Visa Match</div>
-      <div class="brand-sub">Admin</div>
-    </div>
+  <div class="brand" style="display:block">
+    <img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/VISA-MATCH-LOGO-HORIZONTAL-SIMBOLO-AZUL@2x.png" alt="VisaMatch" style="height:30px;width:auto;display:block;margin-bottom:4px"/>
+    <div class="brand-sub" style="padding-left:2px">Painel Administrativo</div>
   </div>
   <nav class="nav">
     <div class="nav-sec">Visão Geral</div>
     <button class="nav-item active" onclick="showPanel('overview')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dashboard
+    </button>
+    <button class="nav-item" onclick="showPanel('trends')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+      Tendências
     </button>
     <div class="nav-sec">Dados</div>
     <button class="nav-item" onclick="showPanel('leads')">
@@ -324,6 +333,26 @@ td.nome{color:var(--txt);font-weight:500}
           </div>
         </div>
         <div id="utm-content"></div>
+      </div>
+    </div>
+
+    <!-- TRENDS PANEL -->
+    <div class="panel" id="panel-trends">
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+          <div class="card-title" style="margin-bottom:0">Tendências no Período</div>
+          <div id="trends-metric-toggles" style="display:flex;gap:7px;flex-wrap:wrap"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--txt3);margin-bottom:16px">Selecione as métricas para comparar a evolução ao longo do tempo</div>
+        <div style="position:relative;height:340px"><canvas id="trends-chart"></canvas></div>
+      </div>
+      <div class="card" style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+          <div class="card-title" style="margin-bottom:0">Volume por Origem (UTM Source)</div>
+          <div id="trends-utm-toggles" style="display:flex;gap:7px;flex-wrap:wrap"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--txt3);margin-bottom:16px">Leads por dia, por fonte de tráfego</div>
+        <div style="position:relative;height:320px"><canvas id="trends-utm-chart"></canvas></div>
       </div>
     </div>
 
@@ -561,6 +590,7 @@ function logout() {
 // ── NAVIGATION ──
 const panels = {
   overview:  { title: 'Dashboard',        sub: 'Visão geral da ferramenta Visa Match' },
+  trends:    { title: 'Tendências',       sub: 'Evolução de métricas ao longo do tempo' },
   leads:     { title: 'Leads',            sub: 'Todos os leads coletados' },
   users:     { title: 'Usuários',         sub: 'Usuários cadastrados no portal' },
   sessions:  { title: 'Sessões Ativas',   sub: 'Análises em andamento nas últimas 24h' },
@@ -576,6 +606,7 @@ function showPanel(id) {
   document.querySelector(`[onclick="showPanel('${id}')"]`).classList.add('active');
   document.getElementById('panel-title').textContent = panels[id].title;
   document.getElementById('panel-sub').textContent = panels[id].sub;
+  if (id === 'trends') loadTrends();
   if (id === 'leads') { document.getElementById('leads-detail-view').style.display = 'none'; document.getElementById('leads-list-view').style.display = ''; loadLeads(1); }
   if (id === 'users') loadUsers(1);
   if (id === 'sessions') loadSessions(1);
@@ -593,6 +624,7 @@ function loadAll() {
     const id = active.id.replace('panel-', '');
     if (id === 'leads') loadLeads(1);
     if (id === 'analytics') loadAnalytics();
+    if (id === 'trends') loadTrends();
   }
 }
 
@@ -622,6 +654,104 @@ async function loadStats() {
   renderTimeline(data.timeline, data.timelineCompletos);
   renderUtmTab('source');
   populateSourceFilter(data.porUtmSource);
+}
+
+// ── TENDÊNCIAS (série temporal) ──
+let _trendsChart = null, _utmChart = null, _trendsData = null;
+const TREND_METRICS = [
+  { key: 'pageviews',   label: 'Page Views',  color: '#1A72F6', axis: 'y'  },
+  { key: 'leads',       label: 'Leads',       color: '#0053d0', axis: 'y'  },
+  { key: 'completes',   label: 'Completos',   color: '#1d9e70', axis: 'y'  },
+  { key: 'partials',    label: 'Parciais',    color: '#f59e0b', axis: 'y'  },
+  { key: 'conversion',  label: 'Conversão %', color: '#38bdf8', axis: 'y1' },
+  { key: 'abandonment', label: 'Abandono %',  color: '#ff4b82', axis: 'y1' },
+];
+const _activeMetrics = new Set(['pageviews', 'leads', 'completes']);
+const _activeUtm = new Set();
+const UTM_COLORS = ['#0053d0', '#1A72F6', '#38bdf8', '#1d9e70', '#f59e0b', '#ff4b82'];
+
+function _dayLabels(days) { return (days || []).map(d => d.slice(8, 10) + '/' + d.slice(5, 7)); }
+
+async function loadTrends() {
+  const wrapM = document.getElementById('trends-metric-toggles');
+  const wrapU = document.getElementById('trends-utm-toggles');
+  wrapM.innerHTML = '<span style="font-size:11.5px;color:var(--txt3)">Carregando...</span>';
+  const d = await apiFetch('/timeseries?' + dateQs().slice(1));
+  _trendsData = d || {};
+
+  // pills de métrica
+  wrapM.innerHTML = TREND_METRICS.map(m =>
+    `<button class="trend-pill${_activeMetrics.has(m.key) ? ' active' : ''}" data-k="${m.key}" onclick="toggleMetric('${m.key}')" style="--pc:${m.color}"><span class="trend-dot" style="background:${m.color}"></span>${m.label}</button>`
+  ).join('');
+  renderTrendsChart();
+
+  // pills de UTM
+  const sources = Object.keys(d.utm || {});
+  if (!_activeUtm.size) sources.slice(0, 3).forEach(s => _activeUtm.add(s));
+  wrapU.innerHTML = sources.length
+    ? sources.map((s, i) => `<button class="trend-pill${_activeUtm.has(s) ? ' active' : ''}" onclick="toggleUtm('${s.replace(/'/g,"\\'")}')" style="--pc:${UTM_COLORS[i % UTM_COLORS.length]}"><span class="trend-dot" style="background:${UTM_COLORS[i % UTM_COLORS.length]}"></span>${s}</button>`).join('')
+    : '<span style="font-size:11.5px;color:var(--txt3)">Sem dados de UTM no período</span>';
+  renderUtmChart();
+}
+
+function toggleMetric(k) {
+  if (_activeMetrics.has(k)) _activeMetrics.delete(k); else _activeMetrics.add(k);
+  document.querySelector(`.trend-pill[data-k="${k}"]`)?.classList.toggle('active');
+  renderTrendsChart();
+}
+function toggleUtm(s) {
+  if (_activeUtm.has(s)) _activeUtm.delete(s); else _activeUtm.add(s);
+  loadTrendsTogglesRefresh();
+  renderUtmChart();
+}
+function loadTrendsTogglesRefresh() {
+  document.querySelectorAll('#trends-utm-toggles .trend-pill').forEach(b => {
+    const label = b.textContent.trim();
+    b.classList.toggle('active', _activeUtm.has(label));
+  });
+}
+
+function _lineDataset(label, data, color, axis) {
+  return {
+    label, data, borderColor: color, backgroundColor: color + '22',
+    yAxisID: axis, tension: 0.35, borderWidth: 2.5, pointRadius: 2, pointHoverRadius: 5,
+    pointBackgroundColor: color, fill: false,
+  };
+}
+
+function _baseOptions(dualAxis) {
+  const opt = {
+    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#002b70', padding: 10, cornerRadius: 8, titleFont: { family: 'Inter Tight' }, bodyFont: { family: 'Inter Tight' } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#737687', font: { size: 10.5 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+      y: { beginAtZero: true, grid: { color: 'rgba(11,28,48,.06)' }, ticks: { color: '#737687', font: { size: 10.5 }, precision: 0 } },
+    },
+  };
+  if (dualAxis) opt.scales.y1 = { beginAtZero: true, max: 100, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#737687', font: { size: 10.5 }, callback: v => v + '%' } };
+  return opt;
+}
+
+function renderTrendsChart() {
+  if (!_trendsData || !window.Chart) return;
+  const labels = _dayLabels(_trendsData.days);
+  const active = TREND_METRICS.filter(m => _activeMetrics.has(m.key));
+  const usesPct = active.some(m => m.axis === 'y1');
+  const datasets = active.map(m => _lineDataset(m.label, _trendsData[m.key] || [], m.color, m.axis));
+  if (_trendsChart) _trendsChart.destroy();
+  _trendsChart = new Chart(document.getElementById('trends-chart'), { type: 'line', data: { labels, datasets }, options: _baseOptions(usesPct) });
+}
+
+function renderUtmChart() {
+  if (!_trendsData || !window.Chart) return;
+  const labels = _dayLabels(_trendsData.days);
+  const sources = Object.keys(_trendsData.utm || {});
+  const datasets = sources.filter(s => _activeUtm.has(s)).map((s, i) => {
+    const color = UTM_COLORS[sources.indexOf(s) % UTM_COLORS.length];
+    return _lineDataset(s, _trendsData.utm[s] || [], color, 'y');
+  });
+  if (_utmChart) _utmChart.destroy();
+  _utmChart = new Chart(document.getElementById('trends-utm-chart'), { type: 'line', data: { labels, datasets }, options: _baseOptions(false) });
 }
 
 function changePct(val) {
