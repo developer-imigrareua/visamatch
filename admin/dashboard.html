@@ -348,10 +348,19 @@ td.nome{color:var(--txt);font-weight:500}
       </div>
       <div class="card" style="margin-bottom:24px">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
-          <div class="card-title" style="margin-bottom:0">Volume por Origem (UTM Source)</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="card-title" style="margin-bottom:0">Volume por Origem (UTM)</div>
+            <select id="utm-dim-select" onchange="changeUtmDim(this.value)" style="border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-family:'Inter Tight',sans-serif;color:var(--txt2);background:#fff;cursor:pointer;outline:none">
+              <option value="source">Source</option>
+              <option value="medium">Medium / Origem</option>
+              <option value="campaign">Campaign</option>
+              <option value="term">Term</option>
+              <option value="affiliate">Affiliate</option>
+            </select>
+          </div>
           <div id="trends-utm-toggles" style="display:flex;gap:7px;flex-wrap:wrap"></div>
         </div>
-        <div style="font-size:11.5px;color:var(--txt3);margin-bottom:16px">Leads por dia, por fonte de tráfego</div>
+        <div style="font-size:11.5px;color:var(--txt3);margin-bottom:16px">Leads <strong>completos</strong> por dia, agrupados pela dimensão selecionada</div>
         <div style="position:relative;height:320px"><canvas id="trends-utm-chart"></canvas></div>
       </div>
     </div>
@@ -668,6 +677,7 @@ const TREND_METRICS = [
 ];
 const _activeMetrics = new Set(['pageviews', 'leads', 'completes']);
 const _activeUtm = new Set();
+let _utmDim = 'source';
 const UTM_COLORS = ['#0053d0', '#1A72F6', '#38bdf8', '#1d9e70', '#f59e0b', '#ff4b82'];
 
 function _dayLabels(days) { return (days || []).map(d => d.slice(8, 10) + '/' + d.slice(5, 7)); }
@@ -685,13 +695,25 @@ async function loadTrends() {
   ).join('');
   renderTrendsChart();
 
-  // pills de UTM
-  const sources = Object.keys(d.utm || {});
+  renderUtmSection();
+}
+
+// (re)constrói pills + gráfico de UTM para a dimensão atual
+function renderUtmSection() {
+  const wrapU = document.getElementById('trends-utm-toggles');
+  const dimData = (_trendsData.utmByDim && _trendsData.utmByDim[_utmDim]) || {};
+  const sources = Object.keys(dimData);
   if (!_activeUtm.size) sources.slice(0, 3).forEach(s => _activeUtm.add(s));
   wrapU.innerHTML = sources.length
-    ? sources.map((s, i) => `<button class="trend-pill${_activeUtm.has(s) ? ' active' : ''}" onclick="toggleUtm('${s.replace(/'/g,"\\'")}')" style="--pc:${UTM_COLORS[i % UTM_COLORS.length]}"><span class="trend-dot" style="background:${UTM_COLORS[i % UTM_COLORS.length]}"></span>${s}</button>`).join('')
-    : '<span style="font-size:11.5px;color:var(--txt3)">Sem dados de UTM no período</span>';
+    ? sources.map((s, i) => `<button class="trend-pill${_activeUtm.has(s) ? ' active' : ''}" data-u="${escHtml(s)}" onclick="toggleUtm(this.dataset.u)" style="--pc:${UTM_COLORS[i % UTM_COLORS.length]}"><span class="trend-dot" style="background:${UTM_COLORS[i % UTM_COLORS.length]}"></span>${escHtml(s)}</button>`).join('')
+    : '<span style="font-size:11.5px;color:var(--txt3)">Sem dados no período</span>';
   renderUtmChart();
+}
+
+function changeUtmDim(dim) {
+  _utmDim = dim;
+  _activeUtm.clear();
+  renderUtmSection();
 }
 
 function toggleMetric(k) {
@@ -706,8 +728,7 @@ function toggleUtm(s) {
 }
 function loadTrendsTogglesRefresh() {
   document.querySelectorAll('#trends-utm-toggles .trend-pill').forEach(b => {
-    const label = b.textContent.trim();
-    b.classList.toggle('active', _activeUtm.has(label));
+    b.classList.toggle('active', _activeUtm.has(b.dataset.u));
   });
 }
 
@@ -745,10 +766,11 @@ function renderTrendsChart() {
 function renderUtmChart() {
   if (!_trendsData || !window.Chart) return;
   const labels = _dayLabels(_trendsData.days);
-  const sources = Object.keys(_trendsData.utm || {});
-  const datasets = sources.filter(s => _activeUtm.has(s)).map((s, i) => {
+  const dimData = (_trendsData.utmByDim && _trendsData.utmByDim[_utmDim]) || {};
+  const sources = Object.keys(dimData);
+  const datasets = sources.filter(s => _activeUtm.has(s)).map((s) => {
     const color = UTM_COLORS[sources.indexOf(s) % UTM_COLORS.length];
-    return _lineDataset(s, _trendsData.utm[s] || [], color, 'y');
+    return _lineDataset(s, dimData[s] || [], color, 'y');
   });
   if (_utmChart) _utmChart.destroy();
   _utmChart = new Chart(document.getElementById('trends-utm-chart'), { type: 'line', data: { labels, datasets }, options: _baseOptions(false) });

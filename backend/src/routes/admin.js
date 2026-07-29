@@ -693,27 +693,46 @@ router.get('/timeseries', auth, async (req, res) => {
       else if (e.event === 'start') starts[i]++;
     });
 
+    // Dimensões de UTM disponíveis para o report (apenas leads COMPLETOS)
+    const UTM_DIMS = {
+      source:    'utm_source',
+      medium:    'utm_medium',
+      campaign:  'utm_campaign',
+      term:      'utm_term',
+      affiliate: 'utm_affiliatename',
+    };
+    const dimDaily = {};
+    Object.keys(UTM_DIMS).forEach(d => { dimDaily[d] = {}; });
+
     const leads = zeros(), completes = zeros(), partials = zeros();
-    const utmDaily = {};
     (ld || []).forEach(r => {
       const i = idx[(r.created_at || '').slice(0, 10)];
       if (i == null) return;
       leads[i]++;
-      if (r.score != null) completes[i]++; else partials[i]++;
-      const src = (r.profile && r.profile._utm && r.profile._utm.utm_source) || '(direto)';
-      if (!utmDaily[src]) utmDaily[src] = zeros();
-      utmDaily[src][i]++;
+      const isComplete = r.score != null;
+      if (isComplete) completes[i]++; else partials[i]++;
+      if (!isComplete) return; // report de UTM considera somente leads completos
+      const utm = (r.profile && r.profile._utm) || {};
+      for (const [dim, key] of Object.entries(UTM_DIMS)) {
+        const val = utm[key] || '(não informado)';
+        if (!dimDaily[dim][val]) dimDaily[dim][val] = zeros();
+        dimDaily[dim][val][i]++;
+      }
     });
 
     const conversion = days.map((_, i) => pageviews[i] > 0 ? Math.round((completes[i] / pageviews[i]) * 1000) / 10 : 0);
     const abandonment = days.map((_, i) => leads[i] > 0 ? Math.round((partials[i] / leads[i]) * 1000) / 10 : 0);
 
-    // top fontes de UTM por volume total
-    const totals = Object.entries(utmDaily).map(([k, arr]) => [k, arr.reduce((a, b) => a + b, 0)]).sort((a, b) => b[1] - a[1]);
-    const utm = {};
-    totals.slice(0, 6).forEach(([k]) => { utm[k] = utmDaily[k]; });
+    // Para cada dimensão, top 6 valores por volume total (completos)
+    const utmByDim = {};
+    for (const dim of Object.keys(UTM_DIMS)) {
+      const totals = Object.entries(dimDaily[dim]).map(([k, arr]) => [k, arr.reduce((a, b) => a + b, 0)]).sort((a, b) => b[1] - a[1]);
+      const obj = {};
+      totals.slice(0, 6).forEach(([k]) => { obj[k] = dimDaily[dim][k]; });
+      utmByDim[dim] = obj;
+    }
 
-    res.json({ days, pageviews, starts, leads, completes, partials, conversion, abandonment, utm, from, to });
+    res.json({ days, pageviews, starts, leads, completes, partials, conversion, abandonment, utmByDim, from, to });
   } catch (err) {
     console.error('Timeseries error:', err);
     res.status(500).json({ error: 'Erro ao buscar série temporal.' });
