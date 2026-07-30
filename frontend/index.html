@@ -1863,7 +1863,7 @@ function singleFullCard(a) {
 
         <!-- Disclaimer -->
         <div style="background:rgba(11,25,41,.03);border:1px solid rgba(11,25,41,.08);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--txt3);line-height:1.65">
-          ⚖️ <b style="color:var(--txt2)">DISCLAIMER:</b> O conteúdo desta análise tem caráter estritamente informativo e não constitui aconselhamento jurídico. Receber este relatório não cria relação advogado-cliente. Para orientação jurídica específica, agende uma consulta com nossos especialistas.
+          ⚖️ <b style="color:var(--txt2)">AVISO LEGAL:</b> Este relatório foi gerado com o auxílio de inteligência artificial (IA), com base nas informações fornecidas durante a análise. Embora busquemos garantir a precisão do conteúdo, os resultados podem conter imprecisões e devem ser verificados de forma independente. Este relatório tem caráter exclusivamente informativo, não constitui aconselhamento jurídico, não substitui uma análise jurídica individualizada realizada por um advogado licenciado nos Estados Unidos e não estabelece uma relação advogado-cliente.
         </div>
       </div>
 
@@ -2135,9 +2135,9 @@ const flows = {
 
   async explain() {
     await think();
-    await showFact('🇺🇸', '<b>ImigrarEUA</b> nasceu em 2016 e já impactou mais de <b>1 milhão de pessoas por mês</b>. Somos um HUB completo de imigração legal para os EUA, reunindo especialistas, parceiros e soluções em um só lugar.');
+    await showFact('🇺🇸', 'A <b>Imigrar EUA</b> nasceu em 2016 e já analisou mais de <b>150 mil perfis</b>. Somos um HUB completo de imigração para os Estados Unidos, conectando cada pessoa aos especialistas, parceiros e soluções mais adequados ao seu caso.');
     await pause(300);
-    await botMsg('O Visa Match faz uma análise inteligente do seu perfil, calcula um <strong>score de pré-elegibilidade</strong> com base nos critérios reais do USCIS e indica os parceiros certos para o seu caso.');
+    await botMsg('O <strong>VisaMatch</strong> faz uma análise inteligente do seu perfil, calcula um <strong>score de probabilidade</strong> com base nos critérios do USCIS e indica o parceiro ideal para o seu caso.');
     await pause(300);
     await botMsg('Todas as informações são usadas exclusivamente para a sua análise. Vamos começar?');
     showOpts(['Vamos começar!'], () => { userMsg('Vamos começar!'); go('disclaimer_legal'); });
@@ -2150,9 +2150,9 @@ const flows = {
     if (localStorage.getItem('vm_lgpd_consent') === 'accepted') { go('contact_email'); return; }
     document.getElementById('pop-close').textContent = 'Aceitar e iniciar análise';
     await showPopup('⚖️', 'Aviso e Privacidade',
-      '• Esta ferramenta realiza uma <b>análise de critérios de pré-elegibilidade</b> com base nas suas respostas. Não constitui aconselhamento jurídico nem configura relação advogado-cliente.<br><br>' +
-      '• Ao concluir, você será conectado a <b>especialistas da ImigrarEUA</b>, que encaminham para advogados licenciados nos EUA pela <b>LIV Immigration Law</b> quando aplicável.<br><br>' +
-      '• <b>Privacidade (LGPD):</b> Coletamos apenas os dados fornecidos aqui para gerar sua análise. Nenhuma informação é compartilhada com terceiros sem consentimento. <a href="https://imigrareua.com/politica-de-privacidade/" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">Política de privacidade →</a>',
+      '• Esta ferramenta utiliza <b>inteligência artificial (IA)</b> para analisar as respostas fornecidas e gerar um resultado inicial. As informações apresentadas podem conter imprecisões, não constituem aconselhamento jurídico e não estabelecem uma relação advogado-cliente.<br><br>' +
+      '• Ao concluir, você poderá ser conectado aos <b>especialistas da Imigrar EUA</b> ou aos <b>advogados licenciados nos Estados Unidos da LIV Immigration Law</b>, conforme as características do seu caso.<br><br>' +
+      '• <b>Privacidade (LGPD):</b> utilizamos os dados fornecidos para gerar sua análise e dar continuidade ao atendimento. Consulte nossa Política de Privacidade para entender como suas informações são coletadas, utilizadas e protegidas.<br><a href="https://imigrareua.com/politica-de-privacidade/" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">Política de Privacidade →</a>',
       () => {
         localStorage.setItem('vm_lgpd_consent', 'accepted');
         localStorage.setItem('vm_lgpd_date', new Date().toISOString());
