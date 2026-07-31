@@ -1625,7 +1625,11 @@ async function sendReportEmail(btn) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email,
-        nome: S.profile?.nomeCompleto || S.nome || '',
+        nome: S.profile?.nomeCompleto || S.nome || (analysis.candidato && analysis.candidato.nome) || '',
+        // Diagnóstico COMPLETO (mesma fonte única do chat/relatório/PDF/conta).
+        // O template do e-mail consome estes campos e mantém paridade de conteúdo.
+        diagnostico: best,
+        // Campos planos mantidos para compatibilidade retroativa da rota.
         visto: best.visto || S.visto || '',
         score: best.score ?? 0,
         aprovacao_pct: best.aprovacao_pct ?? best.score ?? 0,

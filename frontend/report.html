@@ -267,10 +267,19 @@ if (!raw) {
         <div class="error-sub">Os dados desta análise expiraram. Volte ao Visa Match e clique em <b>"Ver relatório completo"</b> novamente.</div>
       </div>`;
   } else {
-    const resultados = (data.resultados && data.resultados.length) ? data.resultados : [data.melhor || data];
+    let resultados = (data.resultados && data.resultados.length) ? data.resultados : [data.melhor || data];
     const candidato = data.candidato || {};
     // Seleciona por padrão o "melhor" visto
     const bestVisto = (data.melhor || {}).visto;
+    // Recuperação robusta: mescla o objeto "melhor" (mais rico) no resultado
+    // correspondente. Garante que análises salvas em formato antigo (com
+    // resultados enxutos) ainda exibam o corpo completo do diagnóstico —
+    // critérios, análise, plano de ação, veredicto etc.
+    if (data.melhor && bestVisto) {
+      resultados = resultados.map(r =>
+        (r && r.visto === bestVisto) ? { ...data.melhor, ...r } : r
+      );
+    }
     let sel = resultados.findIndex(r => r.visto === bestVisto);
     if (sel < 0) sel = 0;
     window._REP = { resultados, candidato, sel };
