@@ -1,6 +1,6 @@
 const express = require('express');
 const { analyzeProfile } = require('../services/analyzer');
-const { buildHubSpotProperties, upsertContact, createNote, uploadFile, createNoteWithAttachment } = require('../services/hubspot');
+const { buildHubSpotProperties, upsertContact, upsertContactStatus, createNote, uploadFile, createNoteWithAttachment } = require('../services/hubspot');
 const { generateReportPdf } = require('../services/pdfReport');
 const supabase = require('../lib/supabase');
 const router = express.Router();
@@ -80,7 +80,7 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
   if (HUBSPOT_TOKEN && leadId) {
     try {
       const props = buildHubSpotProperties(nome, email, phone, bestVisto, bestScore, mergedProfile, finalUtm, 'completed');
-      const { hubspotId, error: hsErr } = await upsertContact(HUBSPOT_TOKEN, props);
+      const { hubspotId, error: hsErr } = await upsertContactStatus(HUBSPOT_TOKEN, props, 'completed');
       if (hubspotId) {
         await supabase.from('leads')
           .update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null })
@@ -109,12 +109,14 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
           }
         })();
       } else {
-        console.error('HubSpot sync failed (analyze):', hsErr);
-        await supabase.from('leads').update({ hubspot_error: hsErr, hubspot_payload: props }).eq('id', leadId);
+        // Falha de sync: registra status pretendido + retorno da API (sem PII) e
+        // mantém hubspot_synced=false para reprocessamento seguro.
+        console.error('HubSpot sync failed (analyze) [completed] lead', leadId, ':', hsErr);
+        await supabase.from('leads').update({ hubspot_synced: false, hubspot_error: `[completed] ${hsErr}`, hubspot_payload: props }).eq('id', leadId);
       }
     } catch (e) {
-      console.error('HubSpot request failed (analyze):', e.message);
-      await supabase.from('leads').update({ hubspot_error: e.message || String(e) }).eq('id', leadId);
+      console.error('HubSpot request failed (analyze) [completed] lead', leadId, ':', e.message);
+      await supabase.from('leads').update({ hubspot_synced: false, hubspot_error: `[completed] ${e.message || String(e)}` }).eq('id', leadId);
     }
   }
 

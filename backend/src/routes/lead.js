@@ -1,6 +1,6 @@
 const express = require('express');
 const supabase = require('../lib/supabase');
-const { buildHubSpotProperties, upsertContact, createNote, uploadFile, createNoteWithAttachment } = require('../services/hubspot');
+const { buildHubSpotProperties, upsertContact, upsertContactStatus, createNote, uploadFile, createNoteWithAttachment } = require('../services/hubspot');
 const { generateReportPdf } = require('../services/pdfReport');
 const router = express.Router();
 
@@ -40,6 +40,15 @@ router.post('/partial', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
 
   try {
+    // Regra de transição: se já existe uma análise CONCLUÍDA para este e-mail,
+    // um parcial (staged) tardio não pode rebaixar nem duplicar o lead.
+    const { data: doneLead } = await supabase
+      .from('leads').select('id').eq('email', email)
+      .not('score', 'is', null).limit(1).maybeSingle();
+    if (doneLead) {
+      return res.json({ success: true, lead_id: doneLead.id, updated: false, skipped: 'already_completed' });
+    }
+
     const { data: existing } = await supabase
       .from('leads')
       .select('id')
@@ -67,13 +76,21 @@ router.post('/partial', async (req, res) => {
 
     if (error) throw error;
 
-    // Envia/atualiza contato no HubSpot como staged (parcial)
+    // Envia/atualiza contato no HubSpot como staged (parcial). O helper aplica a
+    // regra de transição (não rebaixa um contato já 'completed') e valida o status.
     if (HUBSPOT_ENABLED && HUBSPOT_TOKEN && email) {
       try {
         const partialProps = buildHubSpotProperties(nome, email, phone, null, null, profile, utm, 'staged');
-        await upsertContact(HUBSPOT_TOKEN, partialProps);
+        const { hubspotId, error: hsErr, skipped } = await upsertContactStatus(HUBSPOT_TOKEN, partialProps, 'staged');
+        if (hubspotId && !skipped) {
+          await supabase.from('leads').update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null }).eq('id', data.id);
+        } else if (hsErr) {
+          console.error('HubSpot partial sync failed [staged] lead', data.id, ':', hsErr);
+          await supabase.from('leads').update({ hubspot_error: `[staged] ${hsErr}`, hubspot_payload: partialProps }).eq('id', data.id);
+        }
       } catch (e) {
-        console.warn('HubSpot partial sync error:', e.message);
+        console.error('HubSpot partial sync error [staged] lead', data.id, ':', e.message);
+        await supabase.from('leads').update({ hubspot_error: `[staged] ${e.message || String(e)}` }).eq('id', data.id).then(()=>{}, ()=>{});
       }
     }
 
@@ -140,7 +157,7 @@ router.post('/', async (req, res) => {
   if (HUBSPOT_ENABLED && HUBSPOT_TOKEN) {
     try {
       const properties = buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 'completed');
-      const { hubspotId: hsId, error: hsErr } = await upsertContact(HUBSPOT_TOKEN, properties);
+      const { hubspotId: hsId, error: hsErr } = await upsertContactStatus(HUBSPOT_TOKEN, properties, 'completed');
 
       if (hsId) {
         hubspotId = hsId;

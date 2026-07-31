@@ -757,7 +757,7 @@ router.get('/hubspot-logs', auth, async (req, res) => {
 
 // ── POST /api/admin/hubspot-retry/:id ── retentar sincronização
 router.post('/hubspot-retry/:id', auth, async (req, res) => {
-  const { buildHubSpotProperties, upsertContact, createNote } = require('../services/hubspot');
+  const { buildHubSpotProperties, upsertContactStatus, createNote } = require('../services/hubspot');
   const HUBSPOT_TOKEN = process.env.HUBSPOT_TOKEN;
   if (!HUBSPOT_TOKEN) return res.status(500).json({ error: 'HUBSPOT_TOKEN não configurado.' });
 
@@ -765,20 +765,24 @@ router.post('/hubspot-retry/:id', auth, async (req, res) => {
     const { data: lead } = await supabase.from('leads').select('*').eq('id', req.params.id).single();
     if (!lead) return res.status(404).json({ error: 'Lead não encontrado.' });
 
+    // Status REAL derivado da fonte oficial (Supabase): concluído => completed,
+    // caso contrário staged. Nunca força 'completed' num parcial.
+    const status = (lead.completo === true || lead.score != null) ? 'completed' : 'staged';
+
     // Sempre reconstrói o payload completo a partir do perfil salvo
     const profile = lead.profile || {};
     const utm = profile._utm || {};
-    const properties = buildHubSpotProperties(lead.nome, lead.email, lead.phone, lead.visto_recomendado, lead.score, profile, utm);
+    const properties = buildHubSpotProperties(lead.nome, lead.email, lead.phone, lead.visto_recomendado, lead.score, profile, utm, status);
 
-    const { hubspotId, error: hsErr } = await upsertContact(HUBSPOT_TOKEN, properties);
+    const { hubspotId, error: hsErr, skipped } = await upsertContactStatus(HUBSPOT_TOKEN, properties, status);
 
     if (hubspotId) {
       await supabase.from('leads').update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null }).eq('id', lead.id);
-      await createNote(HUBSPOT_TOKEN, hubspotId, `✅ Preencheu VisaMatch\nVisto: ${lead.visto_recomendado || '-'}\nScore: ${lead.score ?? '-'}\n(Retry manual pelo admin)`);
-      res.json({ success: true, hubspot_contact_id: hubspotId });
+      await createNote(HUBSPOT_TOKEN, hubspotId, `✅ VisaMatch (${status})\nVisto: ${lead.visto_recomendado || '-'}\nScore: ${lead.score ?? '-'}\n(Retry manual pelo admin${skipped ? ', sem rebaixar completed' : ''})`);
+      res.json({ success: true, hubspot_contact_id: hubspotId, status, skipped: !!skipped });
     } else {
-      await supabase.from('leads').update({ hubspot_error: hsErr, hubspot_payload: properties }).eq('id', lead.id);
-      res.status(400).json({ error: hsErr });
+      await supabase.from('leads').update({ hubspot_error: `[${status}] ${hsErr}`, hubspot_payload: properties }).eq('id', lead.id);
+      res.status(400).json({ error: hsErr, status });
     }
   } catch (err) {
     res.status(500).json({ error: err.message });

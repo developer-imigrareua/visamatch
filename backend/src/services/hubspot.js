@@ -156,7 +156,15 @@ function mapHabCriteria(p) {
     .join(';');
 }
 
+// Status do funil aceitos (fonte única). Nunca enviar vazio/nulo/ausente.
+const RESPONSE_TYPES = ['staged', 'completed'];
+
 function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, responseType) {
+  // Interrompe o envio quando o status não é determinável — não usa fallback vazio
+  // nem default 'completed'. O chamador deve registrar o erro e reprocessar.
+  if (!RESPONSE_TYPES.includes(responseType)) {
+    throw new Error(`typeform_response_type inválido: "${responseType}" (esperado: staged | completed)`);
+  }
   const p = profile || {};
   const nameParts = (nome || '').trim().split(' ');
   const firstname = nameParts[0] || '';
@@ -273,7 +281,10 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     utm_affiliatetype: utm?.utm_affiliatetype || '',
     utm_affiliatename: utm?.utm_affiliatename || '',
 
-    visamatch_response_type: responseType || 'completed',
+    // Propriedade OFICIAL do funil no HubSpot (recebe staged|completed).
+    typeform_response_type: responseType,
+    // Mantida por compatibilidade com relatórios existentes.
+    visamatch_response_type: responseType,
   };
 
   return Object.fromEntries(
@@ -322,6 +333,13 @@ async function _doRequest(token, method, url, properties) {
     const badFields = parsed.errors
       .filter(e => e.code === 'INVALID_OPTION' || e.code === 'READ_ONLY_VALUE')
       .map(e => e.context?.propertyName?.[0]).filter(Boolean);
+    // NUNCA remove silenciosamente a propriedade de status: se o HubSpot rejeitar
+    // typeform_response_type/visamatch_response_type, isso é falha real (deixaria
+    // o funil em branco). Retorna erro para registro e reprocessamento.
+    const STATUS_PROPS = ['typeform_response_type', 'visamatch_response_type'];
+    if (badFields.some(f => STATUS_PROPS.includes(f))) {
+      return { ok: false, status: res.status, text, statusRejected: true };
+    }
     if (badFields.length) {
       const stripped = Object.fromEntries(Object.entries(properties).filter(([k]) => !badFields.includes(k)));
       console.warn('HubSpot: retrying without invalid fields:', badFields);
@@ -360,6 +378,41 @@ async function upsertContact(token, properties) {
   }
 
   return { error: `HTTP ${postResult.status}: ${postResult.text}` };
+}
+
+// Lê o status atual do funil do contato (para impedir regressões de estado).
+async function getContactResponseType(token, email) {
+  try {
+    const id = await resolveHubSpotId(token, email);
+    if (!id) return { id: null, status: null };
+    const r = await fetch(
+      `https://api.hubapi.com/crm/v3/objects/contacts/${id}?properties=typeform_response_type,visamatch_response_type`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    if (!r.ok) return { id, status: null };
+    const b = await r.json();
+    const status = b.properties?.typeform_response_type || b.properties?.visamatch_response_type || null;
+    return { id, status };
+  } catch (e) {
+    return { id: null, status: null };
+  }
+}
+
+// Upsert idempotente COM regra de transição (sem status → staged → completed).
+// Um evento 'staged' nunca rebaixa um contato já 'completed'.
+// Retorna { hubspotId, error, skipped }.
+async function upsertContactStatus(token, properties, status) {
+  if (!RESPONSE_TYPES.includes(status)) {
+    return { error: `status inválido: "${status}"` };
+  }
+  if (status === 'staged') {
+    const cur = await getContactResponseType(token, properties.email);
+    if (cur.status === 'completed') {
+      // Não regride: mantém o estado mais avançado.
+      return { hubspotId: cur.id, skipped: true };
+    }
+  }
+  return upsertContact(token, properties);
 }
 
 // Cria Note associada ao contato (não lança exceção se falhar)
@@ -428,4 +481,4 @@ async function createNoteWithAttachment(token, hubspotId, body, fileId) {
   }
 }
 
-module.exports = { buildHubSpotProperties, upsertContact, createNote, resolveHubSpotId, uploadFile, createNoteWithAttachment };
+module.exports = { buildHubSpotProperties, upsertContact, upsertContactStatus, getContactResponseType, createNote, resolveHubSpotId, uploadFile, createNoteWithAttachment, RESPONSE_TYPES };
