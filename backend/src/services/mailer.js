@@ -169,7 +169,7 @@ function sendAnalysisReport(email, nome, diag) {
   const parceiroUrl = isLiv ? 'https://wa.link/pxtk7k' : 'https://lp.imigrareua.com/novos-caminhos-imigrareua/';
   const livBanner = isLiv ? `
       <div style="line-height:0">
-        <img src="${LIV_BANNER}" width="100%" alt="Equipe LIV Immigration Law · Advogados licenciados nos EUA" style="display:block;width:100%;max-width:100%;height:auto;max-height:150px;object-fit:cover"/>
+        <img src="${LIV_BANNER}" width="100%" alt="Equipe LIV Immigration Law · Advogados licenciados nos EUA" style="display:block;width:100%;max-width:100%;height:auto;max-height:170px;object-fit:cover;object-position:center top"/>
       </div>` : '';
 
   // ── Corpo ──
