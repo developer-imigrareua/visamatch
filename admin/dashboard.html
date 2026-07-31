@@ -1174,9 +1174,39 @@ async function viewLead(id) {
     </div>
     ${renderAiAnalysis(l.profile?.ai_analysis)}
     <div class="card" style="margin-top:16px">
-      <div class="card-title">Perfil Completo (JSON)</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <div class="card-title" style="margin:0">Perfil Completo (JSON)</div>
+        <button class="copy-json-btn" data-lead="${l.id}" onclick="copyLeadJson(this)" style="background:#0053d0;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Copiar JSON</button>
+      </div>
+      <textarea id="lead-json-${l.id}" readonly style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">${escHtml(JSON.stringify(l.profile || {}, null, 2))}</textarea>
       <div class="json-block">${JSON.stringify(l.profile || {}, null, 2)}</div>
     </div>`;
+}
+
+// Copia o JSON íntegro do lead ABERTO (conteúdo textual, sem HTML/formatação da UI).
+async function copyLeadJson(btn) {
+  const id = btn.getAttribute('data-lead');
+  const ta = document.getElementById('lead-json-' + id);
+  const original = btn.textContent;
+  const done = ok => {
+    btn.textContent = ok ? '✓ Copiado!' : '⚠️ Falhou';
+    btn.style.background = ok ? '#1d9e70' : '#dc2626';
+    setTimeout(() => { btn.textContent = original; btn.style.background = '#0053d0'; }, 1800);
+  };
+  try {
+    if (!ta) throw new Error('conteúdo não encontrado');
+    const text = ta.value;
+    JSON.parse(text); // garante JSON válido antes de copiar
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      ta.style.left = '0'; ta.select(); document.execCommand('copy'); ta.style.left = '-9999px';
+    }
+    done(true);
+  } catch (e) {
+    console.error('Copiar JSON falhou:', e.message);
+    done(false);
+  }
 }
 
 async function downloadReport(id, nome) {

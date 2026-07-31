@@ -61,20 +61,6 @@ Retorne um JSON com EXATAMENTE esta estrutura (sem campos extras, sem texto fora
 
   "documentacao_principal": string[] (6-10 documentos específicos necessários para este caso),
 
-  "custo_estimado": {
-    "itens": [
-      { "nome": string, "valor": string }
-    ],
-    "total": string
-  },
-
-  "processo": {
-    "prazo_regular": string (ex: "2–3 meses"),
-    "prazo_premium": string (ex: "15 dias úteis"),
-    "validade": string (ex: "3 anos, renovável"),
-    "quem_peticiona": string
-  },
-
   "plano_acao": string[] (4-5 ações concretas e priorizadas para as próximas 2-4 semanas),
 
   "proximos_passos": string[] (3-5 ações de médio prazo),

@@ -304,7 +304,9 @@ function paintReport() {
 }
 
 function renderReport(a, candidato, tabs) {
-  const pct = a.aprovacao_pct ?? a.score ?? 0;
+  // Nunca exibe percentual negativo. Abaixo do mínimo (Incompatível), o header
+  // mostra apenas a classificação, sem número.
+  const pct = Math.max(0, Math.round(a.aprovacao_pct ?? a.score ?? 0));
   const cls = getClass(a.classificacao);
 
   const html = `
@@ -348,7 +350,7 @@ function renderHeader(a, candidato, pct, cls) {
     </div>
     <div class="header-right">
       <div class="aprovacao-label">Probabilidade de Aprovação</div>
-      <div class="aprovacao-pct">${pct}%</div>
+      ${a.classificacao === 'Incompatível' ? '' : `<div class="aprovacao-pct">${pct}%</div>`}
       <div class="aprovacao-icon ${aprovClsMap[a.classificacao] || 'aprovacao-dev'}">${iconMap[a.classificacao] || '○'}</div>
       <div class="classificacao-badge ${cls.badgeCls}">${a.classificacao}</div>
     </div>

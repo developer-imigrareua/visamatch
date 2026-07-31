@@ -88,7 +88,7 @@ function criteriaBlock(doc, title, pairs) {
  * Gera o PDF do relatório VisaMatch e resolve com um Buffer.
  * @param {object} opts { nome, email, phone, visto, vistos, score, profile }
  */
-function generateReportPdf({ nome, visto, vistos, score, profile }) {
+function generateReportPdf({ nome, email, phone, visto, vistos, score, profile }) {
   return new Promise((resolve, reject) => {
     try {
       const p = profile || {};
@@ -110,6 +110,8 @@ function generateReportPdf({ nome, visto, vistos, score, profile }) {
       // ── Dados do cliente ──
       sectionHeader(doc, 'Dados do Cliente');
       row(doc, 'Nome completo', nome);
+      row(doc, 'E-mail', email);
+      row(doc, 'WhatsApp', phone);
       row(doc, 'Data de nascimento', fmtIdadeNasc(p));
       row(doc, 'Reside atualmente em', p.localMora);
       row(doc, 'Já esteve nos EUA', p.historicoPermanenciaEUA);

@@ -672,6 +672,7 @@ function addUndoBtn() {
     S.visto = prev.visto; S.vistos = prev.vistos;
     setSideStep(prev.sStep); setProgress(prev.prog);
     clearInputHandlers(); rmOpts();
+    hideStructuredZone(); // fecha widgets (data/telefone) antes de reabrir a pergunta
     document.querySelector('.input-zone').classList.remove('dimmed');
     document.querySelector('.input-zone').style.display = '';
     ti.disabled = false;
@@ -905,6 +906,15 @@ function waitInput(onVal) {
 
 function pause(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Remove emojis/bandeiras e normaliza espaços (preserva acentos e nomes compostos).
+// Usado em valores de país persistidos (JSON/PDF/HubSpot) para evitar caracteres quebrados.
+function stripEmoji(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2190}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // ── Widget de data MM/AAAA (cursos, empregos) ──
 // allowCurrent: mostra botão "Atual" para campos de saída
 function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
@@ -1021,10 +1031,37 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
     });
   }
   inputEl.focus();
+  // "Corrigir resposta anterior" também nos widgets de data (inclusive com "Atual"),
+  // sem obrigar o usuário a responder a pergunta atual para voltar.
+  if (S.history.length > 2) setTimeout(addUndoBtn, 150);
 }
 
 async function think(ms = 900) {
   const t = showTyping(); await pause(ms); rmTyping(); return t;
+}
+
+// Voltar do campo de senha para trocar o e-mail, sem recarregar a página.
+// Limpa TODO o estado vinculado ao e-mail anterior (autenticação, nome, sessão).
+async function chatChangeEmail() {
+  const sz = document.getElementById('structured-zone');
+  if (sz) { sz.style.display = 'none'; sz.innerHTML = ''; }
+  document.querySelector('.input-zone').style.display = '';
+  ti.disabled = false; clearInputHandlers();
+  // Não mantém autenticação/sessão do e-mail substituído
+  localStorage.removeItem('vm_user_token');
+  localStorage.removeItem('vm_user');
+  localStorage.removeItem('vm_session_id');
+  _sessionId = null;
+  S.email = ''; S.nome = ''; S.phone = '';
+  if (S.profile) S.profile.nomeCompleto = '';
+  userMsg('Usar outro e-mail');
+  const askEmail = () => waitInput(v => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(v.trim())) { botMsg('⚠️ E-mail inválido. Tente novamente.'); askEmail(); return; }
+    S.email = v.trim(); go('check_email_exists');
+  });
+  await botMsg('Sem problemas! Qual <strong>e-mail</strong> você quer usar?');
+  askEmail();
 }
 
 async function chatForgotPassword() {
@@ -2346,7 +2383,10 @@ const flows = {
       'style="border:none;outline:none;font-size:15px;font-family:\'Inter Tight\',sans-serif;color:var(--txt);flex:1;background:none"/>' +
       '<button id="' + inputId + '-send" style="background:linear-gradient(135deg,var(--blue2),var(--blue3));border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>' +
-      '<div style="margin-top:8px"><button onclick="chatForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--blue);cursor:pointer;padding:0;font-family:\'Inter Tight\',sans-serif">Esqueceu a senha? Receber código por e-mail</button></div>';
+      '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;align-items:flex-start">' +
+      '<button onclick="chatForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--blue);cursor:pointer;padding:0;font-family:\'Inter Tight\',sans-serif">Esqueceu a senha? Receber código por e-mail</button>' +
+      '<button onclick="chatChangeEmail()" style="background:none;border:none;font-size:12px;color:var(--txt2);cursor:pointer;padding:0;font-family:\'Inter Tight\',sans-serif">← Voltar e usar outro e-mail</button>' +
+      '</div>';
     sz.appendChild(row);
 
     const doLoginChat = async () => {
@@ -2565,13 +2605,12 @@ const flows = {
           await saveUserProfile(S.profile.nomeCompleto || S.nome, S.phone);
           go('path_select');
         } else {
-          await botMsg('Qual é o seu <strong>WhatsApp</strong> atual? Selecione o país e digite o número:');
+          // contact_phone já faz a solicitação (evita mensagem duplicada de WhatsApp)
           go('contact_phone');
         }
       });
     } else {
-      // Não tem telefone salvo, pede
-      await botMsg('Para continuar, preciso do seu <strong>WhatsApp</strong>. Selecione o país e digite o número:');
+      // Sem telefone salvo: contact_phone faz a única solicitação (sem duplicar)
       go('contact_phone');
     }
   },
@@ -2579,15 +2618,21 @@ const flows = {
   async contact_name() {
     await think(500);
     await botMsg('Ótimo! E qual é o seu <strong>nome completo</strong>? (nome e sobrenome)');
-    waitInput(val => {
-      const partes = val.trim().split(/\s+/).filter(p => p.length >= 2);
+    // Exige nome + sobrenome de forma persistente (não avança com uma palavra só).
+    // Preserva acentos, espaços e nomes compostos; não inventa sobrenomes.
+    const askName = () => waitInput(async val => {
+      const limpo = val.trim().replace(/\s{2,}/g, ' ');
+      const partes = limpo.split(' ').filter(p => p.length >= 2);
       if (partes.length < 2) {
-        botMsg('⚠️ Por favor, informe seu <strong>nome e sobrenome</strong> completos.');
-        waitInput(v2 => { S.nome = fml(v2); S.profile.nomeCompleto = v2; go('contact_phone'); });
+        await botMsg('⚠️ Preciso do seu <strong>nome e sobrenome</strong> completos. Informe os dois, por favor.');
+        askName();
         return;
       }
-      S.nome = fml(val); S.profile.nomeCompleto = val; go('contact_phone');
+      S.nome = fml(limpo);            // primeiro nome apenas para saudações do chat
+      S.profile.nomeCompleto = limpo; // fonte oficial do nome completo
+      go('contact_phone');
     });
+    askName();
   },
 
   async contact_phone() {
@@ -3250,7 +3295,7 @@ const flows = {
     // Salva lead parcial, abandono por fundos
     fetch(`${API_BASE}/lead/partial`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_fundos', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
+      body: JSON.stringify({ nome: S.profile.nomeCompleto || S.nome, email: S.email, phone: S.phone, etapa: 'abandono_fundos', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
     }).catch(()=>{});
     await botMsg(`Entendemos completamente, ${S.nome}. O processo de visto é um investimento importante. Nossa equipe pode explicar melhor as opções de pagamento e ajudar a planejar. Posso coletar seus dados para que um especialista entre em contato?`);
     showOpts(['Sim, quero ser contatado', 'Recomeçar avaliação'], val => {
@@ -3266,7 +3311,7 @@ const flows = {
     // Salva lead parcial, abandono por perfil
     fetch(`${API_BASE}/lead/partial`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
+      body: JSON.stringify({ nome: S.profile.nomeCompleto || S.nome, email: S.email, phone: S.phone, etapa: 'abandono_sem_perfil', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
     }).catch(()=>{});
     await botMsg(`Com o perfil atual, os vistos de trabalho e Green Card ainda exigem algumas bases que precisam ser construídas. A boa notícia é que <strong>isso tem caminho</strong>, e o time da Phoenix pode te ajudar com isso.`);
     await pause(400);
@@ -3370,14 +3415,15 @@ const flows = {
     showOpts(['Brasil 🇧🇷','Estados Unidos 🇺🇸','Outro país 🌍'], val => {
       userMsg(val);
       if (val.includes('Outro')) go('pi_local_outro');
-      else { S.profile.localMora = val; go('pi_profissao'); }
+      // Persiste o país SEM emoji/bandeira (evita caracteres quebrados no PDF/HubSpot)
+      else { S.profile.localMora = stripEmoji(val); go('pi_profissao'); }
     });
   },
 
   async pi_local_outro() {
     await think(300);
     await botMsg('Qual país você reside atualmente?');
-    waitInput(val => { S.profile.localMora = val; go('pi_profissao'); });
+    waitInput(val => { S.profile.localMora = stripEmoji(val); go('pi_profissao'); });
   },
 
   async pi_profissao() {
@@ -4150,7 +4196,7 @@ const flows = {
     const analyzePromise = fetch(`${API_BASE}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, visto: S.visto, vistos: S.vistos, profile: S.profile, localScores, utm: window._vmUtms || {} }),
+      body: JSON.stringify({ nome: S.profile.nomeCompleto || S.nome, email: S.email, phone: S.phone, visto: S.visto, vistos: S.vistos, profile: S.profile, localScores, utm: window._vmUtms || {} }),
       signal: _analyzeCtrl.signal
     }).finally(() => clearTimeout(_analyzeTimeout));
 
@@ -4293,7 +4339,7 @@ const flows = {
     // Salva lead de nurturing (não completou mas quer contato)
     fetch(`${API_BASE}/lead/partial`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone, etapa: 'nurturing_contato', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
+      body: JSON.stringify({ nome: S.profile.nomeCompleto || S.nome, email: S.email, phone: S.phone, etapa: 'nurturing_contato', visto: S.visto, profile: S.profile, utm: window._vmUtms || {} })
     }).catch(()=>{});
     await botMsg(`Obrigado pelas informações, <strong>${S.nome}</strong>! Registrei seu perfil e nossa equipe entrará em contato em breve para dar os próximos passos. 🙌`);
     await pause(400);
@@ -4697,7 +4743,7 @@ document.addEventListener('visibilitychange', () => {
     // Salva abandono granular com o step exato onde o usuário saiu
     fetch(`${API_BASE}/lead/partial`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ nome: S.nome, email: S.email, phone: S.phone || null, etapa: S.step, profile: { ...S.profile, _step_atual: S.step }, utm: window._vmUtms || {} })
+      body: JSON.stringify({ nome: S.profile.nomeCompleto || S.nome, email: S.email, phone: S.phone || null, etapa: S.step, profile: { ...S.profile, _step_atual: S.step }, utm: window._vmUtms || {} })
     }).catch(()=>{});
   }
   if (!_exitEnabled || _exitShown) return;
