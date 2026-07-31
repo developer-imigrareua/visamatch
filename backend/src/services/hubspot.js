@@ -398,21 +398,62 @@ async function getContactResponseType(token, email) {
   }
 }
 
+// Marca o contato como MARKETING contact via Marketing Contacts API.
+// hs_marketable_status é read-only na CRM API; a conversão é feita por este
+// endpoint dedicado, usando o ID do contato já criado/localizado (sem duplicar).
+// Só define 'marketing' — nunca 'non-marketing' (não reverte). Não lança: falha
+// é registrada e não bloqueia a sync principal; pode ser reprocessada.
+async function setMarketingContact(token, contactId) {
+  if (!contactId) return { ok: false, error: 'sem contactId' };
+  try {
+    const r = await fetch(
+      'https://api.hubapi.com/marketing/v3/marketing/contacts/batch/set-status/marketing',
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: [{ id: String(contactId) }] })
+      }
+    );
+    if (!r.ok) {
+      const t = await r.text();
+      console.error('HubSpot set marketing falhou | contactId', contactId, '| HTTP', r.status, '|', t.slice(0, 200));
+      return { ok: false, status: r.status, text: t };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('HubSpot set marketing erro | contactId', contactId, '|', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
 // Upsert idempotente COM regra de transição (sem status → staged → completed).
-// Um evento 'staged' nunca rebaixa um contato já 'completed'.
-// Retorna { hubspotId, error, skipped }.
+// Um evento 'staged' nunca rebaixa um contato já 'completed'. Após localizar/criar
+// o contato, converte-o em Marketing contact (mesmo contato, sem duplicar).
+// Retorna { hubspotId, error, skipped, marketing }.
 async function upsertContactStatus(token, properties, status) {
   if (!RESPONSE_TYPES.includes(status)) {
     return { error: `status inválido: "${status}"` };
   }
+  let result;
   if (status === 'staged') {
     const cur = await getContactResponseType(token, properties.email);
     if (cur.status === 'completed') {
-      // Não regride: mantém o estado mais avançado.
-      return { hubspotId: cur.id, skipped: true };
+      // Não regride o typeform_response_type, mas garante o status de marketing.
+      result = { hubspotId: cur.id, skipped: true };
+    } else {
+      result = await upsertContact(token, properties);
     }
+  } else {
+    result = await upsertContact(token, properties);
   }
-  return upsertContact(token, properties);
+
+  // Marketing contact: aplica sempre que houver um contato (staged e completed).
+  if (result.hubspotId) {
+    const mk = await setMarketingContact(token, result.hubspotId);
+    result.marketing = mk.ok ? 'marketing' : false;
+    if (!mk.ok) result.marketingError = mk.status ? `HTTP ${mk.status}` : (mk.error || 'erro');
+  }
+  return result;
 }
 
 // Cria Note associada ao contato (não lança exceção se falhar)
@@ -481,4 +522,4 @@ async function createNoteWithAttachment(token, hubspotId, body, fileId) {
   }
 }
 
-module.exports = { buildHubSpotProperties, upsertContact, upsertContactStatus, getContactResponseType, createNote, resolveHubSpotId, uploadFile, createNoteWithAttachment, RESPONSE_TYPES };
+module.exports = { buildHubSpotProperties, upsertContact, upsertContactStatus, getContactResponseType, setMarketingContact, createNote, resolveHubSpotId, uploadFile, createNoteWithAttachment, RESPONSE_TYPES };

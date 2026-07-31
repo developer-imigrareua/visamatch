@@ -789,6 +789,32 @@ router.post('/hubspot-retry/:id', auth, async (req, res) => {
   }
 });
 
+// ── POST /api/admin/hubspot-marketing-backfill ── converte contatos VisaMatch já
+// existentes em Marketing contact, usando o hubspot_contact_id EXATO salvo (sem
+// duplicar, sem alterar propriedades/notas). Critério: apenas contatos originados
+// pelo VisaMatch (hubspot_contact_id não nulo). Use ?dry=1 para só contar.
+router.post('/hubspot-marketing-backfill', auth, async (req, res) => {
+  const { setMarketingContact } = require('../services/hubspot');
+  const HUBSPOT_TOKEN = process.env.HUBSPOT_TOKEN;
+  if (!HUBSPOT_TOKEN) return res.status(500).json({ error: 'HUBSPOT_TOKEN não configurado.' });
+  const dry = req.query.dry === '1' || req.query.dry === 'true';
+  try {
+    const { data: leads } = await supabase.from('leads')
+      .select('hubspot_contact_id').not('hubspot_contact_id', 'is', null);
+    const ids = [...new Set((leads || []).map(l => String(l.hubspot_contact_id)).filter(Boolean))];
+    if (dry) return res.json({ dry_run: true, contatos_afetados: ids.length });
+    let ok = 0, fail = 0; const erros = [];
+    for (const id of ids) {
+      const r = await setMarketingContact(HUBSPOT_TOKEN, id);
+      if (r.ok) ok++; else { fail++; erros.push({ id, err: r.status ? `HTTP ${r.status}` : (r.error || 'erro') }); }
+      await new Promise(rz => setTimeout(rz, 120)); // rate limit
+    }
+    res.json({ total: ids.length, marcados_marketing: ok, falhas: fail, erros: erros.slice(0, 20) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── DELETE /api/admin/leads/bulk ── delete leads by email list
 router.delete('/leads/bulk', auth, async (req, res) => {
   try {
