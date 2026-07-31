@@ -32,7 +32,7 @@ async function sendWelcome(email, nome) {
     subject: '✅ Conta criada · Visa Match Imigrar EUA',
     html: `
       <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#f8faff">
-        <div style="background:linear-gradient(135deg,#1A72F6,#002b70);border-radius:16px;padding:30px 28px;text-align:center;margin-bottom:24px">
+        <div style="background-color:#0e3b8a;background:linear-gradient(135deg,#1A72F6,#002b70);border-radius:16px;padding:30px 28px;text-align:center;margin-bottom:24px">
           <img src="${LOGO_URL}" alt="Visa Match · Imigrar EUA" height="32" style="height:32px;width:auto;max-width:72%;display:block;margin:0 auto"/>
           <p style="color:rgba(255,255,255,.7);font-size:12px;margin:11px 0 0;letter-spacing:.06em;text-transform:uppercase">Imigrar EUA</p>
         </div>
@@ -41,7 +41,7 @@ async function sendWelcome(email, nome) {
           <p style="color:#424655;font-size:15px;line-height:1.7;margin:0 0 20px">
             Sua conta no <strong>Visa Match</strong> foi criada com sucesso. Agora você pode acessar seu histórico de análises a qualquer momento.
           </p>
-          <a href="${APP_URL}/portal/" style="display:inline-block;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:700">
+          <a href="${APP_URL}/portal/" style="display:inline-block;background-color:#1A72F6;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:700">
             Acessar meu portal →
           </a>
           <p style="color:#737687;font-size:12px;margin:20px 0 0;line-height:1.6">
@@ -189,7 +189,7 @@ function sendAnalysisReport(email, nome, diag) {
         <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:${MUT};margin-bottom:4px">Parceiro Recomendado</div>
         <div style="font-size:15px;font-weight:700;color:${H};margin-bottom:4px">${esc(parceiroNome)}</div>
         <div style="font-size:13px;line-height:1.6;color:${TXT};margin-bottom:12px">${esc(parceiroDesc)}</div>
-        <a href="${parceiroUrl}" style="display:inline-block;background:linear-gradient(135deg,#1A72F6,#003fa3);color:#fff;text-decoration:none;padding:10px 20px;border-radius:9px;font-size:13px;font-weight:700">Falar com o parceiro →</a>
+        <a href="${parceiroUrl}" style="display:inline-block;background-color:#1A72F6;background:linear-gradient(135deg,#1A72F6,#003fa3);color:#fff;text-decoration:none;padding:10px 20px;border-radius:9px;font-size:13px;font-weight:700">Falar com o parceiro →</a>
       </div>
     </div>
   `;
@@ -200,7 +200,7 @@ function sendAnalysisReport(email, nome, diag) {
     subject: `📊 Seu diagnóstico Visa Match · ${visto} · ${pct}%`,
     html: `
       <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;padding:28px 18px;background:#f8faff">
-        <div style="background:linear-gradient(135deg,#1A72F6,#002b70);border-radius:16px;padding:26px 28px;text-align:center;margin-bottom:20px">
+        <div style="background-color:#0e3b8a;background:linear-gradient(135deg,#1A72F6,#002b70);border-radius:16px;padding:26px 28px;text-align:center;margin-bottom:20px">
           <img src="${LOGO_URL}" alt="Visa Match · Imigrar EUA" height="34" style="height:34px;width:auto;max-width:78%;display:block;margin:0 auto"/>
           <p style="color:rgba(255,255,255,.7);font-size:12px;margin:12px 0 0;letter-spacing:.06em;text-transform:uppercase">Imigrar EUA · Diagnóstico de Perfil</p>
         </div>
@@ -227,7 +227,7 @@ async function sendPasswordReset(email, nome, token) {
     subject: '🔐 Redefinir senha · Visa Match',
     html: `
       <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#f8faff">
-        <div style="background:linear-gradient(135deg,#1A72F6,#002b70);border-radius:16px;padding:24px;text-align:center;margin-bottom:24px">
+        <div style="background-color:#0e3b8a;background:linear-gradient(135deg,#1A72F6,#002b70);border-radius:16px;padding:24px;text-align:center;margin-bottom:24px">
           <img src="${LOGO_URL}" alt="Visa Match · Imigrar EUA" height="30" style="height:30px;width:auto;max-width:70%;display:block;margin:0 auto"/>
         </div>
         <div style="background:#fff;border-radius:12px;padding:28px;border:1px solid rgba(194,198,216,.4)">
@@ -235,7 +235,7 @@ async function sendPasswordReset(email, nome, token) {
           <p style="color:#424655;font-size:14px;line-height:1.7;margin:0 0 20px">
             Olá${nome ? `, <strong>${nome}</strong>` : ''}! Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo:
           </p>
-          <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:700">
+          <a href="${resetUrl}" style="display:inline-block;background-color:#1A72F6;background:linear-gradient(135deg,#1A72F6,#ff4b82);color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:700">
             Redefinir senha →
           </a>
           <p style="color:#737687;font-size:12px;margin:16px 0 0;line-height:1.6">
