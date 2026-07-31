@@ -167,6 +167,7 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
 .res-card{background:#fff;border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--sh2);animation:msgIn .4s ease both}
 .res-head{background:linear-gradient(135deg,var(--blue4) 0%,var(--blue3) 100%);padding:24px 28px;position:relative;overflow:hidden}
 .res-head::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(255,75,130,.15) 0%,transparent 70%);border-radius:50%}
+.res-head-info{position:relative;z-index:1;padding-right:96px}
 .res-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:10.5px;color:rgba(255,255,255,.85);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:11px}
 .res-visto{font-family:Manrope,sans-serif;font-size:26px;color:#fff;margin-bottom:5px;line-height:1.15;font-weight:700}
 .res-nome{font-size:12.5px;color:rgba(255,255,255,.5)}
@@ -260,6 +261,11 @@ html,body{height:100%;font-family:"Inter Tight","Inter",sans-serif;background:va
   /* card full-width no mobile: sem avatar à esquerda */
   .row.result-row{flex-direction:column !important}
   .row.result-row > .ava{display:none !important}
+  /* cartão de fallback (buildSingleCard) no mobile: círculo menor e sem sobrepor o texto */
+  .res-head{padding:20px 18px !important}
+  .res-circle{width:58px !important;height:58px !important;top:16px !important;right:14px !important}
+  .res-pts{font-size:18px !important}
+  .res-head-info{padding-right:70px !important}
   .row.result-row > .msg-wrap{max-width:100% !important;width:100% !important;margin:0 !important;padding:0 4px !important}
   .ai-full-card-body table{table-layout:fixed;width:100%}
   .ai-full-card-body td{word-break:break-word;overflow-wrap:break-word}
@@ -1279,9 +1285,12 @@ function buildSingleCard(visto, score, p, showHeader = true) {
 
   const header = showHeader ? `
     <div class="res-head">
-      <div class="res-tag">✦ Visa Match · Avaliação de Perfil</div>
-      <div class="res-visto">${visto}</div>
-      <div class="res-nome">Análise de critérios, ${p.nomeCompleto || S.nome}</div>
+      <img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/VISA-MATCH-LOGO-HORIZONTAL-SIMBOLO-AZUL@2x.png" alt="Visa Match" style="height:24px;width:auto;display:block;margin-bottom:10px;position:relative;z-index:1" onerror="this.style.display='none'"/>
+      <div class="res-head-info">
+        <div class="res-tag">✦ Visa Match · Avaliação de Perfil</div>
+        <div class="res-visto">${visto}</div>
+        <div class="res-nome">Análise de critérios, ${p.nomeCompleto || S.nome}</div>
+      </div>
       <div class="res-circle"><div class="res-pts">${pts}</div><div class="res-pts-lbl">pontos</div></div>
     </div>` : `
     <div style="background:linear-gradient(135deg,var(--blue4),var(--blue3));padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
@@ -1778,8 +1787,10 @@ function switchFullTab(n) {
 }
 
 function switchFbTab(n) {
+  const scores = window._fbScores || [];
   document.querySelectorAll('[id^="tab-fb-"]').forEach((btn, i) => btn.className = 'dual-tab' + (i===n?' active':''));
-  document.querySelectorAll('[id^="fb-panel-"]').forEach((p, i) => p.style.display = i===n?'':'none');
+  const active = document.getElementById('fb-active');
+  if (active && scores[n]) active.innerHTML = buildResult(scores[n].visto, scores[n].score, S.profile);
 }
 
 function buildScoreDonut(pct, classificacao) {
@@ -4300,16 +4311,17 @@ const flows = {
       await botMsg(`Análise concluída! Aqui está o resultado para <strong>${S.nome}</strong> 👇`);
       await pause(400);
       const row = document.createElement('div');
-      row.className = 'row';
+      row.className = 'row result-row'; // esconde o avatar no mobile (igual ao sucesso)
       let resultHtml;
       if (scores.length > 1) {
+        // Capa = maior pontuação (ordena desc). O card ativo é re-renderizado no
+        // clique (evita o bug do WebKit de altura 0 em painéis pré-ocultos).
+        scores.sort((a, b) => b.score - a.score);
+        window._fbScores = scores;
         const tabs = scores.map((s, i) =>
           `<button class="dual-tab ${i===0?'active':''}" id="tab-fb-${i}" onclick="switchFbTab(${i})">${s.visto} · ${s.score} pts</button>`
         ).join('');
-        const panels = scores.map((s, i) =>
-          `<div id="fb-panel-${i}" ${i>0?'style="display:none"':''}>${buildResult(s.visto, s.score, S.profile)}</div>`
-        ).join('');
-        resultHtml = `<div><div class="dual-tab-row">${tabs}</div>${panels}</div>`;
+        resultHtml = `<div><div class="dual-tab-row">${tabs}</div><div id="fb-active">${buildResult(scores[0].visto, scores[0].score, S.profile)}</div></div>`;
       } else {
         resultHtml = buildResult(best.visto, best.score, S.profile);
       }
