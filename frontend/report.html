@@ -331,7 +331,7 @@ function renderHeader(a, candidato, pct, cls) {
   <div class="header">
     <div class="header-left">
       <img class="report-logo" src="https://lp.imigrareua.com/wp-content/uploads/2026/07/VISA-MATCH-LOGO-HORIZONTAL-SIMBOLO-AZUL@2x.png" alt="VisaMatch"/>
-      <div class="visto-tag">✦ Avaliação de Pré-Elegibilidade</div>
+      <div class="visto-tag">✦ Avaliação de Probabilidade</div>
       <div class="visto-nome">${a.visto}</div>
       <div class="visto-subtitulo">${getSubtitulo(a.visto)}</div>
       <div class="candidato-nome">${candidato.nome || '—'}</div>
@@ -611,7 +611,7 @@ function getSubtitulo(visto) {
     'Family Based': 'Visto Baseado em Família',
     'H-1B':         'Trabalhador Especializado por Patrocínio',
   };
-  return map[visto] || 'Análise de Pré-Elegibilidade';
+  return map[visto] || 'Análise de Probabilidade';
 }
 </script>
 </body>

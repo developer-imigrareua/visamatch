@@ -1103,17 +1103,14 @@ function calcScore(visto, p) {
   return Math.max(-100, Math.min(100, s));
 }
 
+// Classificação canônica — MESMOS labels/limiares/parceiro do backend (analyzer
+// e buildLocalDiagnostic) e do report.html. Garante paridade textual total do
+// cartão com relatório completo, PDF, e-mail e histórico da conta.
 function getClass(score, visto) {
-  if (visto === 'EB-1A') {
-    if (score >= 50) return { label: 'Perfil Forte', cls: 'cls-forte', ico: '✓', partner: 'liv' };
-    if (score >= 30) return { label: 'Perfil Moderado', cls: 'cls-mod', ico: '◑', partner: 'liv' };
-    if (score >= 10) return { label: 'Perfil em Desenvolvimento', cls: 'cls-dev', ico: '○', partner: 'phoenix' };
-    return { label: 'Perfil Incompatível', cls: 'cls-inc', ico: '✕', partner: 'phoenix' };
-  }
-  if (score >= 70) return { label: 'Perfil Forte', cls: 'cls-forte', ico: '✓', partner: 'liv' };
-  if (score >= 40) return { label: 'Perfil Moderado', cls: 'cls-mod', ico: '◑', partner: 'liv' };
-  if (score >= 0)  return { label: 'Perfil em Desenvolvimento', cls: 'cls-dev', ico: '○', partner: 'phoenix' };
-  return { label: 'Perfil Incompatível', cls: 'cls-inc', ico: '✕', partner: 'phoenix' };
+  if (score >= 70) return { label: 'Alta',               cls: 'cls-forte', ico: '✓', partner: 'liv' };
+  if (score >= 40) return { label: 'Moderada',           cls: 'cls-mod',   ico: '◑', partner: 'liv' };
+  if (score >= 0)  return { label: 'Em Desenvolvimento', cls: 'cls-dev',   ico: '○', partner: 'phoenix' };
+  return { label: 'Incompatível', cls: 'cls-inc', ico: '✕', partner: 'phoenix' };
 }
 
 // ─── RESULT CARD ───
@@ -1258,7 +1255,8 @@ function _eb1aPartner(p) {
 
 function buildResult(visto, score, p) {
   const isDual = S.vistos && S.vistos.length === 2;
-  const effectivePartner = visto === 'EB-1A' ? _eb1aPartner(p) : getClass(score, visto).partner;
+  // Parceiro por score (canônico) — igual ao recomendacao_parceiro persistido
+  const effectivePartner = getClass(score, visto).partner;
   const cl = getClass(score, visto);
 
   // Legal disclaimer
@@ -1275,9 +1273,8 @@ function buildResult(visto, score, p) {
   if (isDual) {
     const score2 = calcScore('EB-2 NIW', p);
     const score1 = calcScore('EB-1A', p);
-    // For EB-1A: partner = criteria count ≥ 3 → LIV, else best score determines
-    const eb1Partner = _eb1aPartner(p);
-    const bestPartner = eb1Partner === 'liv' ? 'liv' : getClass(Math.max(score2, score1), 'EB-2 NIW').partner;
+    // Parceiro pelo maior score (canônico) — igual ao melhor.recomendacao_parceiro
+    const bestPartner = getClass(Math.max(score2, score1), 'EB-2 NIW').partner;
     const showBoth = score2 > 0 && score1 > 0;
     const activeVisto = score2 > 0 ? 'niw' : 'eb1';
 
@@ -1849,7 +1846,7 @@ function singleFullCard(a) {
       <div style="width:100%;position:relative;z-index:1"><img src="https://lp.imigrareua.com/wp-content/uploads/2026/07/VISA-MATCH-LOGO-HORIZONTAL-SIMBOLO-AZUL@2x.png" alt="VisaMatch" style="height:26px;width:auto;display:block;margin-bottom:8px"/></div>
       <div style="flex-shrink:0;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.3)">${avatar}</div>
       <div style="flex:1">
-        <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-bottom:7px">✦ Análise de Pré-Elegibilidade</div>
+        <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-bottom:7px">✦ Análise de Probabilidade</div>
         <div class="ai-full-card-visto" style="font-family:Manrope,sans-serif;font-size:28px;color:#fff;line-height:1;font-weight:700">${a.visto}</div>
         <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin:3px 0 6px">${getSubtituloVisto(a.visto)}</div>
         <div style="font-family:Manrope,sans-serif;font-size:17px;color:#fff">${nome}</div>
