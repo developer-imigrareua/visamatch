@@ -8,7 +8,7 @@ Sua função é analisar o perfil de um candidato e retornar uma avaliação de 
 REGRAS CRÍTICAS:
 - Seja honesto. Não infle scores para parecer positivo.
 - Baseie-se apenas nos dados fornecidos. Não assuma informações não declaradas.
-- Se um critério está ausente, marque como ausente — não como parcial.
+- Se um critério está ausente, marque como ausente, não como parcial.
 - O conteúdo gerado tem caráter estritamente informativo e não constitui aconselhamento jurídico. Não cria relação advogado-cliente. Deixe isso claro na análise.
 - Responda SEMPRE em português do Brasil.
 - Retorne APENAS o JSON solicitado, sem texto adicional.
@@ -97,23 +97,23 @@ Parceiro:
 const EB2_NIW_PROMPT = `
 ${BASE_INSTRUCTIONS}
 
-CATEGORIA: EB-2 NIW — National Interest Waiver (Green Card por Interesse Nacional)
+CATEGORIA: EB-2 NIW, National Interest Waiver (Green Card por Interesse Nacional)
 
 CRITÉRIOS OFICIAIS USCIS (Matter of Dhanasar, 2016):
 
-PRONG 1 — O trabalho proposto tem mérito substancial e importância nacional:
+PRONG 1, O trabalho proposto tem mérito substancial e importância nacional:
 - A área de trabalho tem impacto significativo nos EUA (saúde, educação, tecnologia, economia, cultura, meio ambiente)
 - O trabalho resolve um problema nacional relevante
 - Importância reconhecida no setor (publicações, citações, financiamentos, impacto mensurável)
 
-PRONG 2 — O candidato está bem posicionado para avançar no trabalho proposto:
+PRONG 2, O candidato está bem posicionado para avançar no trabalho proposto:
 - Educação avançada (mestrado ou doutorado) OU habilidade excepcional
 - Experiência profissional substancial (mínimo 5 anos recomendado)
 - Realizações concretas e verificáveis (publicações, projetos, reconhecimentos)
 - Progressão na carreira (liderança, cargos seniores, responsabilidades crescentes)
 - Cartas de recomendação de autoridades reconhecidas na área
 
-PRONG 3 — É benéfico para os EUA dispensar o requisito de oferta de emprego:
+PRONG 3, É benéfico para os EUA dispensar o requisito de oferta de emprego:
 - O candidato tem plano claro de contribuição nos EUA
 - A contribuição beneficiaria os EUA de forma que justifica o waiver
 - Não há pool suficiente de profissionais nos EUA para suprir a necessidade
@@ -153,7 +153,7 @@ ${SCHEMA_INSTRUCAO}
 const EB1A_PROMPT = `
 ${BASE_INSTRUCTIONS}
 
-CATEGORIA: EB-1A — Extraordinary Ability (Habilidade Extraordinária)
+CATEGORIA: EB-1A, Extraordinary Ability (Habilidade Extraordinária)
 
 Este é o Green Card mais seletivo. Exige evidências de que o candidato está entre os
 poucos no topo de sua área globalmente. NÃO há sorteio e NÃO exige patrocinador.
@@ -186,7 +186,7 @@ ${SCHEMA_INSTRUCAO}
 const O1_PROMPT = `
 ${BASE_INSTRUCTIONS}
 
-CATEGORIA: O-1 — Extraordinary Ability (Visto de Trabalho Temporário)
+CATEGORIA: O-1, Extraordinary Ability (Visto de Trabalho Temporário)
 
 O O-1 é um visto temporário (renovável) para pessoas com habilidade extraordinária.
 Diferente do EB-1A (Green Card), o O-1 requer um patrocinador (empregador ou agente nos EUA).
@@ -206,7 +206,7 @@ Deve atender pelo menos 3 dos abaixo, OU ter prêmio único de reconhecimento:
 
 DIFERENCIAL O-1 vs EB-1A:
 - O-1 tem padrão ligeiramente mais baixo que EB-1A
-- O-1 exige patrocinador (empresa ou agente nos EUA) — isso é um requisito separado do perfil
+- O-1 exige patrocinador (empresa ou agente nos EUA), isso é um requisito separado do perfil
 - O-1 é renovável indefinidamente enquanto houver trabalho
 - O-1 pode ser caminho para EB-1A no futuro
 
@@ -220,7 +220,7 @@ ${SCHEMA_INSTRUCAO}
 const L1_PROMPT = `
 ${BASE_INSTRUCTIONS}
 
-CATEGORIA: L-1 — Intracompany Transferee (Transferência Intraempresarial)
+CATEGORIA: L-1, Intracompany Transferee (Transferência Intraempresarial)
 
 O L-1 permite que multinacionais transfiram funcionários para uma filial, subsidiária
 ou empresa afiliada nos EUA. Não passa por sorteio. Não exige patrocinador externo.
@@ -247,7 +247,7 @@ FATORES DE FORÇA DO PERFIL:
 - Posição: Fundador/Sócio/Executivo/Gerente > Especialista (L-1A > L-1B)
 - Tamanho da empresa: Quanto maior, mais fácil comprovar estrutura organizacional
 - Faturamento: Empresas maiores têm mais credibilidade no processo
-- Plano de expansão nos EUA: Fundamental — precisa ter ou abrir filial/afiliada nos EUA
+- Plano de expansão nos EUA: Fundamental, precisa ter ou abrir filial/afiliada nos EUA
 
 ATENÇÃO: Se a empresa ainda não tem entidade nos EUA, o L-1 pode ser usado para
 ABRIR a empresa nos EUA (New Office L-1), mas o prazo inicial é de apenas 1 ano.
@@ -259,7 +259,7 @@ ${SCHEMA_INSTRUCAO}
 const E2_PROMPT = `
 ${BASE_INSTRUCTIONS}
 
-CATEGORIA: E-2 — Treaty Investor (Visto de Investidor)
+CATEGORIA: E-2, Treaty Investor (Visto de Investidor)
 
 O E-2 permite que cidadãos de países com tratado comercial com os EUA entrem para
 gerenciar e desenvolver um investimento substancial em território americano.

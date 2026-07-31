@@ -33,7 +33,7 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 
 /* ── TOOLBAR ── */
 .toolbar{display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto 16px;padding:0 4px}
-.toolbar-brand{font-family:'Manrope',sans-serif;font-size:16px;color:var(--blue3);opacity:.6}
+.toolbar-brand{font-family:'Manrope',sans-serif;font-size:16px;color:#000000}
 .toolbar-btns{display:flex;gap:8px}
 .tbtn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
 .tbtn-print{background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff}
@@ -45,11 +45,11 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 .page{max-width:960px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12)}
 
 /* ── TABS DE VISTO ── */
-.rep-tabs{display:flex;gap:8px;padding:18px 32px 0;flex-wrap:wrap}
+.rep-tabs{display:flex;gap:8px;padding:18px 32px 18px;flex-wrap:wrap}
 .rep-tab{padding:9px 18px;border-radius:99px;font-size:12.5px;font-weight:700;font-family:'Inter Tight',sans-serif;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--txt2);transition:all .2s}
 .rep-tab:hover{border-color:var(--blue2);color:var(--blue)}
 .rep-tab.active{background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border-color:transparent}
-@media print{.rep-tab:not(.active){display:none}.rep-tabs{padding:10px 32px 0}}
+@media print{.rep-tab:not(.active){display:none}.rep-tabs{padding:10px 32px 14px}}
 
 /* ── HEADER ── */
 .header{background:linear-gradient(135deg,#1A72F6 0%,#002b70 100%);padding:0;display:grid;grid-template-columns:1fr auto;min-height:160px}
@@ -125,7 +125,7 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 .acao-txt{font-size:13px;color:var(--txt);line-height:1.5}
 
 /* ── SIDE COLUMN ── */
-.side-col{padding:28px 24px;background:var(--surface2);display:flex;flex-direction:column;gap:20px}
+.side-col{padding:28px 24px;background:var(--surface2);display:flex;flex-direction:column;gap:20px;border-left:1px solid rgba(11,25,41,.06);box-shadow:inset 0 -22px 26px -22px rgba(11,25,41,.10)}
 .side-card{background:#fff;border:1px solid rgba(11,25,41,.07);border-radius:12px;padding:16px}
 .side-card-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .side-card-title svg{width:13px;height:13px;flex-shrink:0}
@@ -176,8 +176,8 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 
 /* ── FOOTER ── */
 .footer{background:var(--blue3);padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
-.footer-left{font-size:11px;color:rgba(255,255,255,.25);line-height:1.6}
-.footer-right{font-family:'Manrope',sans-serif;font-size:14px;color:rgba(201,168,76,.5)}
+.footer-left{font-size:11px;color:#b5bae5;line-height:1.6}
+.footer-right{font-family:'Manrope',sans-serif;font-size:14px;color:#dddddd}
 
 /* ── LOADING ── */
 .loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:16px}
@@ -206,7 +206,7 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
   .header-right{border-left:none;border-top:1px solid rgba(255,255,255,.08);flex-direction:row;align-items:center;justify-content:space-between;min-width:0;padding:16px 20px;gap:12px}
   .aprovacao-pct{font-size:44px}
   .destaques{padding:12px 18px}
-  .rep-tabs{padding:14px 18px 0}
+  .rep-tabs{padding:14px 18px 18px}
   .body{grid-template-columns:1fr}
   .main-col{padding:20px 18px;border-right:none;border-bottom:1px solid rgba(11,25,41,.07)}
   .side-col{padding:20px 18px}
@@ -224,7 +224,7 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
 <body>
 
 <div class="toolbar no-print">
-  <div class="toolbar-brand">Visa Match · ImigrarEUA</div>
+  <div class="toolbar-brand">Visa Match · Imigrar EUA</div>
   <div class="toolbar-btns">
     <button class="tbtn tbtn-back" onclick="window.close()">← Voltar</button>
     <button class="tbtn tbtn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
@@ -329,7 +329,7 @@ function renderReport(a, candidato, tabs) {
   `;
 
   document.getElementById('report').innerHTML = html;
-  document.title = `Relatório ${a.visto} — ${candidato.nome || 'Visa Match'}`;
+  document.title = `Relatório ${a.visto} · ${candidato.nome || 'Visa Match'}`;
 }
 
 function renderHeader(a, candidato, pct, cls) {
@@ -343,7 +343,7 @@ function renderHeader(a, candidato, pct, cls) {
       <div class="visto-tag">✦ Avaliação de Probabilidade</div>
       <div class="visto-nome">${a.visto}</div>
       <div class="visto-subtitulo">${getSubtitulo(a.visto)}</div>
-      <div class="candidato-nome">${candidato.nome || '—'}</div>
+      <div class="candidato-nome">${candidato.nome || '-'}</div>
       <div class="candidato-profissao">${candidato.profissao || ''}</div>
     </div>
     <div class="header-right">
@@ -370,7 +370,7 @@ function renderDestaques(destaques) {
 function renderCriterios(criterios) {
   if (!criterios?.length) return '';
   return `
-  <div class="section-title">Os ${criterios.length} Critérios USCIS — Análise do Perfil</div>
+  <div class="section-title">Os ${criterios.length} Critérios USCIS · Análise do Perfil</div>
   <table class="criterios-table">
     <thead>
       <tr>
@@ -429,7 +429,7 @@ function renderDocumentacao(docs) {
 function renderPlanoAcao(acoes) {
   if (!acoes?.length) return '';
   return `
-  <div class="section-title">Plano de Ação — Próximas 2–4 Semanas</div>
+  <div class="section-title">Plano de Ação · Próximas 2 a 4 Semanas</div>
   <div class="acao-list">
     ${acoes.map((a, i) => `
       <div class="acao-item">
@@ -448,9 +448,9 @@ function renderFundamentoLegal(fl) {
       Fundamento Legal
     </div>
     <div class="legal-row">
-      <div class="legal-item"><div class="legal-label">Base</div><div class="legal-val">${fl.base || '—'}</div></div>
-      <div class="legal-item"><div class="legal-label">Regulamento</div><div class="legal-val">${fl.regulamento || '—'}</div></div>
-      <div class="legal-item"><div class="legal-label">Formulário</div><div class="legal-val">${fl.formulario || '—'}</div></div>
+      <div class="legal-item"><div class="legal-label">Base</div><div class="legal-val">${fl.base || '-'}</div></div>
+      <div class="legal-item"><div class="legal-label">Regulamento</div><div class="legal-val">${fl.regulamento || '-'}</div></div>
+      <div class="legal-item"><div class="legal-label">Formulário</div><div class="legal-val">${fl.formulario || '-'}</div></div>
     </div>
   </div>`;
 }
@@ -519,7 +519,7 @@ function renderCusto(custo) {
       ${itens}
       <div class="custo-total">
         <span class="custo-total-label">Total</span>
-        <span class="custo-total-val">${custo.total || '—'}</span>
+        <span class="custo-total-val">${custo.total || '-'}</span>
       </div>
     </div>
   </div>`;
@@ -558,7 +558,7 @@ function renderParceiro(a) {
     <div style="width:100%;height:128px;position:relative;overflow:hidden">
       <img src="https://liv.law/wp-content/uploads/2026/05/LIV-Advogados-Licenciados-scaled.webp" style="width:100%;height:100%;object-fit:cover;object-position:center 22%" alt="Time LIV Immigration Law" onerror="this.style.display='none'"/>
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,43,112,.7) 100%)"></div>
-      <div style="position:absolute;bottom:8px;left:12px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em">LIV Immigration Law · Parceiro Oficial ImigrarEUA</div>
+      <div style="position:absolute;bottom:8px;left:12px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em">LIV Immigration Law · Parceiro Oficial Imigrar EUA</div>
     </div>` : '';
 
   const btnPrimary = 'display:block;text-align:center;text-decoration:none;background:linear-gradient(135deg,var(--blue2),var(--blue3));color:#fff;border-radius:7px;padding:9px 12px;font-size:12px;font-weight:700;margin-bottom:6px';
@@ -613,8 +613,8 @@ function getClass(cls) {
 function getSubtitulo(visto) {
   const map = {
     'EB-2 NIW':     'Green Card por Interesse Nacional',
-    'EB-1A':        'Habilidade Extraordinária — Green Card',
-    'O-1':          'Habilidade Extraordinária — Visto de Trabalho',
+    'EB-1A':        'Habilidade Extraordinária · Green Card',
+    'O-1':          'Habilidade Extraordinária · Visto de Trabalho',
     'L-1':          'Transferência Intraempresarial',
     'E-2':          'Visto de Investidor por Tratado',
     'Family Based': 'Visto Baseado em Família',

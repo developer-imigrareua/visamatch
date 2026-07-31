@@ -150,7 +150,7 @@ router.get('/stats', auth, async (req, res) => {
     const idades = (idadeRows || []).map(r => r.profile?.idade).filter(v => v && v >= 10 && v <= 100);
     const mediaIdade = idades.length ? Math.round(idades.reduce((a, b) => a + b, 0) / idades.length) : null;
 
-    // UTM aggregations (todos os parâmetros) — reutiliza idadeRows
+    // UTM aggregations (todos os parâmetros), reutiliza idadeRows
     const utmRows = idadeRows;
     const porUtmSource = {}, porUtmMedium = {}, porUtmCampaign = {},
           porUtmContent = {}, porUtmTerm = {}, porUtmAffType = {}, porUtmAffName = {};
@@ -200,7 +200,7 @@ router.get('/leads', auth, async (req, res) => {
     if (visto) query = query.eq('visto_recomendado', visto);
     if (score_min) query = query.gte('score', score_min);
     if (score_max) query = query.lte('score', score_max);
-    // Tipo: completo (tem score) ou parcial (sem score) — espelha o badge do admin
+    // Tipo: completo (tem score) ou parcial (sem score), espelha o badge do admin
     if (tipo === 'completo') query = query.not('score', 'is', null);
     if (tipo === 'parcial')  query = query.is('score', null);
     if (search) query = query.or(`nome.ilike.%${search}%,email.ilike.%${search}%`);
@@ -354,16 +354,16 @@ router.post('/users/:userId/analyses/:analysisId/send-email', auth, async (req, 
 
     const nome = user.nome?.split(' ')[0] || 'candidato';
     const pct = analysis.aprovacao_pct ?? analysis.score ?? 0;
-    const visto = analysis.visto || '—';
-    const cls = analysis.classificacao || '—';
+    const visto = analysis.visto || '-';
+    const cls = analysis.classificacao || '-';
     const dt = new Date(analysis.created_at).toLocaleDateString('pt-BR');
     const melhor = analysis.analysis_json?.melhor || {};
     const pontosFortes = (melhor.pontos_fortes || []).map(p => `<li style="margin-bottom:6px">${p}</li>`).join('');
     const planoAcao = (melhor.plano_acao || []).map((p,i) => `<li style="margin-bottom:6px"><b>${i+1}.</b> ${p}</li>`).join('');
     const veredicto = melhor.veredicto || '';
     const partner = melhor.recomendacao_parceiro === 'liv'
-      ? '<b style="color:#1A72F6">LIV Law</b> — Escritório licenciado nos EUA, especializado em vistos de Green Card.'
-      : '<b>Phoenix</b> — Especialista em fortalecimento de perfil para imigração.';
+      ? '<b style="color:#1A72F6">LIV Law</b>, Escritório licenciado nos EUA, especializado em vistos de Green Card.'
+      : '<b>Phoenix</b>, Especialista em fortalecimento de perfil para imigração.';
 
     const clsColor = cls.includes('Alta') || cls.includes('Forte') ? '#1d9e70'
       : cls.includes('Moderada') || cls.includes('Moderado') ? '#d97706'
@@ -416,7 +416,7 @@ router.post('/users/:userId/analyses/:analysisId/send-email', auth, async (req, 
     </div>
   </div>
   <div class="footer">
-    Visa Match · ImigrarEUA · Este e-mail foi enviado pela equipe de atendimento.<br>
+    Visa Match · Imigrar EUA · Este e-mail foi enviado pela equipe de atendimento.<br>
     Para dúvidas, responda este e-mail.
   </div>
 </div>
@@ -431,9 +431,9 @@ router.post('/users/:userId/analyses/:analysisId/send-email', auth, async (req, 
     });
 
     await transporter.sendMail({
-      from: `"Visa Match · ImigrarEUA" <${process.env.SMTP_USER}>`,
+      from: `"Visa Match · Imigrar EUA" <${process.env.SMTP_USER}>`,
       to: user.email,
-      subject: `Sua análise ${visto} — ${pct}% de pré-elegibilidade`,
+      subject: `Sua análise ${visto}, ${pct}% de pré-elegibilidade`,
       html
     });
 
@@ -774,7 +774,7 @@ router.post('/hubspot-retry/:id', auth, async (req, res) => {
 
     if (hubspotId) {
       await supabase.from('leads').update({ hubspot_synced: true, hubspot_contact_id: String(hubspotId), hubspot_error: null }).eq('id', lead.id);
-      await createNote(HUBSPOT_TOKEN, hubspotId, `✅ Preencheu VisaMatch\nVisto: ${lead.visto_recomendado || '—'}\nScore: ${lead.score ?? '—'}\n(Retry manual pelo admin)`);
+      await createNote(HUBSPOT_TOKEN, hubspotId, `✅ Preencheu VisaMatch\nVisto: ${lead.visto_recomendado || '-'}\nScore: ${lead.score ?? '-'}\n(Retry manual pelo admin)`);
       res.json({ success: true, hubspot_contact_id: hubspotId });
     } else {
       await supabase.from('leads').update({ hubspot_error: hsErr, hubspot_payload: properties }).eq('id', lead.id);

@@ -25,7 +25,7 @@ function fmtIdadeNasc(p) {
 function fmtCurso(nome, inst, ini, fim, status) {
   if (!nome && !inst) return null;
   let s = nome || '';
-  if (inst) s += (s ? ' — ' : '') + inst;
+  if (inst) s += (s ? ', ' : '') + inst;
   const periodo = [ini, fim].filter(Boolean).join(' – ');
   const extra = [periodo, status && /conclu/i.test(status) ? 'concluído' : (status || '')].filter(Boolean).join(', ');
   if (extra) s += ` (${extra})`;
@@ -36,8 +36,8 @@ function fmtEmpregoAtual(p) {
   if (!p.emp1Cargo && !p.emp1Entrada) return null;
   let s = p.emp1Cargo || '';
   const fim = /atual|current|presente/i.test(String(p.emp1Saida || '')) ? 'atual' : (p.emp1Saida || '');
-  const per = [p.emp1Entrada && `desde ${p.emp1Entrada}`, fim].filter(Boolean).join(' — ');
-  if (per) s += (s ? ' — ' : '') + per;
+  const per = [p.emp1Entrada && `desde ${p.emp1Entrada}`, fim].filter(Boolean).join(', ');
+  if (per) s += (s ? ', ' : '') + per;
   return s || null;
 }
 
@@ -145,13 +145,13 @@ function generateReportPdf({ nome, visto, vistos, score, profile }) {
         const ca = fmtEmpregoAtual(p);
         if (ca) row(doc, 'Cargo atual', ca);
         if (p.emp2Nome) row(doc, 'Empresa anterior 1', p.emp2Nome);
-        if (p.emp2Cargo) row(doc, 'Cargo', p.emp2Saida ? `${p.emp2Cargo} — até ${p.emp2Saida}` : p.emp2Cargo);
+        if (p.emp2Cargo) row(doc, 'Cargo', p.emp2Saida ? `${p.emp2Cargo}, até ${p.emp2Saida}` : p.emp2Cargo);
         if (p.emp3Nome) row(doc, 'Empresa anterior 2', p.emp3Nome);
         if (p.emp3Cargo || p.emp3Info) row(doc, 'Cargo', p.emp3Cargo || p.emp3Info);
         if (p.expNaoListada) row(doc, 'Experiências adicionais', p.expNaoListada);
       }
       if (p.temProjetos) {
-        row(doc, 'Projetos relevantes', p.projetosDesc ? `${p.temProjetos} — ${p.projetosDesc}` : p.temProjetos);
+        row(doc, 'Projetos relevantes', p.projetosDesc ? `${p.temProjetos}, ${p.projetosDesc}` : p.temProjetos);
       }
 
       // ── Empresa (L-1) ──
@@ -210,11 +210,11 @@ function generateReportPdf({ nome, visto, vistos, score, profile }) {
         ['Artigos acadêmicos', p.o1_artigos],
       ]);
 
-      // ── Rodapé ── (documento interno de respostas — sem score/diagnóstico)
+      // ── Rodapé ── (documento interno de respostas, sem score/diagnóstico)
       doc.moveDown(0.8);
       doc.fillColor(MUTED).font('Helvetica').fontSize(8.5)
          .text('Documento interno com as respostas informadas pelo lead no VisaMatch. ' +
-               'Registro fiel de perguntas e respostas — não constitui aconselhamento jurídico.',
+               'Registro fiel de perguntas e respostas, não constitui aconselhamento jurídico.',
                M, doc.y, { width: CONTENT_W });
 
       doc.end();

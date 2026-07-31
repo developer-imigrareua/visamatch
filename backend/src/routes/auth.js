@@ -197,11 +197,11 @@ router.post('/send-code', async (req, res) => {
     const FROM = process.env.SMTP_FROM || 'Visa Match <contato@imigrareua.com>';
     await transporter.sendMail({
       from: FROM, to: email,
-      subject: `${code} é seu código de verificação — Visa Match`,
+      subject: `${code} é seu código de verificação, Visa Match`,
       html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f8faff">
         <div style="background:linear-gradient(135deg,#1A72F6,#002b70);border-radius:14px;padding:28px;text-align:center;margin-bottom:20px">
           <h2 style="color:#fff;margin:0;font-size:20px">Código de Verificação</h2>
-          <p style="color:rgba(255,255,255,.7);margin:6px 0 0;font-size:13px">Visa Match · ImigrarEUA</p>
+          <p style="color:rgba(255,255,255,.7);margin:6px 0 0;font-size:13px">Visa Match · Imigrar EUA</p>
         </div>
         <div style="background:#fff;border-radius:12px;padding:24px;text-align:center;border:1px solid rgba(194,198,216,.4)">
           <p style="color:#424655;font-size:14px;margin:0 0 16px">Olá${user.nome ? ', <strong>' + user.nome + '</strong>' : ''}! Seu código de verificação é:</p>
