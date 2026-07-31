@@ -1545,20 +1545,13 @@ async function _saveAnalysisToAccount(token) {
       aprovacao_pct: best.aprovacao_pct ?? 0,
       classificacao: best.classificacao || '',
       profile: profileClean,
+      // Grava o diagnóstico COMPLETO (mesma fonte única) — sem reduzir campos,
+      // para que o relatório salvo na conta seja idêntico ao exibido no chat.
       analysis_json: {
         isDual: _pendingAnalysis.isDual,
-        melhor: best ? {
-          visto:best.visto, score:best.score, aprovacao_pct:best.aprovacao_pct,
-          classificacao:best.classificacao, scorecard:best.scorecard,
-          pontos_fortes:best.pontos_fortes, pontos_criticos:best.pontos_criticos,
-          veredicto:best.veredicto, criterios:best.criterios,
-          plano_acao:best.plano_acao, fundamento_legal:best.fundamento_legal,
-          recomendacao_parceiro:best.recomendacao_parceiro
-        } : null,
-        resultados: (_pendingAnalysis.resultados || []).map(r => r ? {
-          visto:r.visto, score:r.score, aprovacao_pct:r.aprovacao_pct,
-          classificacao:r.classificacao, scorecard:r.scorecard
-        } : null)
+        melhor: best || null,
+        resultados: (_pendingAnalysis.resultados || []).filter(Boolean),
+        candidato: _candidatoAtual()
       }
     })
   }).catch(e => console.warn('Erro ao salvar análise:', e));
@@ -2135,6 +2128,40 @@ function showTab(t) {
 }
 
 // ─── FLOW ENGINE ───
+// ─── FONTE ÚNICA DO DIAGNÓSTICO ───
+// TODOS os canais (resultado no chat, relatório completo, PDF/imprimir,
+// e-mail e histórico da conta) consomem ESTE objeto persistido. Nunca
+// recalcular o diagnóstico por canal — apenas variar o layout.
+function _candidatoAtual() {
+  return { nome: S.profile.nomeCompleto || S.nome, email: S.email, profissao: S.profile.profissao, genero: S.profile.genero };
+}
+function persistDiagnostic(analysis) {
+  localStorage.setItem('visamatch_report', JSON.stringify({
+    ...analysis,
+    _version: Date.now(),
+    candidato: analysis.candidato || _candidatoAtual()
+  }));
+  return analysis;
+}
+// Diagnóstico local canônico — MESMA forma/labels do backend (buildLocalFallback).
+// Usado quando a IA está indisponível, para que chat, relatório, PDF, e-mail e
+// conta apresentem exatamente o mesmo diagnóstico estruturado.
+function buildLocalDiagnostic(scores) {
+  const clsOf = sc => sc >= 70 ? 'Alta' : sc >= 40 ? 'Moderada' : sc >= 0 ? 'Em Desenvolvimento' : 'Incompatível';
+  const resultados = scores.map(s => {
+    const c = clsOf(s.score);
+    return {
+      visto: s.visto, score: s.score,
+      aprovacao_pct: Math.max(0, Math.min(100, s.score)),
+      classificacao: c,
+      recomendacao_parceiro: (c === 'Alta' || c === 'Moderada') ? 'liv' : 'phoenix',
+      _fallback: true
+    };
+  });
+  const melhor = [...resultados].sort((a, b) => b.score - a.score)[0];
+  return { resultados, melhor, isDual: resultados.length > 1, _fallback: true };
+}
+
 async function go(id) {
   saveHistory(id);
   S.step = id;
@@ -4124,12 +4151,8 @@ const flows = {
       // Remove bolha de loading
       loadRow.remove();
 
-      // Armazena para relatório PDF
-      localStorage.setItem('visamatch_report', JSON.stringify({
-        ...analysis,
-        _version: Date.now(),
-        candidato: { nome: S.profile.nomeCompleto || S.nome, email: S.email, profissao: S.profile.profissao, genero: S.profile.genero }
-      }));
+      // Fonte única: persiste o diagnóstico consumido por todos os canais
+      persistDiagnostic(analysis);
 
       const bestScore = analysis.melhor?.score ?? 0;
       if (analysis.melhor?.visto) setSideVisto(analysis.melhor.visto);
@@ -4183,6 +4206,11 @@ const flows = {
       const scores = targetVistos.map(v => ({ visto: v, score: calcScore(v, S.profile) }));
       const best = scores.reduce((a, b) => a.score > b.score ? a : b);
       setSideBar(best.score);
+
+      // Fonte única também no fallback: relatório/PDF/e-mail/conta leem o MESMO
+      // diagnóstico estruturado que embasa o cartão exibido no chat.
+      const fallbackAnalysis = buildLocalDiagnostic(scores);
+      persistDiagnostic(fallbackAnalysis);
       await botMsg(`Análise concluída! Aqui está o resultado para <strong>${S.nome}</strong> 👇`);
       await pause(400);
       const row = document.createElement('div');
@@ -4212,7 +4240,7 @@ const flows = {
 
       const fbToken = localStorage.getItem('vm_user_token');
       if (fbToken) {
-        _pendingAnalysis = { melhor: best, resultados: scores.map(s => ({ visto: s.visto, score: s.score, aprovacao_pct: s.score })), isDual: scores.length > 1 };
+        _pendingAnalysis = fallbackAnalysis;
         await _saveAnalysisToAccount(fbToken);
       }
     }
@@ -4546,7 +4574,7 @@ async function openSavedAnalysis(id) {
     localStorage.setItem('visamatch_report', JSON.stringify({
       ...(data.analysis_json || {}),
       _version: Date.now(),
-      candidato: JSON.parse(localStorage.getItem('vm_user') || '{}')
+      candidato: (data.analysis_json && data.analysis_json.candidato) || JSON.parse(localStorage.getItem('vm_user') || '{}')
     }));
     window.open('/report.html', '_blank', 'fullscreen=yes');
   } catch(e) {}
