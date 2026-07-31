@@ -1694,8 +1694,11 @@ function resetAndRestart() {
   });
   // Limpa chat
   document.getElementById('chat').innerHTML = '';
-  // Reseta sidebar
+  // Reseta sidebar (inclui o texto do sb-card que setSideDone havia alterado)
+  S._diagDone = false;
   setSideStep(0); setProgress(0);
+  const _lbl = document.getElementById('sb-card-lbl');
+  if (_lbl) _lbl.textContent = 'Avaliando seu perfil para o visto americano';
   document.getElementById('sb-visto').textContent = '';
   document.getElementById('sb-bar').style.width = '0%';
   // Restaura input
