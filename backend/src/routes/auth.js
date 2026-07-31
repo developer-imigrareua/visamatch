@@ -28,8 +28,9 @@ router.post('/register', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
 
-    // Boas-vindas por e-mail (não bloqueia resposta)
-    sendWelcome(email, nome).catch(e => console.error('Welcome email failed:', e.message));
+    // NÃO envia o e-mail de "conta criada" aqui: a criação do registro ainda
+    // não está confirmada. O welcome é disparado apenas após a validação do
+    // código (POST /auth/verify-code com purpose:'register').
 
     res.json({ token, user: { id: user.id, email: user.email, nome: user.nome } });
   } catch(err) {
@@ -239,6 +240,15 @@ router.post('/verify-code', async (req, res) => {
     await supabase.from('users').update({ reset_token: null, reset_token_expires: null }).eq('id', user.id);
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+
+    // E-mail de "conta criada": só agora, após o código ter sido validado, e
+    // apenas no fluxo de registro (purpose:'register') — não no reset de senha.
+    // Limpar o reset_token acima garante que um mesmo código não valide duas
+    // vezes, então o welcome não é reenviado sem um novo código.
+    if (req.body.purpose === 'register') {
+      sendWelcome(user.email, user.nome).catch(e => console.error('Welcome email failed:', e.message));
+    }
+
     res.json({ token, user: { id: user.id, email: user.email, nome: user.nome } });
   } catch(err) {
     console.error('Verify code error:', err);

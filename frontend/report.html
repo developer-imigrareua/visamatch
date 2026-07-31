@@ -347,7 +347,7 @@ function renderHeader(a, candidato, pct, cls) {
       <div class="candidato-profissao">${candidato.profissao || ''}</div>
     </div>
     <div class="header-right">
-      <div class="aprovacao-label">Análise de Aprovação</div>
+      <div class="aprovacao-label">Probabilidade de Aprovação</div>
       <div class="aprovacao-pct">${pct}%</div>
       <div class="aprovacao-icon ${aprovClsMap[a.classificacao] || 'aprovacao-dev'}">${iconMap[a.classificacao] || '○'}</div>
       <div class="classificacao-badge ${cls.badgeCls}">${a.classificacao}</div>

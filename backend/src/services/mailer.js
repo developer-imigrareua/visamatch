@@ -142,7 +142,7 @@ function sendAnalysisReport(email, nome, diag) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#f0f4ff;border-radius:12px;margin:18px 0">
       <tr>
         <td style="padding:20px 22px" align="center">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0053d0">Análise de Probabilidade · ${esc(visto)}</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0053d0">Probabilidade de Aprovação · ${esc(visto)}</div>
           <div style="font-family:Arial,sans-serif;font-size:46px;font-weight:800;color:#0053d0;line-height:1.1;margin-top:6px">${pct}%</div>
           <div style="display:inline-block;margin-top:8px;padding:5px 16px;border-radius:20px;font-size:12.5px;font-weight:700;background:${tierBg};color:${tierFg}">${esc(classificacao)}</div>
           ${criteriosLinha}
