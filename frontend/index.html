@@ -2641,6 +2641,11 @@ const flows = {
       ti.disabled = false;
       S.phone = full;
       userMsg(full);
+      // Usuário autenticado: persiste o WhatsApp em users.phone (fonte única)
+      // para que seja carregado automaticamente nas próximas análises.
+      if (localStorage.getItem('vm_user_token')) {
+        saveUserProfile(S.profile.nomeCompleto || S.nome, full);
+      }
       // Salva lead parcial após ter email + nome + telefone
       fetch(`${API_BASE}/lead/partial`, {
         method:'POST', headers:{'Content-Type':'application/json'},

@@ -44,8 +44,11 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios.' });
 
   try {
-    const { data: user } = await supabase.from('users')
-      .select('id,email,nome,password_hash').eq('email', email).single();
+    // Identificação por e-mail case-insensitive (não depende da capitalização).
+    const { data: _users } = await supabase.from('users')
+      .select('id,email,nome,password_hash').ilike('email', email)
+      .order('created_at', { ascending: true }).limit(1);
+    const user = _users && _users[0];
 
     if (!user) return res.status(401).json({ error: 'E-mail não encontrado.' });
 
@@ -155,8 +158,9 @@ router.post('/check-email', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email obrigatório.' });
   try {
-    const { data: user } = await supabase.from('users').select('id,nome').eq('email', email).single();
-    const { data: leads, count: leadCount } = await supabase.from('leads').select('nome', { count:'exact' }).eq('email', email).order('created_at', { ascending: false }).limit(1);
+    const { data: _users } = await supabase.from('users').select('id,nome').ilike('email', email).order('created_at', { ascending: true }).limit(1);
+    const user = _users && _users[0];
+    const { data: leads, count: leadCount } = await supabase.from('leads').select('nome', { count:'exact' }).ilike('email', email).order('created_at', { ascending: false }).limit(1);
     const leadNome = leads?.[0]?.nome || null;
     res.json({
       hasAccount: !!user,

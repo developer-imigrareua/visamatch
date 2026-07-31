@@ -23,6 +23,27 @@ router.get('/me', authUser, async (req, res) => {
   const { data } = await supabase.from('users')
     .select('id,email,nome,phone,created_at').eq('id', req.user.userId).single();
   if (!data) return res.status(404).json({ error: 'Usuário não encontrado.' });
+
+  // Recuperação do WhatsApp: quando o perfil ainda não tem telefone salvo em
+  // users.phone (fonte única), busca o último número plausível informado nos
+  // leads do MESMO e-mail (case-insensitive, para não depender da capitalização)
+  // e persiste em users.phone. Assim o número já cadastrado é reconhecido e não
+  // é pedido novamente. Não sobrescreve um telefone já existente no perfil.
+  if ((!data.phone || !String(data.phone).trim()) && data.email) {
+    try {
+      const { data: leads } = await supabase.from('leads')
+        .select('phone,created_at').ilike('email', data.email)
+        .not('phone', 'is', null)
+        .order('created_at', { ascending: false }).limit(25);
+      const recuperado = (leads || [])
+        .map(l => (l.phone || '').trim())
+        .find(p => p.replace(/\D/g, '').length >= 10); // número plausível
+      if (recuperado) {
+        data.phone = recuperado;
+        await supabase.from('users').update({ phone: recuperado }).eq('id', data.id);
+      }
+    } catch (_) { /* recuperação é best-effort; nunca bloqueia o perfil */ }
+  }
   res.json(data);
 });
 
