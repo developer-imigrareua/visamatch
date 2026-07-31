@@ -203,8 +203,11 @@ body{font-family:'Inter Tight','Inter',sans-serif;background:#e8e4da;color:var(-
   .header{grid-template-columns:1fr}
   .header-left{padding:22px 20px}
   .visto-nome{font-size:30px}
-  .header-right{border-left:none;border-top:1px solid rgba(255,255,255,.08);flex-direction:row;align-items:center;justify-content:space-between;min-width:0;padding:16px 20px;gap:12px}
-  .aprovacao-pct{font-size:44px}
+  /* Mobile: empilha (rótulo acima do %), círculo redondo com espaço, sem espremer */
+  .header-right{border-left:none;border-top:1px solid rgba(255,255,255,.08);flex-direction:column;align-items:center;justify-content:center;min-width:0;padding:20px 20px;gap:8px;text-align:center}
+  .aprovacao-label{order:-1}
+  .aprovacao-pct{font-size:46px}
+  .aprovacao-icon{flex-shrink:0}
   .destaques{padding:12px 18px}
   .rep-tabs{padding:14px 18px 18px}
   .body{grid-template-columns:1fr}
