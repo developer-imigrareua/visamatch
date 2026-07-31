@@ -2292,7 +2292,7 @@ const flows = {
     if (localStorage.getItem('vm_lgpd_consent') === 'accepted') { go('contact_email'); return; }
     document.getElementById('pop-close').textContent = 'Aceitar e iniciar análise';
     await showPopup('⚖️', 'Aviso e Privacidade',
-      '• Esta ferramenta utiliza <b>inteligência artificial (IA)</b> para analisar as respostas fornecidas e gerar uma avaliação inicial. Os resultados podem conter imprecisões e devem ser verificados de forma independente. O conteúdo tem caráter exclusivamente informativo, não constitui aconselhamento jurídico, não substitui uma análise individualizada realizada por um advogado licenciado nos Estados Unidos e não estabelece uma relação advogado-cliente.<br><br>' +
+      '• Esta ferramenta usa <b>inteligência artificial (IA)</b> para gerar uma avaliação inicial, que pode conter imprecisões. Tem caráter apenas informativo: não constitui aconselhamento jurídico, não substitui um advogado licenciado nos EUA e não estabelece relação advogado-cliente.<br><br>' +
       '• Ao concluir, você poderá ser conectado aos <b>especialistas da Imigrar EUA</b> ou aos <b>advogados licenciados nos Estados Unidos da LIV Immigration Law</b>, conforme as características do seu caso.<br><br>' +
       '• <b>Privacidade (LGPD):</b> utilizamos os dados fornecidos para gerar sua análise e dar continuidade ao atendimento. Consulte nossa Política de Privacidade para entender como suas informações são coletadas, utilizadas e protegidas.<br><a href="https://imigrareua.com/politica-de-privacidade/" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">Política de Privacidade →</a>',
       () => {
