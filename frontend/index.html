@@ -610,6 +610,11 @@ function setSideBar(score) {
 }
 
 // ─── HISTORY / UNDO ───
+// Passos de checagem/derivados (validações cruzadas) — NÃO capturam resposta
+// do usuário. O "Corrigir resposta anterior" precisa ignorá-los ao voltar,
+// senão restauraria um snapshot que ainda contém o valor a ser corrigido.
+const NON_INPUT_STEPS = new Set(['ac_valida_formacao', 'pe_valida1', 'pe_gap_check']);
+
 function saveHistory(stepId) {
   S.history.push({
     step: stepId, sStep: S.sStep, prog: S.prog,
@@ -634,7 +639,11 @@ function addUndoBtn() {
   document.getElementById('undo-btn').onclick = () => {
     if (S.history.length < 2) return;
     S.history.pop(); // remove current
-    const prev = S.history.pop(); // get previous
+    // Volta para a última pergunta REAL, pulando passos de validação/derivados
+    // — assim a correção reabre a pergunta certa e sobrescreve o valor antigo.
+    let prev = S.history.pop();
+    while (prev && NON_INPUT_STEPS.has(prev.step) && S.history.length) prev = S.history.pop();
+    if (!prev) return;
     // restore chat to that length
     while (chat.children.length > prev.chatLen) chat.removeChild(chat.lastChild);
     // restore state
@@ -923,15 +932,26 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
   };
   setValid(false); // começa desabilitado
 
-  // Valida formato MM/AAAA com mês 01-12 e ano plausível
+  // Data futura: compara MM/AAAA com o mês/ano atual (dinâmico — sem ano fixo).
+  const isFuture = (v) => {
+    const m = /^(\d{2})\/(\d{4})$/.exec(v);
+    if (!m) return false;
+    const mo = +m[1], yr = +m[2];
+    if (mo < 1 || mo > 12) return false;
+    const now = new Date();
+    return yr > now.getFullYear() || (yr === now.getFullYear() && mo > now.getMonth() + 1);
+  };
+
+  // Valida formato MM/AAAA com mês 01-12, ano plausível e NÃO futuro.
   const isValid = (v) => {
     const m = /^(\d{2})\/(\d{4})$/.exec(v);
     if (!m) return false;
     const mo = +m[1], yr = +m[2];
-    return mo >= 1 && mo <= 12 && yr >= 1940 && yr <= 2035;
+    if (mo < 1 || mo > 12 || yr < 1940 || yr > 2035) return false;
+    return !isFuture(v); // rejeita qualquer data posterior à data atual
   };
 
-  // Auto-formata MM/AAAA, atualiza botão e mostra aviso de mês inválido
+  // Auto-formata MM/AAAA, atualiza botão e mostra o aviso adequado
   inputEl.addEventListener('input', function() {
     let v = this.value.replace(/\D/g,'');
     if (v.length > 6) v = v.slice(0,6);
@@ -940,7 +960,17 @@ function showMonthYearWidget(profileKey, nextStep, allowCurrent = false) {
     const ok = isValid(v);
     setValid(ok);
     const hintEl = document.getElementById(inputId + '-hint');
-    if (hintEl) hintEl.style.display = (/^\d{2}\/\d{4}$/.test(v) && !ok) ? 'block' : 'none';
+    if (hintEl) {
+      const completo = /^\d{2}\/\d{4}$/.test(v);
+      if (completo && !ok) {
+        hintEl.textContent = isFuture(v)
+          ? 'Data no futuro — informe uma data até o mês atual.'
+          : 'Data inválida — use MM/AAAA com mês entre 01 e 12.';
+        hintEl.style.display = 'block';
+      } else {
+        hintEl.style.display = 'none';
+      }
+    }
   });
   wrapEl.addEventListener('focusin',  () => { wrapEl.style.borderColor='var(--blue)'; wrapEl.style.boxShadow='0 0 0 4px rgba(0,83,208,.06)'; });
   wrapEl.addEventListener('focusout', () => { wrapEl.style.borderColor='var(--border2)'; wrapEl.style.boxShadow=''; });
@@ -1015,12 +1045,15 @@ function diffMeses(d1, d2) {
 
 function somarExpMeses(p) {
   let total = 0;
+  const hoje = new Date();
   const pares = [
     [p.emp1Entrada, p.emp1Saida],
     [p.emp2Entrada, p.emp2Saida],
   ];
   for (const [ent, sai] of pares) {
-    const d1 = parseMesAno(ent), d2 = parseMesAno(sai || 'atual');
+    let d1 = parseMesAno(ent), d2 = parseMesAno(sai || 'atual');
+    if (d1 && d1 > hoje) continue;   // entrada futura → par inválido, ignora
+    if (d2 && d2 > hoje) d2 = hoje;  // saída futura → limita à data atual
     if (d1 && d2 && d2 > d1) total += diffMeses(d1, d2);
   }
   return total;
