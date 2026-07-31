@@ -381,14 +381,15 @@ function renderCriterios(criterios) {
       </tr>
     </thead>
     <tbody>
-      ${criterios.map(c => {
+      ${criterios.map((c, ci) => {
         const numCls = c.status === 'atendido' ? 'crit-num-ok' : c.status === 'fortalecer' ? 'crit-num-fort' : 'crit-num-constr';
+        const numero = c.numero != null ? c.numero : (ci + 1);
         const pillCls = c.status === 'atendido' ? 'sp-atendido' : c.status === 'fortalecer' ? 'sp-fortalecer' : 'sp-construir';
         const pillTxt = c.status === 'atendido' ? '✓ Atendido' : c.status === 'fortalecer' ? '⚡ Fortalecer' : '◯ Construir';
         const stars = Array.from({length:5}, (_,i) => `<div class="estrela ${i < (c.estrelas||0) ? 'estrela-on' : 'estrela-off'}"></div>`).join('');
         const evidencias = (c.evidencias||[]).map(e => `<li>${e}</li>`).join('');
         return `<tr>
-          <td><div class="crit-num ${numCls}">${c.numero}</div></td>
+          <td><div class="crit-num ${numCls}">${numero}</div></td>
           <td>
             <div class="crit-nome">${c.nome}</div>
             <ul class="crit-evidencias">${evidencias}</ul>
