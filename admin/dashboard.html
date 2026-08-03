@@ -105,6 +105,36 @@ html,body{height:100%;font-family:'Inter Tight','Inter',sans-serif;background:va
 .search-in:focus{border-color:var(--blue2);background:#fff}
 .filter-sel{border:1.5px solid rgba(11,25,41,.1);border-radius:9px;padding:8px 12px;font-family:'Inter Tight',sans-serif;font-size:12.5px;color:var(--txt2);background:var(--surface3);outline:none;cursor:pointer}
 .filter-sel:focus{border-color:var(--blue2)}
+/* ── Calendário visual (período personalizado) ── */
+.cal-trigger{display:flex;align-items:center;gap:7px;border:1.5px solid rgba(11,25,41,.1);border-radius:9px;padding:7px 12px;font-family:'Inter Tight',sans-serif;font-size:12.5px;color:var(--txt2);background:var(--surface3);outline:none;cursor:pointer;transition:all .15s;white-space:nowrap}
+.cal-trigger:hover{border-color:var(--blue2);color:var(--txt)}
+.cal-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:100;background:#fff;border:1.5px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(11,25,41,.16);padding:16px;width:max-content}
+.cal-pop.open{display:block}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-months{display:flex;gap:40px;flex:1;justify-content:space-around;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;color:var(--txt);text-transform:capitalize}
+.cal-nav{width:28px;height:28px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--txt2);font-size:16px;line-height:1;cursor:pointer;transition:all .15s;flex-shrink:0}
+.cal-nav:hover{border-color:var(--blue2);color:var(--blue)}
+.cal-grids{display:flex;gap:24px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,32px);gap:2px}
+.cal-dow{font-size:10px;font-weight:600;color:var(--txt3);text-align:center;height:24px;display:flex;align-items:center;justify-content:center;text-transform:uppercase}
+.cal-day{height:30px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--txt2);cursor:pointer;border-radius:8px;transition:background .1s,color .1s;user-select:none}
+.cal-day:hover{background:var(--surface4)}
+.cal-day.empty{cursor:default}
+.cal-day.empty:hover{background:transparent}
+.cal-day.disabled{color:#c2c6d8;cursor:default}
+.cal-day.disabled:hover{background:transparent}
+.cal-day.in-range{background:var(--surface4);border-radius:0}
+.cal-day.range-start{background:var(--blue);color:#fff;border-radius:8px 0 0 8px}
+.cal-day.range-end{background:var(--blue);color:#fff;border-radius:0 8px 8px 0}
+.cal-day.range-start.range-end{border-radius:8px}
+.cal-foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(11,25,41,.06)}
+.cal-hint{font-size:11.5px;color:var(--txt3)}
+.cal-btn{border:none;border-radius:8px;padding:7px 15px;font-family:'Inter Tight',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.cal-btn-ghost{background:transparent;color:var(--txt3)}
+.cal-btn-ghost:hover{color:var(--txt2)}
+.cal-btn-primary{background:var(--blue);color:#fff}
+.cal-btn-primary:hover{background:var(--blue3)}
+.cal-btn-primary:disabled{background:#c2c6d8;cursor:default}
 table{width:100%;border-collapse:collapse}
 thead th{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);padding:8px 12px;text-align:left;border-bottom:1px solid rgba(11,25,41,.06)}
 tbody tr{border-bottom:1px solid rgba(11,25,41,.04);transition:background .15s}
@@ -263,10 +293,34 @@ td.nome{color:var(--txt);font-weight:500}
           <option value="thisyear">Este ano</option>
           <option value="custom">Personalizado</option>
         </select>
-        <span id="custom-dates" style="display:none;align-items:center;gap:4px">
-          <input type="date" id="date-from" class="filter-sel" style="padding:2px 6px;font-size:12px;border:none;background:transparent" onchange="applyCustomDate()"/>
-          <span style="font-size:11px;color:var(--txt3)">até</span>
-          <input type="date" id="date-to" class="filter-sel" style="padding:2px 6px;font-size:12px;border:none;background:transparent" onchange="applyCustomDate()"/>
+        <span id="custom-dates" style="display:none;position:relative;align-items:center">
+          <input type="hidden" id="date-from"/>
+          <input type="hidden" id="date-to"/>
+          <button type="button" id="cal-trigger" class="cal-trigger" onclick="toggleCalendar()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="cal-label">Selecione o período</span>
+          </button>
+          <div id="cal-pop" class="cal-pop">
+            <div class="cal-head">
+              <button type="button" class="cal-nav" onclick="calMove(-1)">‹</button>
+              <div class="cal-months">
+                <span id="cal-title-0"></span>
+                <span id="cal-title-1"></span>
+              </div>
+              <button type="button" class="cal-nav" onclick="calMove(1)">›</button>
+            </div>
+            <div class="cal-grids">
+              <div id="cal-grid-0" class="cal-grid"></div>
+              <div id="cal-grid-1" class="cal-grid"></div>
+            </div>
+            <div class="cal-foot">
+              <span id="cal-hint" class="cal-hint">Clique na data inicial</span>
+              <div style="display:flex;gap:8px">
+                <button type="button" class="cal-btn cal-btn-ghost" onclick="calClear()">Limpar</button>
+                <button type="button" class="cal-btn cal-btn-primary" onclick="calApply()">Aplicar</button>
+              </div>
+            </div>
+          </div>
         </span>
       </div>
       <button class="refresh-btn" onclick="loadAll()">
@@ -571,14 +625,103 @@ function getDateRange() {
 function applyPreset() {
   const val = document.getElementById('preset-range').value;
   const cd = document.getElementById('custom-dates');
-  cd.style.display = val === 'custom' ? 'flex' : 'none';
-  if (val !== 'custom') loadAll();
+  cd.style.display = val === 'custom' ? 'inline-flex' : 'none';
+  if (val === 'custom') { toggleCalendar(); }
+  else loadAll();
 }
 
 function applyCustomDate() {
   const from = document.getElementById('date-from')?.value;
   const to   = document.getElementById('date-to')?.value;
   if (from && to) loadAll();
+}
+
+// ── CALENDÁRIO VISUAL (range) ──
+const CAL_MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CAL_DOW = ['D','S','T','Q','Q','S','S'];
+let _calView = new Date();      // mês esquerdo exibido
+let _calStart = null;           // Date selecionada (início)
+let _calEnd = null;             // Date selecionada (fim)
+
+function _calIso(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function _calFmt(d){ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
+function _calParse(iso){ if(!iso) return null; const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); }
+
+function toggleCalendar(){
+  const pop = document.getElementById('cal-pop');
+  const open = pop.classList.toggle('open');
+  if (open) {
+    // Semeia com a seleção atual (se houver) ou hoje
+    _calStart = _calParse(document.getElementById('date-from').value);
+    _calEnd   = _calParse(document.getElementById('date-to').value);
+    _calView  = new Date((_calStart || new Date()).getFullYear(), (_calStart || new Date()).getMonth(), 1);
+    renderCalendar();
+    setTimeout(()=>document.addEventListener('mousedown', _calOutside), 0);
+  } else {
+    document.removeEventListener('mousedown', _calOutside);
+  }
+}
+function _calOutside(e){
+  const wrap = document.getElementById('custom-dates');
+  if (wrap && !wrap.contains(e.target)) closeCalendar();
+}
+function closeCalendar(){
+  document.getElementById('cal-pop').classList.remove('open');
+  document.removeEventListener('mousedown', _calOutside);
+}
+function calMove(dir){
+  _calView = new Date(_calView.getFullYear(), _calView.getMonth() + dir, 1);
+  renderCalendar();
+}
+function _sameDay(a,b){ return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+
+function renderCalendar(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let off=0; off<2; off++){
+    const base = new Date(_calView.getFullYear(), _calView.getMonth()+off, 1);
+    document.getElementById('cal-title-'+off).textContent = `${CAL_MONTHS[base.getMonth()]} ${base.getFullYear()}`;
+    const grid = document.getElementById('cal-grid-'+off);
+    let html = CAL_DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+    const firstDow = base.getDay();
+    const daysInMonth = new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
+    for (let i=0;i<firstDow;i++) html += `<div class="cal-day empty"></div>`;
+    for (let d=1; d<=daysInMonth; d++){
+      const cur = new Date(base.getFullYear(), base.getMonth(), d);
+      const cls = ['cal-day'];
+      if (cur > today) cls.push('disabled');
+      else {
+        const s=_calStart, e=_calEnd;
+        if (_sameDay(cur,s)) cls.push('range-start');
+        if (_sameDay(cur,e)) cls.push('range-end');
+        if (s && e && cur>s && cur<e) cls.push('in-range');
+        if (s && !e && _sameDay(cur,s)) cls.push('range-start','range-end');
+      }
+      html += `<div class="${cls.join(' ')}" ${cur<=today?`onclick="calPick(${cur.getFullYear()},${cur.getMonth()},${d})"`:''}>${d}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+  const hint = document.getElementById('cal-hint');
+  if (!_calStart) hint.textContent = 'Clique na data inicial';
+  else if (!_calEnd) hint.textContent = `Início: ${_calFmt(_calStart)} — clique na data final`;
+  else hint.textContent = `${_calFmt(_calStart)} até ${_calFmt(_calEnd)}`;
+}
+
+function calPick(y,m,d){
+  const picked = new Date(y,m,d);
+  if (!_calStart || (_calStart && _calEnd)) { _calStart = picked; _calEnd = null; }
+  else if (picked < _calStart) { _calEnd = _calStart; _calStart = picked; }
+  else { _calEnd = picked; }
+  renderCalendar();
+}
+function calClear(){ _calStart=null; _calEnd=null; renderCalendar(); }
+function calApply(){
+  if (!_calStart) return;
+  const end = _calEnd || _calStart;
+  document.getElementById('date-from').value = _calIso(_calStart);
+  document.getElementById('date-to').value   = _calIso(end);
+  document.getElementById('cal-label').textContent = `${_calFmt(_calStart)} – ${_calFmt(end)}`;
+  closeCalendar();
+  loadAll();
 }
 
 function dateQs() {
