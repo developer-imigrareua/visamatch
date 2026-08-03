@@ -163,7 +163,7 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
   // Interrompe o envio quando o status não é determinável — não usa fallback vazio
   // nem default 'completed'. O chamador deve registrar o erro e reprocessar.
   if (!RESPONSE_TYPES.includes(responseType)) {
-    throw new Error(`typeform_response_type inválido: "${responseType}" (esperado: staged | completed)`);
+    throw new Error(`visamatch_response_type inválido: "${responseType}" (esperado: staged | completed)`);
   }
   const p = profile || {};
   const nameParts = (nome || '').trim().split(' ');
@@ -281,9 +281,9 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     utm_affiliatetype: utm?.utm_affiliatetype || '',
     utm_affiliatename: utm?.utm_affiliatename || '',
 
-    // Propriedade OFICIAL do funil no HubSpot (recebe staged|completed).
-    typeform_response_type: responseType,
-    // Mantida por compatibilidade com relatórios existentes.
+    // Propriedade ÚNICA e OFICIAL do funil VisaMatch no HubSpot (staged|completed).
+    // A antiga typeform_response_type NÃO é mais escrita pelo VisaMatch (pode ser
+    // usada por outros fluxos — não a tocamos, apenas deixamos de participar dela).
     visamatch_response_type: responseType,
   };
 
@@ -334,9 +334,9 @@ async function _doRequest(token, method, url, properties) {
       .filter(e => e.code === 'INVALID_OPTION' || e.code === 'READ_ONLY_VALUE')
       .map(e => e.context?.propertyName?.[0]).filter(Boolean);
     // NUNCA remove silenciosamente a propriedade de status: se o HubSpot rejeitar
-    // typeform_response_type/visamatch_response_type, isso é falha real (deixaria
-    // o funil em branco). Retorna erro para registro e reprocessamento.
-    const STATUS_PROPS = ['typeform_response_type', 'visamatch_response_type'];
+    // visamatch_response_type, isso é falha real (deixaria o funil em branco).
+    // Retorna erro para registro e reprocessamento.
+    const STATUS_PROPS = ['visamatch_response_type'];
     if (badFields.some(f => STATUS_PROPS.includes(f))) {
       return { ok: false, status: res.status, text, statusRejected: true };
     }
@@ -380,18 +380,20 @@ async function upsertContact(token, properties) {
   return { error: `HTTP ${postResult.status}: ${postResult.text}` };
 }
 
-// Lê o status atual do funil do contato (para impedir regressões de estado).
+// Lê o status atual do funil VisaMatch do contato (para impedir regressões de estado).
+// Considera EXCLUSIVAMENTE visamatch_response_type. A antiga typeform_response_type
+// NÃO é consultada nem usada como fallback (pode conter valor legado de outro fluxo).
 async function getContactResponseType(token, email) {
   try {
     const id = await resolveHubSpotId(token, email);
     if (!id) return { id: null, status: null };
     const r = await fetch(
-      `https://api.hubapi.com/crm/v3/objects/contacts/${id}?properties=typeform_response_type,visamatch_response_type`,
+      `https://api.hubapi.com/crm/v3/objects/contacts/${id}?properties=visamatch_response_type`,
       { headers: { 'Authorization': `Bearer ${token}` } }
     );
     if (!r.ok) return { id, status: null };
     const b = await r.json();
-    const status = b.properties?.typeform_response_type || b.properties?.visamatch_response_type || null;
+    const status = b.properties?.visamatch_response_type || null;
     return { id, status };
   } catch (e) {
     return { id: null, status: null };
