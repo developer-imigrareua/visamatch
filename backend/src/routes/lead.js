@@ -49,13 +49,17 @@ router.post('/partial', async (req, res) => {
       return res.json({ success: true, lead_id: doneLead.id, updated: false, skipped: 'already_completed' });
     }
 
+    // Reaproveita o parcial existente por e-mail (qualquer parcial ainda não
+    // concluído), INDEPENDENTE de já ter sido sincronizado no HubSpot. Isso evita
+    // duplicar o lead a cada gravação parcial (o contato no HubSpot já é o mesmo).
     const { data: existing } = await supabase
       .from('leads')
       .select('id')
       .eq('email', email)
-      .eq('hubspot_synced', false)
       .is('score', null)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (existing) {
       await supabase.from('leads').update({
