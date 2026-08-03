@@ -89,21 +89,31 @@ router.get('/stats', auth, async (req, res) => {
 
     const pct = (cur, prev) => prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100);
 
-    // Totais no período e período anterior
-    const [{ count: total }, { count: totalPrev }, { count: completos }, { count: completosPrev }] = await Promise.all([
-      supabase.from('leads').select('*', { count: 'exact', head: true }).gte('created_at', from).lte('created_at', to),
-      supabase.from('leads').select('*', { count: 'exact', head: true }).gte('created_at', prevFrom).lte('created_at', from),
-      supabase.from('leads').select('*', { count: 'exact', head: true }).eq('completo', true).gte('created_at', from).lte('created_at', to),
-      supabase.from('leads').select('*', { count: 'exact', head: true }).eq('completo', true).gte('created_at', prevFrom).lte('created_at', from),
+    // Totais DEDUPLICADOS por e-mail (robusto a duplicidade de linhas): uma
+    // pessoa = um lead, independente de quantas linhas parciais existam.
+    // completo se qualquer linha do e-mail estiver concluída (completo/score).
+    const dedupTotals = (rows) => {
+      const byEmail = {};
+      (rows || []).forEach(r => {
+        const e = (r.email || '').toLowerCase();
+        if (!(e in byEmail)) byEmail[e] = false;
+        if (r.completo === true || r.score != null) byEmail[e] = true;
+      });
+      const vals = Object.values(byEmail);
+      return { total: vals.length, completos: vals.filter(Boolean).length, parciais: vals.filter(v => !v).length };
+    };
+    const [{ data: _periodoRows }, { data: _prevRows }] = await Promise.all([
+      supabase.from('leads').select('email, score, completo').gte('created_at', from).lte('created_at', to).limit(50000),
+      supabase.from('leads').select('email, score, completo').gte('created_at', prevFrom).lte('created_at', from).limit(50000),
     ]);
+    const _cur = dedupTotals(_periodoRows), _prv = dedupTotals(_prevRows);
+    const total = _cur.total, totalPrev = _prv.total;
+    const completos = _cur.completos, completosPrev = _prv.completos;
+    const parciais = _cur.parciais;
 
     // Pendentes HubSpot (global)
     const { count: pendentesHubspot } = await supabase
       .from('leads').select('*', { count: 'exact', head: true }).eq('hubspot_synced', false);
-
-    // Parciais no período (score null = nunca concluíram)
-    const { count: parciais } = await supabase
-      .from('leads').select('*', { count: 'exact', head: true }).is('score', null).gte('created_at', from).lte('created_at', to);
 
     // Últimos 7 dias (KPI fixo)
     const seteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
