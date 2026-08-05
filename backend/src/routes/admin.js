@@ -49,6 +49,20 @@ function classifyStep(step) {
   return { id, label: g ? g.label : id };
 }
 
+// Totais DEDUPLICADOS por e-mail (robusto a duplicidade de linhas): uma
+// pessoa = um lead, independente de quantas linhas parciais existam.
+// completo se qualquer linha do e-mail estiver concluída (completo/score).
+function dedupTotals(rows) {
+  const byEmail = {};
+  (rows || []).forEach(r => {
+    const e = (r.email || '').toLowerCase();
+    if (!(e in byEmail)) byEmail[e] = false;
+    if (r.completo === true || r.score != null) byEmail[e] = true;
+  });
+  const vals = Object.values(byEmail);
+  return { total: vals.length, completos: vals.filter(Boolean).length, parciais: vals.filter(v => !v).length };
+}
+
 // Busca o step real (mais avançado) por e-mail a partir das sessões
 async function fetchRealStepsByEmail(emails) {
   const map = {};
@@ -89,19 +103,6 @@ router.get('/stats', auth, async (req, res) => {
 
     const pct = (cur, prev) => prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100);
 
-    // Totais DEDUPLICADOS por e-mail (robusto a duplicidade de linhas): uma
-    // pessoa = um lead, independente de quantas linhas parciais existam.
-    // completo se qualquer linha do e-mail estiver concluída (completo/score).
-    const dedupTotals = (rows) => {
-      const byEmail = {};
-      (rows || []).forEach(r => {
-        const e = (r.email || '').toLowerCase();
-        if (!(e in byEmail)) byEmail[e] = false;
-        if (r.completo === true || r.score != null) byEmail[e] = true;
-      });
-      const vals = Object.values(byEmail);
-      return { total: vals.length, completos: vals.filter(Boolean).length, parciais: vals.filter(v => !v).length };
-    };
     const [{ data: _periodoRows }, { data: _prevRows }] = await Promise.all([
       supabase.from('leads').select('email, score, completo').gte('created_at', from).lte('created_at', to).limit(50000),
       supabase.from('leads').select('email, score, completo').gte('created_at', prevFrom).lte('created_at', from).limit(50000),
@@ -464,16 +465,11 @@ router.get('/funnel', auth, async (req, res) => {
 
     // Todos os leads incompletos no período (com e-mail p/ cruzar com a sessão real)
     const { data: allLeads } = await supabase
-      .from('leads').select('completo, email, etapa_abandono, profile, created_at')
+      .from('leads').select('completo, email, score, etapa_abandono, profile, created_at')
       .gte('created_at', from).lte('created_at', to);
 
-    const { count: total } = await supabase
-      .from('leads').select('*', { count: 'exact', head: true })
-      .gte('created_at', from).lte('created_at', to);
-
-    const { count: completos } = await supabase
-      .from('leads').select('*', { count: 'exact', head: true })
-      .eq('completo', true).gte('created_at', from).lte('created_at', to);
+    // total/completos DEDUPLICADOS por e-mail, mesmo critério do /stats
+    const { total, completos } = dedupTotals(allLeads);
 
     // Abandono granular pela etapa REAL alcançada (lida da sessão).
     // Fallback: etapa registrada no lead, se não houver sessão.
