@@ -203,15 +203,26 @@ td.nome{color:var(--txt);font-weight:500}
 .change-flat{background:rgba(11,25,41,.05);color:var(--txt3)}
 /* ── CHART TOOLTIP ── */
 #chart-tooltip{position:fixed;z-index:9999;background:var(--blue4);color:#fff;font-size:12px;padding:8px 12px;border-radius:9px;pointer-events:none;white-space:pre-line;line-height:1.55;box-shadow:0 4px 16px rgba(11,25,41,.25);max-width:220px;opacity:0;transition:opacity .12s}
-/* ── FUNNEL v2 ── */
-.funnel-item{display:grid;grid-template-columns:160px 1fr 70px 70px 80px;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:10px}
-/* ── ABANDON STEPS ── */
-.ab-step{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;background:var(--surface3);margin-bottom:5px}
-.ab-step-name{font-size:12.5px;color:var(--txt);font-weight:500;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ab-step-bar{flex:1;height:7px;background:rgba(11,25,41,.08);border-radius:4px;overflow:hidden;min-width:60px}
-.ab-step-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--amber),#f59e0b)}
-.ab-step-num{font-size:12px;font-weight:700;color:var(--amber);min-width:30px;text-align:right}
-.ab-step-pct{font-size:11px;color:var(--txt3);min-width:36px;text-align:right}
+/* ── FUNNEL v2 ──
+   O wrapper é BLOCO (não grid): a linha e o detalhe expansível são empilhados
+   verticalmente. Quando era grid, o detalhe caía numa coluna ao lado da linha
+   em vez de abaixo dela, e a linha ficava comprimida na 1ª coluna. */
+.funnel-item{display:block;padding:0;overflow:hidden;background:#fff;border:1px solid rgba(11,25,41,.06);border-radius:10px}
+.funnel-item.is-open{border-color:rgba(26,114,246,.28);box-shadow:0 2px 10px rgba(11,25,41,.05)}
+.funnel-head{align-items:center;padding:11px 14px}
+.funnel-head.clickable{cursor:pointer;user-select:none}
+.funnel-head.clickable:hover{background:rgba(26,114,246,.035)}
+.funnel-detail{padding:2px 14px 12px;border-top:1px solid rgba(11,25,41,.06);background:var(--surface3)}
+.funnel-detail-hint{font-size:11px;color:var(--txt3);padding:9px 2px 7px;line-height:1.5}
+/* ── ABANDON SUB-STEPS (detalhe expandido de cada etapa) ── */
+.ab-step{align-items:start;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid rgba(11,25,41,.05);margin-bottom:6px}
+.ab-step-name{font-size:12.5px;color:var(--txt);font-weight:600;line-height:1.35}
+.ab-step-q{font-size:11.5px;color:var(--txt2);margin-top:3px;line-height:1.45}
+.ab-step-raw{font-size:9.5px;color:rgba(11,25,41,.3);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:3px}
+.ab-step-bar{height:7px;background:rgba(11,25,41,.08);border-radius:4px;overflow:hidden;margin-top:5px}
+.ab-step-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--amber),#f59e0b);transition:width .5s ease}
+.ab-step-num{font-size:14px;font-weight:800;color:var(--amber);text-align:right;line-height:1.2}
+.ab-step-pct{font-size:10.5px;color:var(--txt3);text-align:right;margin-top:2px}
 </style>
 </head>
 <body>
@@ -480,8 +491,16 @@ td.nome{color:var(--txt);font-weight:500}
 
     <!-- ANALYTICS PANEL -->
     <div class="panel" id="panel-analytics">
+      <!-- Os dois blocos abaixo medem POPULAÇÕES DIFERENTES; sem esse rótulo o
+           time compara "não concluíram" com "abandonaram" e parece contradição. -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">
+        👤 Pessoas que deixaram o e-mail
+      </div>
       <div class="stat-row" id="analytics-stats">
         <div class="loading"><div class="spin"></div></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin:18px 0 8px">
+        🌐 Visitantes da página <span style="font-weight:500;text-transform:none;letter-spacing:0">— inclui quem saiu antes de informar o e-mail</span>
       </div>
       <!-- KPIs estilo Typeform: pageview / start / complete / taxas -->
       <div id="funnel-event-stats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px">
@@ -490,12 +509,17 @@ td.nome{color:var(--txt);font-weight:500}
 
       <!-- Funil principal -->
       <div class="card" style="margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:12px;flex-wrap:wrap">
           <div class="card-title" style="margin-bottom:0">🔽 Funil de Conversão — Onde os usuários param</div>
-          <span style="font-size:11px;color:var(--txt3)" id="funnel-period"></span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:11px;color:var(--txt3)" id="funnel-period"></span>
+            <button id="funnel-expand-all" onclick="toggleAllFunnelDetails()"
+              style="background:none;border:1px solid rgba(11,25,41,.12);border-radius:7px;padding:5px 10px;font-size:11.5px;font-family:inherit;font-weight:600;color:var(--txt2);cursor:pointer">⊞ Expandir todas</button>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:160px 1fr 70px 70px 80px;gap:8px;padding:4px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">
-          <span>Etapa</span><span>Distribuição</span><span style="text-align:right">Usuários</span><span style="text-align:right">%</span><span style="text-align:right">Abandono</span>
+        <div style="font-size:11.5px;color:var(--txt3);margin-bottom:14px;line-height:1.5">
+          Cada etapa mostra quantas pessoas <b>chegaram</b> nela e quantas <b>pararam</b> ali.
+          Clique em uma etapa para ver <b>em qual pergunta</b> cada pessoa desistiu.
         </div>
         <div class="funnel-list" id="funnel-list"><div class="loading"><div class="spin"></div>Carregando funil...</div></div>
       </div>
@@ -936,9 +960,9 @@ function renderKPIs(d) {
   const convPrev = d.conversionRatePrev || 0;
   const convChange = convPrev === 0 ? (conv > 0 ? 100 : 0) : Math.round(((conv - convPrev) / convPrev) * 100);
   const kpis = [
-    { label: 'Leads no Período', val: d.total || 0, sub: `vs ${d.totalPrev||0} período anterior`, change: d.totalChange },
-    { label: 'Análises Completas', val: d.completosPeriodo || 0, sub: `vs ${d.completosPeriodoPrev||0} período anterior`, change: d.completosPeriodoChange },
-    { label: 'Taxa de Conversão', val: conv + '%', sub: `${d.completions||0} completos / ${d.views||0} visualizações`, change: convChange },
+    { label: 'Leads no Período', val: d.total || 0, sub: `pessoas · vs ${d.totalPrev||0} período anterior`, change: d.totalChange },
+    { label: 'Análises Completas', val: d.completosPeriodo || 0, sub: `pessoas · vs ${d.completosPeriodoPrev||0} período anterior`, change: d.completosPeriodoChange },
+    { label: 'Taxa de Conversão', val: conv + '%', sub: `${d.completions||0} sessões concluídas / ${d.views||0} visualizações`, change: convChange },
     { label: 'Sessões (24h)', val: d.activeSessions || 0, sub: `Pendentes HubSpot: ${d.pendentesHubspot||0}`, change: null },
     { label: 'Média de Idade', val: d.mediaIdade ? d.mediaIdade + ' anos' : '—', sub: 'Baseado nos leads do período', change: null },
   ];
@@ -1489,7 +1513,7 @@ async function loadAnalytics() {
 
   renderFunnelEventStats(eventStats || {});
   renderAnalyticsStats(funnelData, statsData);
-  renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0, funnelData.abandonMap || {});
+  renderFunnel(funnelData.funnel || [], funnelData.total || 0, funnelData.completos || 0);
   renderDeviceChart(funnelData.deviceMap || {});
 }
 
@@ -1503,17 +1527,19 @@ function renderAnalyticsStats(f, s) {
     <div class="stat-card">
       <div class="stat-label">Taxa de Conversão</div>
       <div class="stat-val" style="color:${conv>=30?'var(--green)':conv>=15?'var(--amber)':'var(--red)'}">${conv}%</div>
-      <div class="stat-sub">${f.completions||0} completos de ${f.views||0} visualizações</div>
+      <div class="stat-sub">${f.completions||0} sessões concluídas de ${f.views||0} visualizações</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Abandono Total</div>
+      <div class="stat-label">Não concluíram</div>
       <div class="stat-val" style="color:var(--amber)">${totalAbandono}</div>
-      <div class="stat-sub">${total > 0 ? Math.round((totalAbandono/total)*100) : 0}% dos iniciados</div>
+      <div class="stat-sub">${total > 0 ? Math.round((totalAbandono/total)*100) : 0}% de quem deixou o e-mail (${total})</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Maior Ponto de Fuga</div>
-      <div class="stat-val" style="font-size:16px;color:var(--red);word-break:break-all">${topStep ? topStep.step : '—'}</div>
-      <div class="stat-sub">${topStep ? topStep.count + ' abandonos neste step' : 'Sem dados ainda'}</div>
+      <div class="stat-val" style="font-size:15px;line-height:1.3;color:var(--red)">${topStep ? escHtml(STEP_LABELS[topStep.step] || topStep.step) : '—'}</div>
+      <div class="stat-sub">${topStep
+        ? `${topStep.count} pararam aqui${STEP_QUESTIONS[topStep.step] ? ` · ❓ ${escHtml(STEP_QUESTIONS[topStep.step])}` : ''}`
+        : 'Sem dados ainda'}</div>
     </div>`;
 }
 
@@ -1634,132 +1660,125 @@ const STEP_LABELS = {
   desconhecido:'Step desconhecido',
 };
 
-const STEP_TO_FUNNEL = {
-  welcome:'contato', explain:'contato', disclaimer_legal:'contato', check_email_exists:'contato',
-  contact_email:'contato', contact_name:'contato', contact_phone:'contato',
-  chat_confirm_data:'contato', chat_login_password:'contato', chat_verify_code:'contato',
-  chat_post_login:'contato', chat_set_new_password:'contato', chat_confirm_phone:'contato',
-  contato:'contato', contato_completo:'contato', nurturing_contato:'contato',
-  path_select:'triagem', path_select2:'triagem',
-  path_prof_formacao:'triagem', path_sem_formacao:'triagem', path_prof_experiencia:'triagem',
-  path_niw:'triagem', path_eb1:'triagem', path_o1:'triagem', path_l1:'triagem',
-  path_e2:'triagem', path_work:'triagem', path_family:'triagem', path_diagnostico:'triagem',
-  path_prazo_gc:'triagem', path_fundos_gc:'triagem', path_cidadania:'triagem',
-  path_redireciona_temporario:'triagem', path_work_o1:'triagem',
-  path_l1_intro:'triagem', path_l1_empresa:'triagem', path_l1_funcionarios:'triagem',
-  path_l1_faturamento:'triagem', path_l1_fundos:'triagem',
-  path_e2_check:'triagem', path_e2_fundos:'triagem',
-  path_family_aviso:'triagem', path_family_fundos:'triagem', path_family_beneficiario:'triagem',
-  path_family_aplicante:'triagem', path_family_status_ap:'triagem', path_family_status_ben:'triagem',
-  path_offramp_sem_perfil:'offramp', abandono_sem_perfil:'offramp',
-  abandono_fundos:'perfil_pessoal',
-  pi_local:'perfil_pessoal', pi_profissao:'perfil_pessoal', pi_casado:'perfil_pessoal',
-  pi_filhos:'perfil_pessoal', pi_renda:'perfil_pessoal', pi_planos:'perfil_pessoal',
-  pi_prazo:'perfil_pessoal', pi_fundos:'perfil_pessoal',
-  ac_grau:'formacao', ac_instituicao:'formacao', ac_curso:'formacao',
-  ac_status:'formacao', ac_posgrad:'formacao', ac_conclusao:'formacao',
-  pe_emp1:'experiencia', pe_cargo1:'experiencia', pe_entrada1:'experiencia',
-  pe_saida1:'experiencia', pe_segunda:'experiencia', pe_terceira:'experiencia',
-  pe_gap_check:'experiencia', pe_projetos:'experiencia',
-  sc_niw_1:'scoring', sc_niw_hab:'scoring', sc_eb1_intro:'scoring',
-  sc_eb1_1:'scoring', sc_eb1_decide:'scoring', sc_o1_1:'scoring', sc_o1_5:'scoring',
-  sc_diag_intro:'scoring', sc_diag_form:'scoring',
-  resultado:'resultado', resultado_nurturing:'resultado',
-};
+// Layout do funil: UMA definição de colunas compartilhada pelo cabeçalho e
+// pelas linhas, para que nunca saiam desalinhados (antes havia dois
+// cabeçalhos, com larguras e gaps diferentes entre si e das linhas).
+const FUNNEL_COLS = 'grid-template-columns:minmax(190px,1.4fr) 1fr 92px 132px;gap:12px';
 
-function _funnelSubSteps(etapaId, abandonMap) {
-  return Object.entries(abandonMap || {})
-    .filter(([step]) => (STEP_TO_FUNNEL[step] || 'desconhecido') === etapaId)
-    .sort((a, b) => b[1] - a[1]);
+function _setFunnelDetail(id, open) {
+  const el = document.getElementById('funnel-detail-' + id);
+  if (!el) return;
+  el.style.display = open ? 'block' : 'none';
+  const arr = document.getElementById('funnel-arrow-' + id);
+  if (arr) arr.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+  document.getElementById('funnel-item-' + id)?.classList.toggle('is-open', open);
 }
-
-let _abandonMap = {};
 
 function toggleFunnelDetail(id) {
   const el = document.getElementById('funnel-detail-' + id);
-  const arr = document.getElementById('funnel-arrow-' + id);
   if (!el) return;
-  const open = el.style.display !== 'none';
-  el.style.display = open ? 'none' : 'block';
-  if (arr) arr.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+  _setFunnelDetail(id, el.style.display === 'none');
+  _syncFunnelExpandAllLabel();
 }
 
-function renderFunnel(funnel, total, completos, abandonMap) {
-  _abandonMap = abandonMap || {};
-  if (!funnel.length) { document.getElementById('funnel-list').innerHTML = '<div class="empty">Sem dados ainda.</div>'; return; }
-  const maxVal = Math.max(...funnel.map(f => f.abandons + f.em_andamento), completos, 1);
-  let chegaram = total;
-  const rows = funnel.map((f, i) => {
-    const isLast = f.id === 'resultado';
-    const val = isLast ? completos : (f.abandons + f.em_andamento);
-    const pct = total > 0 ? Math.round((val / total) * 100) : 0;
-    const barW = Math.round((val / maxVal) * 100);
-    const dropoff = chegaram > 0 && f.abandons > 0 ? Math.round((f.abandons / chegaram) * 100) : 0;
-    const dropColor = dropoff >= 40 ? 'var(--red)' : dropoff >= 20 ? 'var(--amber)' : 'var(--txt3)';
-    const barColor = isLast ? 'background:linear-gradient(90deg,var(--green),#1d9e70)' :
-                    f.abandons > 0 ? 'background:linear-gradient(90deg,var(--blue2),var(--pink))' :
-                    'background:linear-gradient(90deg,var(--blue2),var(--blue4))';
-    if (i > 0) chegaram = Math.max(0, chegaram - funnel[i-1].abandons);
+function toggleAllFunnelDetails() {
+  const details = [...document.querySelectorAll('[id^="funnel-detail-"]')];
+  if (!details.length) return;
+  const abrir = details.some(d => d.style.display === 'none');
+  details.forEach(d => _setFunnelDetail(d.id.replace('funnel-detail-', ''), abrir));
+  _syncFunnelExpandAllLabel();
+}
 
-    const subSteps = _funnelSubSteps(f.id, _abandonMap);
-    const hasDetail = subSteps.length > 0;
-    const maxSub = subSteps[0]?.[1] || 1;
+function _syncFunnelExpandAllLabel() {
+  const btn = document.getElementById('funnel-expand-all');
+  if (!btn) return;
+  const details = [...document.querySelectorAll('[id^="funnel-detail-"]')];
+  btn.style.display = details.length ? '' : 'none';
+  btn.textContent = details.length && details.every(d => d.style.display !== 'none')
+    ? '⊟ Recolher todas' : '⊞ Expandir todas';
+}
+
+function renderFunnel(funnel, total, completos) {
+  const el = document.getElementById('funnel-list');
+  if (!funnel.length) { el.innerHTML = '<div class="empty">Sem dados ainda.</div>'; return; }
+
+  const rows = funnel.map(f => {
+    // `chegaram`/`taxaAbandono`/`steps` vêm calculados do backend, da mesma
+    // classificação que gera o total da etapa — a soma do detalhe sempre fecha.
+    const chegaram = f.chegaram ?? 0;
+    const abandons = f.abandons ?? 0;
+    const taxa = f.taxaAbandono ?? 0;
+    const isLast = f.id === 'resultado';
+    const isSaida = !!f.isSaida;
+    const barW = total > 0 ? Math.round((chegaram / total) * 100) : 0;
+    const barColor = isLast ? 'linear-gradient(90deg,var(--green),#1d9e70)'
+                            : 'linear-gradient(90deg,var(--blue2),var(--blue4))';
+    // Semáforo do abandono: >=40% vermelho, >=20% âmbar. Saída lateral
+    // (offramp) é neutra — ali a saída é intencional, não uma perda.
+    const cor = isSaida ? 'var(--txt2)' : taxa >= 40 ? 'var(--red)' : taxa >= 20 ? 'var(--amber)' : 'var(--txt3)';
+    const verbo = isSaida ? 'saíram' : 'pararam';
+
+    const steps = f.steps || [];
+    const hasDetail = steps.length > 0;
+    const maxSub = steps[0]?.count || 1;
 
     const detailHtml = hasDetail ? `
-      <div id="funnel-detail-${f.id}" style="display:none;padding:10px 14px 4px;border-top:1px solid rgba(11,25,41,.05)">
-        ${subSteps.map(([step, count]) => {
-          const subPct = total > 0 ? Math.round((count / total) * 100) : 0;
+      <div id="funnel-detail-${f.id}" class="funnel-detail" style="display:none">
+        <div class="funnel-detail-hint">
+          <b>${abandons}</b> ${verbo} nesta etapa, em <b>${steps.length}</b> ${steps.length === 1 ? 'pergunta' : 'perguntas diferentes'}.
+          ${f.em_andamento > 0 ? `<span style="color:var(--blue2)"> · ${f.em_andamento} em andamento aqui agora (últimos 7 dias, independente do filtro de data).</span>` : ''}
+        </div>
+        ${steps.map(({ step, count, pctEtapa }) => {
           const subW = Math.round((count / maxSub) * 100);
           const label = STEP_LABELS[step] || step;
-          return `<div style="display:grid;grid-template-columns:180px 1fr 60px 50px;align-items:center;gap:8px;padding:5px 0">
-            <span style="font-size:11.5px;color:var(--txt2);padding-left:18px">↳ ${label}</span>
-            <div style="height:5px;background:rgba(11,25,41,.06);border-radius:4px;overflow:hidden">
-              <div style="height:100%;width:${subW}%;background:var(--amber);border-radius:4px;transition:width .5s"></div>
+          const question = STEP_QUESTIONS[step];
+          return `<div class="ab-step" style="display:grid;grid-template-columns:1fr 74px;gap:12px">
+            <div style="min-width:0">
+              <div class="ab-step-name">${escHtml(label)}</div>
+              ${question ? `<div class="ab-step-q">❓ ${escHtml(question)}</div>` : ''}
+              <div class="ab-step-bar"><div class="ab-step-fill" style="width:${subW}%"></div></div>
+              <div class="ab-step-raw">${escHtml(step)}</div>
             </div>
-            <span style="font-size:11.5px;font-weight:700;color:var(--amber);text-align:right">${count}</span>
-            <span style="font-size:11px;color:var(--txt3);text-align:right">${subPct}%</span>
+            <div>
+              <div class="ab-step-num">${count}</div>
+              <div class="ab-step-pct">${pctEtapa}% da etapa</div>
+            </div>
           </div>`;
         }).join('')}
       </div>` : '';
 
-    return `<div class="funnel-item" style="${isLast?'border-color:rgba(29,158,112,.3);background:rgba(29,158,112,.03)':''}flex-direction:column;padding:0;overflow:hidden">
-      <div style="display:grid;grid-template-columns:180px 1fr 80px 60px 90px;align-items:center;gap:8px;padding:10px 14px;${hasDetail?'cursor:pointer;':''}" ${hasDetail?`onclick="toggleFunnelDetail('${f.id}')"`:''}>
+    return `<div class="funnel-item" id="funnel-item-${f.id}" style="${isLast ? 'border-color:rgba(29,158,112,.3);background:rgba(29,158,112,.03);' : ''}">
+      <div class="funnel-head${hasDetail ? ' clickable' : ''}" style="display:grid;${FUNNEL_COLS}" ${hasDetail ? `onclick="toggleFunnelDetail('${f.id}')"` : ''}>
         <div class="funnel-label">
-          ${hasDetail ? `<span id="funnel-arrow-${f.id}" style="font-size:10px;color:var(--txt3);transition:transform .2s;display:inline-block;margin-right:2px">▶</span>` : '<span style="width:14px;display:inline-block"></span>'}
-          ${f.icon} ${f.label}
+          ${hasDetail
+            ? `<span id="funnel-arrow-${f.id}" style="font-size:10px;color:var(--txt3);transition:transform .2s;display:inline-block;width:12px">▶</span>`
+            : '<span style="width:12px;display:inline-block"></span>'}
+          <span>${f.icon} ${f.label}${isSaida ? '<span style="font-size:10px;font-weight:600;color:var(--txt3);margin-left:5px">saída lateral</span>' : ''}</span>
         </div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${barW}%;${barColor}"></div></div>
-        <div class="funnel-num">${val}</div>
-        <div class="funnel-pct" style="color:var(--txt)">${pct}%</div>
-        <div style="text-align:right;font-size:11.5px;font-weight:700;color:${f.abandons>0?dropColor:'var(--txt3)'}">
-          ${f.abandons > 0 ? `↗ ${f.abandons} (${dropoff}%)` : '—'}
+        <div class="funnel-bar-wrap" title="${chegaram} de ${total} chegaram nesta etapa">
+          <div class="funnel-bar" style="width:${barW}%;background:${barColor}"></div>
+        </div>
+        <div style="text-align:right">
+          <div class="funnel-num">${chegaram}</div>
+          <div class="funnel-pct">${f.pctDoTotal ?? 0}% do total</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:800;color:${cor}">${abandons > 0 ? `↘ ${abandons}` : '—'}</div>
+          <div style="font-size:10.5px;color:var(--txt3);margin-top:2px">
+            ${abandons > 0 ? `${taxa}% de quem chegou` : 'ninguém parou aqui'}
+          </div>
         </div>
       </div>
       ${detailHtml}
     </div>`;
   }).join('');
-  document.getElementById('funnel-list').innerHTML = `
-    <div style="display:grid;grid-template-columns:180px 1fr 80px 60px 90px;gap:12px;padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">
-      <span>Etapa</span><span>Distribuição</span><span style="text-align:right">Usuários</span><span style="text-align:right">%</span><span style="text-align:right">Abandono</span>
+
+  el.innerHTML = `
+    <div style="display:grid;${FUNNEL_COLS};padding:0 14px 6px;border:1px solid transparent;border-width:0 1px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">
+      <span>Etapa</span><span>Chegaram até aqui</span><span style="text-align:right">Chegaram</span><span style="text-align:right">Pararam aqui</span>
     </div>
     ${rows}`;
-}
-
-function renderAbandonSteps(steps, total) {
-  const el = document.getElementById('abandon-steps');
-  if (!el) return;
-  if (!steps.length) { el.innerHTML = '<div class="empty" style="padding:12px 0">Nenhum dado de abandono ainda.</div>'; return; }
-  const max = steps[0]?.count || 1;
-  el.innerHTML = steps.map(({ step, count }) => {
-    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-    const barW = Math.round((count / max) * 100);
-    return `<div class="ab-step">
-      <span class="ab-step-name" title="${step}">${step}</span>
-      <div class="ab-step-bar"><div class="ab-step-fill" style="width:${barW}%"></div></div>
-      <span class="ab-step-num">${count}</span>
-      <span class="ab-step-pct">${pct}%</span>
-    </div>`;
-  }).join('');
+  _syncFunnelExpandAllLabel();
 }
 
 

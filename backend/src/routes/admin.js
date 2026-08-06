@@ -560,12 +560,19 @@ router.get('/funnel', auth, async (req, res) => {
     const realSteps = await fetchRealStepsByEmail(incompletos.map(l => l.email));
     const abandonMap = {};        // raw step → count (granular)
     const funnelAbandonMap = {};  // grupo do funil → count
+    const abandonByStage = {};    // grupo do funil → { raw step → count }
     incompletos.forEach(l => {
       const real = realSteps[l.email];
       const rawStep = (real && real.step) || l.profile?._etapa_abandono || l.etapa_abandono || 'desconhecido';
       abandonMap[rawStep] = (abandonMap[rawStep] || 0) + 1;
       const g = classifyStep(rawStep);
       funnelAbandonMap[g.id] = (funnelAbandonMap[g.id] || 0) + 1;
+      // Detalhamento por etapa derivado do MESMO classifyStep que produz o
+      // total da linha — garante que a soma do dropdown feche com o número
+      // exibido na etapa (antes o admin reclassificava os steps por conta
+      // própria, com um mapa divergente, e as somas não fechavam).
+      if (!abandonByStage[g.id]) abandonByStage[g.id] = {};
+      abandonByStage[g.id][rawStep] = (abandonByStage[g.id][rawStep] || 0) + 1;
     });
 
     // Sessões em andamento (últimos 7 dias para "quentes")
@@ -582,14 +589,39 @@ router.get('/funnel', auth, async (req, res) => {
       funnelStepMap[g.id] = (funnelStepMap[g.id] || 0) + 1;
     });
 
-    // Funil com dados reais de abandono por etapa
+    // Funil com dados reais de abandono por etapa.
+    // `chegaram` é a cadeia sequencial: todos entram na 1ª etapa e cada etapa
+    // recebe quem não abandonou nas anteriores. `taxaAbandono` é relativo a
+    // quem CHEGOU naquela etapa (não ao total), que é a leitura que importa
+    // para saber onde o funil realmente perde gente.
     const ICONS = { contato:'📧', triagem:'🔀', offramp:'🚪', perfil_pessoal:'👤', formacao:'🎓', experiencia:'💼', scoring:'📊', resultado:'✅' };
-    const funnel = FUNNEL_GROUPS.map(s => ({
-      ...s,
-      icon: ICONS[s.id] || '•',
-      abandons:    funnelAbandonMap[s.id] || 0,
-      em_andamento: funnelStepMap[s.id] || 0,
-    }));
+    let chegaram = total;
+    const funnel = FUNNEL_GROUPS.map((s, i) => {
+      const abandons = funnelAbandonMap[s.id] || 0;
+      const chegaramAqui = chegaram;
+      const seguiram = Math.max(0, chegaramAqui - abandons);
+      chegaram = seguiram;
+      const steps = Object.entries(abandonByStage[s.id] || {})
+        .sort((a, b) => b[1] - a[1])
+        .map(([step, count]) => ({
+          step, count,
+          pctEtapa: abandons > 0 ? Math.round((count / abandons) * 100) : 0,
+        }));
+      return {
+        ...s,
+        icon: ICONS[s.id] || '•',
+        abandons,
+        em_andamento: funnelStepMap[s.id] || 0,
+        chegaram: chegaramAqui,
+        seguiram,
+        taxaAbandono: chegaramAqui > 0 ? Math.round((abandons / chegaramAqui) * 100) : 0,
+        pctDoTotal: total > 0 ? Math.round((chegaramAqui / total) * 100) : 0,
+        // Saída lateral: quem cai aqui foi redirecionado (não segue o fluxo),
+        // então não é "abandono no meio de uma pergunta".
+        isSaida: s.id === 'offramp',
+        steps,
+      };
+    });
 
     // Dispositivos
     const deviceMap = {};
@@ -613,7 +645,7 @@ router.get('/funnel', auth, async (req, res) => {
     res.json({
       funnel, total, completos, conversionRate,
       views: views || 0, completions: completions || 0,
-      abandonMap, funnelAbandonMap, stepMap, topAbandonSteps,
+      abandonMap, funnelAbandonMap, abandonByStage, stepMap, topAbandonSteps,
       deviceMap, exitMap, from, to
     });
   } catch (err) {
