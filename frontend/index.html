@@ -515,7 +515,14 @@ function trackConversion(visto, score, classificacao) {
   const params = { visto, score, classificacao, currency: 'BRL' };
   trackPixelEvent('Lead', params);
   trackPixelEvent('CompleteRegistration', params);
-  trackFunnel('complete', { visto, score });
+  // Fonte ÚNICA do evento 'complete' do funil — protegida por _funnelCompleted
+  // para nunca disparar mais de uma vez por sessão (era chamado aqui E direto
+  // no fluxo de sucesso, duplicando quase toda conclusão real).
+  if (!_funnelCompleted) {
+    _funnelCompleted = true;
+    const _fcs = _funnelStartTime ? Math.round((Date.now() - _funnelStartTime) / 1000) : null;
+    trackFunnel('complete', { visto, score, time_to_complete: _fcs });
+  }
 }
 
 // ─── UTM CAPTURE ───
@@ -4269,7 +4276,6 @@ const flows = {
       // Marca sessão como concluída para não aparecer "análise em andamento" ao recarregar
       S._completo = true;
       setSideDone(); // sidebar: "Diagnóstico gerado"
-      if (!_funnelCompleted) { _funnelCompleted = true; const _fcs = _funnelStartTime ? Math.round((Date.now() - _funnelStartTime) / 1000) : null; trackFunnel('complete', { visto: S.visto, score: S.score, time_to_complete: _fcs }); }
       trackConversion(S.visto, S.score, getClass(S.score, S.visto));
       saveSession('resultado_concluido');
       localStorage.removeItem('vm_session_id');

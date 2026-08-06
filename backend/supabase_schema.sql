@@ -115,3 +115,39 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 UPDATE leads SET completed_at = created_at
   WHERE completed_at IS NULL AND (completo = true OR score IS NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_leads_completed_at ON leads(completed_at DESC);
+
+-- ── SYSTEM_ERRORS (log persistente de falhas silenciosas) ──────────────────
+-- Os logs do EasyPanel são efêmeros (não guardam histórico). Falhas que antes
+-- só apareciam em console.error (e se perdiam no restart do container) agora
+-- ficam registradas aqui, para dar visibilidade real de quantas vezes e por
+-- que uma gravação crítica (ex: conclusão de análise) falhou.
+CREATE TABLE IF NOT EXISTS system_errors (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  context     TEXT NOT NULL,   -- ex: 'persistCompletion'
+  email       TEXT,
+  message     TEXT,
+  payload     JSONB
+);
+CREATE INDEX IF NOT EXISTS idx_system_errors_created_at ON system_errors(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_system_errors_context    ON system_errors(context);
+
+-- ── Migração: funnel_events idempotente para start/complete ───────────────
+-- trackConversion() disparava 'complete' duas vezes por conclusão real (uma
+-- vez direto, uma vez dentro de si mesma) — Taxa de Conversão saía inflada.
+-- 'view' continua podendo repetir livremente (reload/revisita é esperado).
+--
+-- Remove duplicatas existentes ANTES de criar o índice único (mantém a
+-- ocorrência mais antiga de cada par session_id+event, deleta o resto):
+DELETE FROM funnel_events fe
+  USING (
+    SELECT id, ROW_NUMBER() OVER (
+      PARTITION BY session_id, event ORDER BY created_at ASC
+    ) AS rn
+    FROM funnel_events
+    WHERE event IN ('start', 'complete')
+  ) dups
+  WHERE fe.id = dups.id AND dups.rn > 1;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_funnel_events_once_per_session
+  ON funnel_events(session_id, event) WHERE event IN ('start', 'complete');

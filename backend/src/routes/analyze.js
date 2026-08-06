@@ -66,14 +66,19 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
     completed_at: new Date().toISOString(),
   };
 
+  // O supabase-js NÃO lança exceção em erro de banco (constraint, RLS, JSONB
+  // malformado etc.) — ele resolve normalmente com { error }. Sem checar isso
+  // explicitamente, uma escrita que falhasse passava como sucesso, silenciosamente.
   let leadId;
   if (existing) {
-    await supabase.from('leads').update(payload).eq('id', existing.id);
+    const { error: updErr } = await supabase.from('leads').update(payload).eq('id', existing.id);
+    if (updErr) throw updErr;
     leadId = existing.id;
   } else {
-    const { data } = await supabase.from('leads')
+    const { data, error: insErr } = await supabase.from('leads')
       .insert({ email, hubspot_synced: false, ...payload })
       .select('id').single();
+    if (insErr) throw insErr;
     leadId = data?.id;
   }
 
@@ -124,6 +129,47 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
   return leadId;
 }
 
+// Registra uma falha crítica de forma PERSISTENTE (não só console.error) —
+// os logs do EasyPanel são efêmeros e não guardam histórico entre restarts.
+async function logSystemError(context, email, err) {
+  try {
+    await supabase.from('system_errors').insert({
+      context, email: email || null, message: String((err && err.message) || err),
+    });
+  } catch (_) { /* nunca deixa o log de erro derrubar o fluxo principal */ }
+}
+
+// Tenta persistir a conclusão com 2 novas tentativas (cobre falhas
+// transitórias de rede/Supabase). Se todas falharem, garante uma gravação
+// MÍNIMA (só os dados brutos) para nunca perder o lead por completo — mesmo
+// que a gravação "rica" (merge de profile, HubSpot, PDF) não tenha rodado.
+async function persistCompletionSafe({ nome, email, phone, profile, utm, analysis }, context) {
+  let lastErr;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      return await persistCompletion({ nome, email, phone, profile, utm, analysis });
+    } catch (e) {
+      lastErr = e;
+      if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+    }
+  }
+
+  console.error(`${context} falhou após 3 tentativas, aplicando gravação mínima:`, email, lastErr);
+  try {
+    const { error: recErr } = await supabase.from('leads').insert({
+      nome, email, phone,
+      profile: { ...(profile || {}), ai_analysis: analysis, _completo: true, _recovery: true },
+      completo: true,
+      completed_at: new Date().toISOString(),
+      hubspot_synced: false,
+    });
+    if (recErr) lastErr = recErr;
+  } catch (e2) {
+    lastErr = e2;
+  }
+  await logSystemError(context, email, lastErr);
+}
+
 // POST /analyze
 // Body: { nome, email, phone, visto, vistos, profile, localScores, utm }
 router.post('/', async (req, res) => {
@@ -137,8 +183,7 @@ router.post('/', async (req, res) => {
 
     // 2. Persiste a conclusão (Supabase + HubSpot) — não bloqueia a resposta em caso de erro de persistência
     if (email) {
-      try { await persistCompletion({ nome, email, phone, profile, utm, analysis }); }
-      catch (e) { console.error('persistCompletion (sucesso IA) error:', e); }
+      await persistCompletionSafe({ nome, email, phone, profile, utm, analysis }, 'persistCompletion (sucesso IA)');
     }
 
     // 3. Retorna análise completa para o frontend
@@ -150,13 +195,8 @@ router.post('/', async (req, res) => {
     // IA indisponível: AINDA ASSIM persiste a conclusão com os scores locais.
     // Isso evita "leads fantasma" (jornada completa registrada como parcial).
     if (email) {
-      try {
-        const fallback = buildLocalFallback(localScores, vistos, visto);
-        await persistCompletion({ nome, email, phone, profile, utm, analysis: fallback });
-        console.log('Lead concluído via fallback local após falha de IA:', email);
-      } catch (e) {
-        console.error('persistCompletion (fallback) error:', e);
-      }
+      const fallback = buildLocalFallback(localScores, vistos, visto);
+      await persistCompletionSafe({ nome, email, phone, profile, utm, analysis: fallback }, 'persistCompletion (fallback IA)');
     }
 
     // Mantém o contrato atual: 500 → frontend exibe seu resultado local (buildResult)
