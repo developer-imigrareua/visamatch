@@ -347,6 +347,15 @@ td.nome{color:var(--txt);font-weight:500}
       <div class="kpi-grid" id="kpi-grid">
         <div class="loading"><div class="spin"></div>Carregando...</div>
       </div>
+      <!-- As três taxas do funil ficam JUNTAS, na mesma linha: todas vêm da
+           mesma fonte (sessões de navegador) e só fazem sentido lidas em
+           conjunto — pageview → iniciou → concluiu. -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin:-8px 0 10px">
+        🌐 Funil de visitantes <span style="font-weight:500;text-transform:none;letter-spacing:0">— mede todo mundo que abriu a página, inclusive quem saiu antes de deixar o e-mail</span>
+      </div>
+      <div class="kpi-grid" id="kpi-grid-rates" style="grid-template-columns:repeat(3,1fr)">
+        <div class="loading"><div class="spin"></div></div>
+      </div>
       <div class="grid2">
         <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -813,10 +822,12 @@ function loadAll() {
 async function loadStats() {
   document.getElementById('kpi-grid').innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
   const qs = dateQs();
+  // /stats já devolve views/starts/completions e as três taxas — antes havia
+  // um terceiro fetch a /funnel-stats cujo resultado era descartado (a
+  // desestruturação só pegava 2 dos 3 valores).
   const [data, overview] = await Promise.all([
     apiFetch('/stats?' + qs.slice(1)),
     apiFetch('/overview').catch(() => ({})),
-    apiFetch('/funnel-stats?' + qs.slice(1)).catch(() => ({}))
   ]);
   Object.assign(data, overview);
   _utmData = {
@@ -956,24 +967,38 @@ function changePct(val) {
 }
 
 function renderKPIs(d) {
-  const conv = d.conversionRate || 0;
-  const convPrev = d.conversionRatePrev || 0;
-  const convChange = convPrev === 0 ? (conv > 0 ? 100 : 0) : Math.round(((conv - convPrev) / convPrev) * 100);
+  // Variação % de uma taxa entre o período atual e o anterior.
+  const varTaxa = (cur, prev) => (prev || 0) === 0 ? ((cur || 0) > 0 ? 100 : 0)
+                                                   : Math.round((((cur || 0) - prev) / prev) * 100);
+  // Volumes (pessoas, tabela leads) e contexto operacional.
   const kpis = [
     { label: 'Leads no Período', val: d.total || 0, sub: `pessoas · vs ${d.totalPrev||0} período anterior`, change: d.totalChange },
     { label: 'Análises Completas', val: d.completosPeriodo || 0, sub: `pessoas · vs ${d.completosPeriodoPrev||0} período anterior`, change: d.completosPeriodoChange },
-    { label: 'Taxa de Conversão', val: conv + '%', sub: `${d.completions||0} sessões concluídas / ${d.views||0} visualizações`, change: convChange },
     { label: 'Sessões (24h)', val: d.activeSessions || 0, sub: `Pendentes HubSpot: ${d.pendentesHubspot||0}`, change: null },
     { label: 'Média de Idade', val: d.mediaIdade ? d.mediaIdade + ' anos' : '—', sub: 'Baseado nos leads do período', change: null },
   ];
-  document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+  // Taxas do funil — todas de funnel_events (sessões de navegador), portanto
+  // comparáveis entre si. Não misturar com os volumes acima, que contam pessoas.
+  const taxas = [
+    { label: 'Taxa de Conversão', val: (d.conversionRate||0) + '%',
+      sub: `Pageview → análise concluída · ${d.completions||0} de ${d.views||0} pageviews`,
+      change: varTaxa(d.conversionRate, d.conversionRatePrev) },
+    { label: 'Taxa de Início', val: (d.startRate||0) + '%',
+      sub: `Começaram a responder · ${d.starts||0} de ${d.views||0} pageviews`,
+      change: varTaxa(d.startRate, d.startRatePrev) },
+    { label: 'Taxa de Conclusão (Iniciaram e Finalizaram)', val: (d.completionRate||0) + '%',
+      sub: `${d.completions||0} finalizaram de ${d.starts||0} que iniciaram`,
+      change: varTaxa(d.completionRate, d.completionRatePrev) },
+  ];
+  const card = k => `
     <div class="kpi">
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-val">${k.val}</div>
       <div class="kpi-sub">${k.sub}</div>
       ${k.change !== null ? changePct(k.change) : ''}
-    </div>
-  `).join('');
+    </div>`;
+  document.getElementById('kpi-grid').innerHTML = kpis.map(card).join('');
+  document.getElementById('kpi-grid-rates').innerHTML = taxas.map(card).join('');
 }
 
 function renderVistoBars(porVisto, totalLeads) {
@@ -1152,7 +1177,7 @@ function renderCompletionDonut(completos, parciais) {
       </div>
     </div>
     <div style="margin-top:4px;padding:10px 12px;background:rgba(29,158,112,.06);border-radius:10px;border:1px solid rgba(29,158,112,.15)">
-      <div style="font-size:11px;color:var(--txt3)">Taxa de conclusão do funil</div>
+      <div style="font-size:11px;color:var(--txt3)">Conclusão entre quem deixou o e-mail (${total} pessoas)</div>
       <div style="font-size:20px;font-weight:800;color:#1d9e70;margin-top:2px">${taxaConclusao}%</div>
     </div>`;
 }

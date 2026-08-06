@@ -184,15 +184,26 @@ router.get('/stats', auth, async (req, res) => {
     const completosPeriodo = new Set((_completedCur || []).map(r => (r.email || '').toLowerCase())).size;
     const completosPeriodoPrev = new Set((_completedPrev || []).map(r => (r.email || '').toLowerCase())).size;
 
-    // Taxa de conversão real: de quem chegou no VisaMatch (pageview), quantos
-    // completaram — via funnel_events (view/complete), não via tabela leads
-    // (que só ganha linha depois que a pessoa informa e-mail).
-    const [{ count: views }, { count: completions }, { count: viewsPrev }, { count: completionsPrev }] = await Promise.all([
-      countFunnelEvent('view', from, to), countFunnelEvent('complete', from, to),
-      countFunnelEvent('view', prevFrom, from), countFunnelEvent('complete', prevFrom, from),
+    // Funil de eventos do navegador (funnel_events): view → start → complete.
+    // Mede TODO visitante, inclusive quem saiu antes de informar o e-mail — a
+    // tabela leads só ganha linha depois disso, então não serve para isso.
+    const [
+      { count: views }, { count: starts }, { count: completions },
+      { count: viewsPrev }, { count: startsPrev }, { count: completionsPrev },
+    ] = await Promise.all([
+      countFunnelEvent('view', from, to), countFunnelEvent('start', from, to), countFunnelEvent('complete', from, to),
+      countFunnelEvent('view', prevFrom, from), countFunnelEvent('start', prevFrom, from), countFunnelEvent('complete', prevFrom, from),
     ]);
-    const conversionRate = views > 0 ? Math.round((completions / views) * 100) : 0;
-    const conversionRatePrev = viewsPrev > 0 ? Math.round((completionsPrev / viewsPrev) * 100) : 0;
+    const rate = (num, den) => den > 0 ? Math.round((num / den) * 100) : 0;
+    // Conversão: pageview → análise concluída (o funil inteiro).
+    const conversionRate     = rate(completions, views);
+    const conversionRatePrev = rate(completionsPrev, viewsPrev);
+    // Início: de quem viu a página, quantos começaram a responder.
+    const startRate     = rate(starts, views);
+    const startRatePrev = rate(startsPrev, viewsPrev);
+    // Conclusão: de quem começou a responder, quantos chegaram ao fim.
+    const completionRate     = rate(completions, starts);
+    const completionRatePrev = rate(completionsPrev, startsPrev);
 
     // Pendentes HubSpot (global)
     const { count: pendentesHubspot } = await supabase
@@ -262,7 +273,9 @@ router.get('/stats', auth, async (req, res) => {
       completosPeriodo, completosPeriodoPrev, completosPeriodoChange: pct(completosPeriodo, completosPeriodoPrev),
       parciais: parciais || 0,
       conversionRate, conversionRatePrev,
-      views: views || 0, completions: completions || 0,
+      startRate, startRatePrev,
+      completionRate, completionRatePrev,
+      views: views || 0, starts: starts || 0, completions: completions || 0,
       ultimos7dias, pendentesHubspot,
       porVisto: vistoCount, porScore: scoreClass,
       timeline, timelineCompletos,
