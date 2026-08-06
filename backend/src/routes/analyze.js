@@ -28,19 +28,27 @@ function buildLocalFallback(localScores, vistos, visto) {
 }
 
 // ── Persiste a conclusão do lead (Supabase + HubSpot) ──
-// Idempotente por e-mail: atualiza o parcial existente ou insere um novo.
+// Idempotente por e-mail: UMA PESSOA = UMA LINHA, sempre.
 async function persistCompletion({ nome, email, phone, profile, utm, analysis }) {
   const bestScore   = analysis.melhor?.score ?? null;
   const bestPct     = analysis.melhor?.aprovacao_pct ?? null;
   const bestVisto   = analysis.melhor?.visto ?? null;
   const bestClassif = analysis.melhor?.classificacao ?? null;
 
-  // Localiza o parcial existente ANTES de montar o payload, para MESCLAR o
+  // Localiza a linha existente ANTES de montar o payload, para MESCLAR o
   // profile e preservar campos gravados no lead (ex: _utm, _etapa_abandono)
   // que podem não vir no profile do request.
-  const { data: existing } = await supabase
-    .from('leads').select('id, profile').eq('email', email)
-    .eq('completo', false).order('created_at', { ascending: false }).limit(1).single();
+  // Prefere converter o parcial em aberto; se a pessoa JÁ concluiu antes,
+  // atualiza a análise naquela mesma linha. Antes o filtro era só
+  // `completo=false`: quem refazia o VisaMatch não casava com nada e ganhava
+  // uma segunda linha de lead para o mesmo e-mail.
+  const { data: rows } = await supabase
+    .from('leads').select('id, profile, completo, completed_at')
+    .eq('email', email).order('created_at', { ascending: true });
+  const abertos = (rows || []).filter(r => !r.completo);
+  const existing = abertos.length
+    ? abertos[abertos.length - 1]          // parcial mais recente
+    : (rows || [])[0] || null;             // senão, a linha canônica (mais antiga)
 
   const prevProfile = (existing && existing.profile) || {};
   // UTM: prioriza o recebido, senão preserva o que já existia no lead.
@@ -63,7 +71,10 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
     etapa_abandono: null,
     profile: mergedProfile,
     updated_at: new Date().toISOString(),
-    completed_at: new Date().toISOString(),
+    // completed_at é IMUTÁVEL: numa reconclusão, mantém a data da primeira
+    // conclusão. Reescrever aqui moveria a conclusão de um período já fechado
+    // para o atual — o mês passado perderia 1 completo retroativamente.
+    completed_at: (existing && existing.completed_at) || new Date().toISOString(),
   };
 
   // O supabase-js NÃO lança exceção em erro de banco (constraint, RLS, JSONB
