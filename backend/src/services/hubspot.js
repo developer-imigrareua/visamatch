@@ -1,23 +1,96 @@
 const fetch = require('node-fetch');
 
+// Normaliza para comparação: minúsculas e sem acentos. Evita que uma
+// diferença de caixa/acento derrube o campo silenciosamente (era o caso de
+// 'Sem Formação Superior' vs a checagem por 'Sem formação').
+function norm(v) {
+  return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// → first_immigration_path ([LIV] Declared Immigration Path).
+// Recebe o caminho MAIS ESPECÍFICO que a pessoa declarou: `perfilProfissional`
+// (2º nível) quando existe, senão `caminhoPrincipal` (1º nível).
+// Antes esta função recebia só o 1º nível, cujos valores ('Através do meu
+// perfil profissional', 'Não tenho certeza') não casavam com nenhuma regra —
+// então TODO lead de work visa era gravado como 'None of the above'.
 function mapCaminho(v) {
-  if (!v) return '';
-  if (v.includes('profissão') || v.includes('formação acadêmica')) return 'Green Card EB';
-  if (v.includes('familiares')) return 'Green Card Family-Based';
-  if (v.includes('empresa que atua')) return 'Work Visa';
-  if (v.includes('investimento')) return 'Investor Visa';
+  const s = norm(v);
+  if (!s) return '';
+  // 2º nível (perfilProfissional)
+  if (s.includes('abertura de uma empresa')) return 'Investor Visa';
+  if (s.includes('alguma empresa nos eua') || s.includes('empresa que atua')) return 'Work Visa';
+  if (s.includes('profissao') || s.includes('formacao academica')) return 'Green Card EB';
+  // 1º nível (caminhoPrincipal)
+  if (s.includes('familiares')) return 'Green Card Family-Based';
+  if (s.includes('investimento')) return 'Investor Visa';
   return 'None of the above';
 }
 
 function mapGrau(v) {
-  if (!v) return '';
+  const s = norm(v);
+  if (!s) return '';
   // Valores EXATOS das opções do select nonimmigrant_visas__level_of_education
-  if (v.includes('Doutorado')) return 'PhD / Doutorado';
-  if (v.includes('Mestrado')) return 'Master’s degree / Mestrado';
-  if (v.includes('Bacharelado') || v.includes('Licenciatura')) return 'Bachelor’s degree / Graduação';
-  if (v.includes('Tecnólogo')) return "Associate's Degree / Tecnólogo";
-  if (v.includes('Superior incompleto') || v.includes('incompleto')) return 'Outros';
-  if (v.includes('Não tenho') || v.includes('não tenho') || v.includes('Sem formação')) return 'No degree / Não tenho graduação';
+  if (s.includes('doutorado')) return 'PhD / Doutorado';
+  if (s.includes('mestrado')) return 'Master’s degree / Mestrado';
+  if (s.includes('bacharelado') || s.includes('licenciatura')) return 'Bachelor’s degree / Graduação';
+  if (s.includes('tecnologo')) return "Associate's Degree / Tecnólogo";
+  if (s.includes('incompleto')) return 'Outros';
+  if (s.includes('nao tenho') || s.includes('sem formacao') || s.includes('ensino medio')) return 'No degree / Não tenho graduação';
+  return '';
+}
+
+// ── Bloco EMPRESA / INVESTIMENTO (caminhos E-2 / L-1 / O-1) ──
+// Estes campos existiam no VisaMatch mas NÃO tinham mapeamento nenhum aqui,
+// então nunca chegavam ao HubSpot. As opções de destino foram conferidas
+// contra as enumerações reais das propriedades.
+
+// numFunc → nonimmigrant__quantos_funcionarios_formais_tem_a_empresa_
+// Opções no HubSpot: 'Menos que 5' / 'Entre 5 e 10' / 'Entre 11 a 20' / 'Mais do que 21'
+function mapNumFunc(v) {
+  const s = norm(v);
+  if (!s) return '';
+  if (s.includes('menos de 5')) return 'Menos que 5 funcionários';
+  if (s.includes('5 e 10')) return 'Entre 5 e 10 funcionários';
+  if (s.includes('11 e 50')) return 'Entre 11 a 20 funcionários';  // faixa do chat é mais larga
+  if (s.includes('mais de 50')) return 'Mais do que 21 funcionários';
+  return '';
+}
+
+// faturamento → nonimmigrant_visas__qual_a_faixa_de_faturamento_anual_da_empresa__l_1
+// As 4 faixas do chat correspondem 1:1 às 4 opções do HubSpot.
+function mapFaturamento(v) {
+  const s = norm(v);
+  if (!s) return '';
+  if (s.includes('menos de r$ 1') || s.includes('menos de 1')) return 'Menos que 1 milhão de reais/ano';
+  if (s.includes('1 e 2')) return 'Entre 1 milhão e 2 milhões de reais/ano';
+  if (s.includes('2 e 5')) return 'Entre 2 e 5 milhões de reais/ano';
+  if (s.includes('acima de r$ 5') || s.includes('acima de 5')) return 'Acima de 5 milhões de reais/ano';
+  return '';
+}
+
+// posicao → nonimmigrant__qual_a_sua_posicao_atual_na_empresa_
+// As 4 opções do chat são idênticas às do HubSpot; valida antes de enviar
+// para nunca mandar uma opção inexistente (seria descartada em silêncio).
+const POSICOES_HS = ['Fundador / Empreendedor', 'Sócio / Acionista', 'Executivo / Gerente', 'Funcionário com Conhecimento Especializado'];
+function mapPosicao(v) {
+  return POSICOES_HS.includes(v) ? v : '';
+}
+
+// avaliacaoComplementarE2 → nonimmigrant__gostaria_de_continuar_preenchendo_
+// Opções no HubSpot (com ponto final): 'Sim, quero uma avaliação completa.' /
+// 'Não, quero encerrar por aqui.'
+function mapGateComplementar(v) {
+  const s = norm(v);
+  if (!s) return '';
+  return s.startsWith('sim') ? 'Sim, quero uma avaliação completa.' : 'Não, quero encerrar por aqui.';
+}
+
+// l1Contexto → l1__new_office_transfer_ (Yes/No)
+// 'expansao' = abrir nova operação nos EUA; 'transferencia' = mover-se dentro
+// de uma estrutura que já existe.
+function mapL1Contexto(v) {
+  if (v === 'expansao') return 'Yes';
+  if (v === 'transferencia') return 'No';
   return '';
 }
 
@@ -181,7 +254,10 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     phone: phone || '',
     visamatch_age: p.idade ? Number(p.idade) : undefined,
 
-    first_immigration_path: mapCaminho(p.caminhoPrincipal),
+    // Usa o caminho MAIS ESPECÍFICO: perfilProfissional é a resposta de 2º
+    // nível (profissão / empresa nos EUA / abertura de empresa) e é a que
+    // distingue Work Visa de Investor Visa. caminhoPrincipal é o fallback.
+    first_immigration_path: mapCaminho(p.perfilProfissional) || mapCaminho(p.caminhoPrincipal),
 
     nonimmigrant_visas__level_of_education: mapGrau(p.grauFormacao || p.grauFormacaoDiag),
     nonimmigrant__ha_quanto_tempo_voce_atua_na_sua_area_de_formacao_: mapTempoExp(p.tempoExp),
@@ -222,11 +298,33 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     // Data de nascimento (idade já vai em visamatch_age)
     date_of_birth: p.dataNasc || '',
 
-    // Cidadania de país com tratado (checkbox: opções Yes/No)
-    liv__e_2_treaty_country_citizenship_: mapSimNao(p.tratadoCidadania),
+    // Cidadania de país com tratado. A chave real gravada pelo chat é
+    // `tratado` (ou `tratadoDiag` no fluxo de diagnóstico) — antes lia-se
+    // `tratadoCidadania`, que não existe no profile, então nunca era enviado.
+    liv__e_2_treaty_country_citizenship_: mapSimNao(p.tratado || p.tratadoDiag || p.tratadoCidadania),
+    nonimmigrant__voce_possui_cidadania: (p.tratado || p.tratadoDiag || '') === 'Sim' ? 'Sim'
+                                       : (p.tratado || p.tratadoDiag) ? 'Não' : '',
 
-    // Experiência profissional — empresa atual (1ª)
-    company:  p.emp1Nome  || '',
+    // ── Bloco EMPRESA / INVESTIMENTO (E-2 / L-1 / O-1) ──
+    // Respostas que o chat já coletava e que não tinham destino nenhum aqui.
+    nonimmigrant__quantos_funcionarios_formais_tem_a_empresa_: mapNumFunc(p.numFunc),
+    nonimmigrant_visas__qual_a_faixa_de_faturamento_anual_da_empresa__l_1: mapFaturamento(p.faturamento),
+    nonimmigrant__qual_a_sua_posicao_atual_na_empresa_: mapPosicao(p.posicao),
+    l1__new_office_transfer_: mapL1Contexto(p.l1Contexto),
+    // Propriedades de texto livre no HubSpot: envia a resposta literal, sem
+    // encaixar em faixas que não correspondem às do chat (evita perda).
+    e2_investment_range: p.investimento || '',
+    e2_business_stage:   p.tipoNegocio  || '',
+
+    // Gate de avaliação complementar (quem já respondeu E-2 e aceitou seguir
+    // para L-1/O-1). Texto livre + a versão enumerada, que é filtrável.
+    nonimmigrant__want_to_follow_other_visas: p.avaliacaoComplementarE2 || '',
+    nonimmigrant__gostaria_de_continuar_preenchendo_: mapGateComplementar(p.avaliacaoComplementarE2),
+
+    // Experiência profissional — empresa atual (1ª).
+    // Nos caminhos de work visa a empresa vem em `nomeEmpresa` (a própria
+    // empresa da pessoa), não em `emp1Nome` (histórico profissional).
+    company:  p.emp1Nome  || p.nomeEmpresa || '',
     industry: p.emp1Ramo  || '',
     jobtitle: p.emp1Cargo || p.profissao || '',
     company_start_date: mapData(p.emp1Entrada),
@@ -268,10 +366,15 @@ function buildHubSpotProperties(nome, email, phone, visto, score, profile, utm, 
     // Prazo de mudança
     when_do_you_plan_to_start_your_immigration_process_: mapPrazoMudanca(p.prazoMudanca),
 
-    // EB-1A critérios adicionais
-    nonimmigrant__comprovacoes_de_que_seu_trabalho_foi_exibido_em_exposicoes_ou_mostras_artisticas: p.eb1_exposicoes || p.eb1_artes || p.o1_exposicoes || '',
-    nonimmigrant__evidencias_de_suas_contribuicoes_originais_cientificas__academicas__artisticas__atlet: p.eb1_contrib || p.eb1_artigos || p.o1_contrib || '',
-    evidence_of_material_published_about_you_in_professional_publications_or_other_major_media: p.eb1_midia || p.o1_midia || '',
+    // EB-1A / O-1 critérios adicionais — cada critério tem a SUA propriedade
+    // "- Detailed". Antes, `o1_artes` e `o1_artigos` ficavam de fora das
+    // cadeias (nunca chegavam) e `o1_midia` era gravado na propriedade
+    // "- Resumed", que é preenchida por outro processo com S/N.
+    nonimmigrant__comprovacoes_de_que_seu_trabalho_foi_exibido_em_exposicoes_ou_mostras_artisticas: p.eb1_exposicoes || p.o1_exposicoes || '',
+    nonimmigrant__evidencias_de_suas_contribuicoes_originais_cientificas__academicas__artisticas__atlet: p.eb1_contrib || p.o1_contrib || '',
+    nonimmigrant__evidencias_de_material_publicado_sobre_voce: p.eb1_midia || p.o1_midia || '',
+    nonimmigrant__provas_de_sucessos_comerciais: p.eb1_artes || p.o1_artes || '',
+    nonimmigrant__evidencia_de_sua_autoria_de_artigos_academicos_em_publicacoes_profissionais: p.eb1_artigos || p.o1_artigos || '',
 
     utm_source:       utm?.utm_source       || '',
     utm_medium:       utm?.utm_medium       || '',
