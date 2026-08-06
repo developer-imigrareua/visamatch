@@ -63,6 +63,7 @@ async function persistCompletion({ nome, email, phone, profile, utm, analysis })
     etapa_abandono: null,
     profile: mergedProfile,
     updated_at: new Date().toISOString(),
+    completed_at: new Date().toISOString(),
   };
 
   let leadId;

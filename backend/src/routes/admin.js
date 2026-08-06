@@ -49,18 +49,76 @@ function classifyStep(step) {
   return { id, label: g ? g.label : id };
 }
 
-// Totais DEDUPLICADOS por e-mail (robusto a duplicidade de linhas): uma
-// pessoa = um lead, independente de quantas linhas parciais existam.
-// completo se qualquer linha do e-mail estiver concluída (completo/score).
-function dedupTotals(rows) {
+// Coorte ESTÁVEL (robusta a duplicidade de linhas e a mudanças depois que o
+// período fecha): de quem entrou no período (linhas recebidas), quantos
+// e-mails únicos já tinham completado até `boundary` (normalmente o `to` do
+// período). Usa completed_at — que só é gravado UMA VEZ, no momento real da
+// conclusão — em vez do status "de agora" (score/completo). Por isso, uma
+// vez que o período fecha (boundary no passado), o resultado nunca muda de
+// novo, mesmo que a pessoa complete semanas depois: completed_at será > to,
+// então ela continua "parcial" para este período para sempre.
+function cohortSplit(rows, boundary) {
   const byEmail = {};
   (rows || []).forEach(r => {
     const e = (r.email || '').toLowerCase();
-    if (!(e in byEmail)) byEmail[e] = false;
-    if (r.completo === true || r.score != null) byEmail[e] = true;
+    const completedByBoundary = !!(r.completed_at && r.completed_at <= boundary);
+    if (!(e in byEmail)) byEmail[e] = completedByBoundary;
+    else if (completedByBoundary) byEmail[e] = true;
   });
   const vals = Object.values(byEmail);
   return { total: vals.length, completos: vals.filter(Boolean).length, parciais: vals.filter(v => !v).length };
+}
+
+// Igual ao cohortSplit, mas granular por dia: para cada dia (YYYY-MM-DD) das
+// linhas recebidas (created_at), conta e-mails únicos que entraram naquele
+// dia e quantos JÁ tinham completado até o FIM daquele mesmo dia. Estável
+// para qualquer dia já passado, pelo mesmo motivo do cohortSplit.
+function cohortSplitByDay(rows) {
+  const byDay = {};
+  (rows || []).forEach(r => {
+    const dia = (r.created_at || '').slice(0, 10);
+    if (!dia) return;
+    const endOfDay = dia + 'T23:59:59.999Z';
+    const e = (r.email || '').toLowerCase();
+    const completedByEnd = !!(r.completed_at && r.completed_at <= endOfDay);
+    if (!byDay[dia]) byDay[dia] = {};
+    if (!(e in byDay[dia]) || completedByEnd) byDay[dia][e] = completedByEnd;
+  });
+  const leads = {}, completos = {}, parciais = {};
+  Object.entries(byDay).forEach(([dia, emails]) => {
+    const vals = Object.values(emails);
+    leads[dia] = vals.length;
+    completos[dia] = vals.filter(Boolean).length;
+    parciais[dia] = vals.filter(v => !v).length;
+  });
+  return { leads, completos, parciais };
+}
+
+// Conta e-mails únicos por dia (YYYY-MM-DD) usando o campo de data indicado —
+// tipicamente created_at ("entrou nesse dia") ou completed_at ("completou
+// nesse dia"). Ambos os campos são imutáveis, então o resultado é estável
+// para qualquer dia já passado: um evento real, uma vez ocorrido, não migra
+// de dia depois.
+function countByDay(rows, dateField) {
+  const byDay = {};
+  (rows || []).forEach(r => {
+    const dia = (r[dateField] || '').slice(0, 10);
+    if (!dia) return;
+    const e = (r.email || '').toLowerCase();
+    if (!byDay[dia]) byDay[dia] = new Set();
+    byDay[dia].add(e);
+  });
+  const out = {};
+  Object.entries(byDay).forEach(([dia, set]) => { out[dia] = set.size; });
+  return out;
+}
+
+// Conta eventos de funil (view/start/complete) num intervalo — usado para a
+// Taxa de Conversão real (pageview → completo), independente da tabela leads.
+function countFunnelEvent(evt, from, to) {
+  return supabase
+    .from('funnel_events').select('*', { count: 'exact', head: true })
+    .eq('event', evt).gte('created_at', from).lte('created_at', to);
 }
 
 // Busca o step real (mais avançado) por e-mail a partir das sessões
@@ -104,13 +162,37 @@ router.get('/stats', auth, async (req, res) => {
     const pct = (cur, prev) => prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100);
 
     const [{ data: _periodoRows }, { data: _prevRows }] = await Promise.all([
-      supabase.from('leads').select('email, score, completo').gte('created_at', from).lte('created_at', to).limit(50000),
-      supabase.from('leads').select('email, score, completo').gte('created_at', prevFrom).lte('created_at', from).limit(50000),
+      supabase.from('leads').select('email, created_at, completed_at').gte('created_at', from).lte('created_at', to).limit(50000),
+      supabase.from('leads').select('email, created_at, completed_at').gte('created_at', prevFrom).lte('created_at', from).limit(50000),
     ]);
-    const _cur = dedupTotals(_periodoRows), _prv = dedupTotals(_prevRows);
+    // Coorte estável: de quem entrou no período, quantos já tinham completado
+    // até o fim dele — alimenta o donut "Taxa de conclusão do funil". Nunca
+    // muda depois que o período fecha (ver cohortSplit).
+    const _cur = cohortSplit(_periodoRows, to), _prv = cohortSplit(_prevRows, from);
     const total = _cur.total, totalPrev = _prv.total;
     const completos = _cur.completos, completosPrev = _prv.completos;
     const parciais = _cur.parciais;
+
+    // Completos NO período (evento real de conclusão via completed_at),
+    // independente de quando a pessoa entrou no funil — alimenta o KPI
+    // "Análises Completas". Se alguém entrou mês passado e completou hoje,
+    // conta aqui (hoje), não no mês passado.
+    const [{ data: _completedCur }, { data: _completedPrev }] = await Promise.all([
+      supabase.from('leads').select('email').not('completed_at', 'is', null).gte('completed_at', from).lte('completed_at', to).limit(50000),
+      supabase.from('leads').select('email').not('completed_at', 'is', null).gte('completed_at', prevFrom).lte('completed_at', from).limit(50000),
+    ]);
+    const completosPeriodo = new Set((_completedCur || []).map(r => (r.email || '').toLowerCase())).size;
+    const completosPeriodoPrev = new Set((_completedPrev || []).map(r => (r.email || '').toLowerCase())).size;
+
+    // Taxa de conversão real: de quem chegou no VisaMatch (pageview), quantos
+    // completaram — via funnel_events (view/complete), não via tabela leads
+    // (que só ganha linha depois que a pessoa informa e-mail).
+    const [{ count: views }, { count: completions }, { count: viewsPrev }, { count: completionsPrev }] = await Promise.all([
+      countFunnelEvent('view', from, to), countFunnelEvent('complete', from, to),
+      countFunnelEvent('view', prevFrom, from), countFunnelEvent('complete', prevFrom, from),
+    ]);
+    const conversionRate = views > 0 ? Math.round((completions / views) * 100) : 0;
+    const conversionRatePrev = viewsPrev > 0 ? Math.round((completionsPrev / viewsPrev) * 100) : 0;
 
     // Pendentes HubSpot (global)
     const { count: pendentesHubspot } = await supabase
@@ -142,17 +224,15 @@ router.get('/stats', auth, async (req, res) => {
       else scoreClass.incompativel++;
     });
 
-    // Timeline por dia + completos por dia
-    const { data: porDia } = await supabase
-      .from('leads').select('created_at, completo')
-      .gte('created_at', from).lte('created_at', to)
-      .order('created_at', { ascending: true });
-    const timeline = {}, timelineCompletos = {};
-    (porDia || []).forEach(r => {
-      const dia = r.created_at.slice(0, 10);
-      timeline[dia] = (timeline[dia] || 0) + 1;
-      if (r.completo) timelineCompletos[dia] = (timelineCompletos[dia] || 0) + 1;
-    });
+    // Timeline por dia: iniciados (created_at) e completos (completed_at) —
+    // dois eventos independentes, cada um no seu próprio dia. Ambos imutáveis,
+    // então um dia já passado nunca muda de novo.
+    const [{ data: porDiaEntrada }, { data: porDiaCompleto }] = await Promise.all([
+      supabase.from('leads').select('created_at, email').gte('created_at', from).lte('created_at', to),
+      supabase.from('leads').select('completed_at, email').not('completed_at', 'is', null).gte('completed_at', from).lte('completed_at', to),
+    ]);
+    const timeline = countByDay(porDiaEntrada, 'created_at');
+    const timelineCompletos = countByDay(porDiaCompleto, 'completed_at');
 
     // Média de idade
     const { data: idadeRows } = await supabase
@@ -179,9 +259,10 @@ router.get('/stats', auth, async (req, res) => {
     res.json({
       total, totalPrev, totalChange: pct(total, totalPrev),
       completos, completosPrev, completosChange: pct(completos, completosPrev),
+      completosPeriodo, completosPeriodoPrev, completosPeriodoChange: pct(completosPeriodo, completosPeriodoPrev),
       parciais: parciais || 0,
-      conversionRate: total > 0 ? Math.round((completos / total) * 100) : 0,
-      conversionRatePrev: totalPrev > 0 ? Math.round(((completosPrev || 0) / totalPrev) * 100) : 0,
+      conversionRate, conversionRatePrev,
+      views: views || 0, completions: completions || 0,
       ultimos7dias, pendentesHubspot,
       porVisto: vistoCount, porScore: scoreClass,
       timeline, timelineCompletos,
@@ -463,17 +544,19 @@ router.get('/funnel', auth, async (req, res) => {
     const from = req.query.from ? new Date(req.query.from).toISOString() : defaultFrom;
     const to   = req.query.to   ? new Date(req.query.to + 'T23:59:59').toISOString() : now.toISOString();
 
-    // Todos os leads incompletos no período (com e-mail p/ cruzar com a sessão real)
+    // Todos os leads que entraram no período (com e-mail p/ cruzar com a sessão real)
     const { data: allLeads } = await supabase
-      .from('leads').select('completo, email, score, etapa_abandono, profile, created_at')
+      .from('leads').select('email, etapa_abandono, profile, created_at, completed_at')
       .gte('created_at', from).lte('created_at', to);
 
-    // total/completos DEDUPLICADOS por e-mail, mesmo critério do /stats
-    const { total, completos } = dedupTotals(allLeads);
+    // total/completos: coorte estável (mesmo critério do /stats), nunca muda
+    // depois que o período fecha
+    const { total, completos } = cohortSplit(allLeads, to);
 
-    // Abandono granular pela etapa REAL alcançada (lida da sessão).
-    // Fallback: etapa registrada no lead, se não houver sessão.
-    const incompletos = (allLeads || []).filter(l => !l.completo);
+    // Abandono granular pela etapa REAL alcançada (lida da sessão). "Incompleto
+    // para este período" = ainda não tinha completado até o fim dele (não o
+    // status "de agora") — estável pelo mesmo motivo do cohortSplit.
+    const incompletos = (allLeads || []).filter(l => !(l.completed_at && l.completed_at <= to));
     const realSteps = await fetchRealStepsByEmail(incompletos.map(l => l.email));
     const abandonMap = {};        // raw step → count (granular)
     const funnelAbandonMap = {};  // grupo do funil → count
@@ -520,11 +603,16 @@ router.get('/funnel', auth, async (req, res) => {
       .sort((a, b) => b[1] - a[1]).slice(0, 15)
       .map(([step, count]) => ({ step, count }));
 
-    const conversionRate = total > 0 ? Math.round(((completos || 0) / total) * 100) : 0;
+    // Taxa de conversão real (pageview → completo), mesmo critério do /stats
+    const [{ count: views }, { count: completions }] = await Promise.all([
+      countFunnelEvent('view', from, to), countFunnelEvent('complete', from, to),
+    ]);
+    const conversionRate = views > 0 ? Math.round((completions / views) * 100) : 0;
     const exitMap = { ...abandonMap };
 
     res.json({
       funnel, total, completos, conversionRate,
+      views: views || 0, completions: completions || 0,
       abandonMap, funnelAbandonMap, stepMap, topAbandonSteps,
       deviceMap, exitMap, from, to
     });
@@ -676,9 +764,10 @@ router.get('/timeseries', auth, async (req, res) => {
     const from = req.query.from ? new Date(req.query.from).toISOString() : defaultFrom;
     const to   = req.query.to   ? new Date(req.query.to + 'T23:59:59').toISOString() : now.toISOString();
 
-    const [{ data: ev }, { data: ld }] = await Promise.all([
+    const [{ data: ev }, { data: entradaRows }, { data: completedRows }] = await Promise.all([
       supabase.from('funnel_events').select('event, created_at').gte('created_at', from).lte('created_at', to),
-      supabase.from('leads').select('created_at, score, profile').gte('created_at', from).lte('created_at', to),
+      supabase.from('leads').select('created_at, email, completed_at').gte('created_at', from).lte('created_at', to),
+      supabase.from('leads').select('completed_at, email, profile').not('completed_at', 'is', null).gte('completed_at', from).lte('completed_at', to),
     ]);
 
     // Lista de dias (YYYY-MM-DD) do intervalo
@@ -710,14 +799,23 @@ router.get('/timeseries', auth, async (req, res) => {
     const dimDaily = {};
     Object.keys(UTM_DIMS).forEach(d => { dimDaily[d] = {}; });
 
-    const leads = zeros(), completes = zeros(), partials = zeros();
-    (ld || []).forEach(r => {
-      const i = idx[(r.created_at || '').slice(0, 10)];
+    // leads/partials: coorte por dia de ENTRADA (created_at) — estável, nunca
+    // muda depois que o dia passa (ver cohortSplitByDay).
+    const cohortDaily = cohortSplitByDay(entradaRows);
+    const toDayArray = map => days.map(d => map[d] || 0);
+    const leads = toDayArray(cohortDaily.leads);
+    const partials = toDayArray(cohortDaily.parciais);
+
+    // completes: evento real de conclusão por dia (completed_at) — quem
+    // entrou num dia e completou em outro conta no dia em que completou.
+    const completesByDay = countByDay(completedRows, 'completed_at');
+    const completes = toDayArray(completesByDay);
+
+    // UTM (apenas leads completos) também por dia de conclusão, mantendo a
+    // fonte (utm capturada na entrada) mas a data do evento real de conversão.
+    (completedRows || []).forEach(r => {
+      const i = idx[(r.completed_at || '').slice(0, 10)];
       if (i == null) return;
-      leads[i]++;
-      const isComplete = r.score != null;
-      if (isComplete) completes[i]++; else partials[i]++;
-      if (!isComplete) return; // report de UTM considera somente leads completos
       const utm = (r.profile && r.profile._utm) || {};
       for (const [dim, key] of Object.entries(UTM_DIMS)) {
         const val = utm[key] || '(não informado)';

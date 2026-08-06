@@ -123,6 +123,8 @@ router.post('/', async (req, res) => {
     .limit(1)
     .single();
 
+  const completedAt = new Date().toISOString();
+
   if (existingPartial) {
     const { data, error } = await supabase
       .from('leads')
@@ -132,7 +134,8 @@ router.post('/', async (req, res) => {
         score,
         profile: { ...profile, _utm: utm || undefined },
         hubspot_synced: false,
-        hubspot_error: null
+        hubspot_error: null,
+        completed_at: completedAt
       })
       .eq('id', existingPartial.id)
       .select()
@@ -141,7 +144,7 @@ router.post('/', async (req, res) => {
   } else {
     const { data, error } = await supabase
       .from('leads')
-      .insert({ nome, email, phone, visto_recomendado: visto, score, profile: { ...profile, _utm: utm || undefined }, hubspot_synced: false })
+      .insert({ nome, email, phone, visto_recomendado: visto, score, profile: { ...profile, _utm: utm || undefined }, hubspot_synced: false, completed_at: completedAt })
       .select()
       .single();
     savedLead = data; dbError = error;

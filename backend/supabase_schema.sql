@@ -104,3 +104,14 @@ CREATE INDEX IF NOT EXISTS idx_funnel_events_session_id ON funnel_events(session
 -- Migrações HubSpot
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS hubspot_error   TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS hubspot_payload JSONB;
+
+-- ── Migração: completed_at (data real e imutável da conclusão) ──
+-- Necessário para que métricas por período (mês/dia) sejam estáveis: uma vez
+-- que um período fecha, seus números nunca mudam de novo, porque passam a
+-- depender de created_at/completed_at (fixos), não do status "de agora".
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+-- Backfill: leads que já completaram antes desta coluna existir usam
+-- created_at como aproximação da data de conclusão (não temos a data real).
+UPDATE leads SET completed_at = created_at
+  WHERE completed_at IS NULL AND (completo = true OR score IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_leads_completed_at ON leads(completed_at DESC);

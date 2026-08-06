@@ -937,8 +937,8 @@ function renderKPIs(d) {
   const convChange = convPrev === 0 ? (conv > 0 ? 100 : 0) : Math.round(((conv - convPrev) / convPrev) * 100);
   const kpis = [
     { label: 'Leads no Período', val: d.total || 0, sub: `vs ${d.totalPrev||0} período anterior`, change: d.totalChange },
-    { label: 'Análises Completas', val: d.completos || 0, sub: `vs ${d.completosPrev||0} período anterior`, change: d.completosChange },
-    { label: 'Taxa de Conversão', val: conv + '%', sub: `Completos / Iniciados`, change: convChange },
+    { label: 'Análises Completas', val: d.completosPeriodo || 0, sub: `vs ${d.completosPeriodoPrev||0} período anterior`, change: d.completosPeriodoChange },
+    { label: 'Taxa de Conversão', val: conv + '%', sub: `${d.completions||0} completos / ${d.views||0} visualizações`, change: convChange },
     { label: 'Sessões (24h)', val: d.activeSessions || 0, sub: `Pendentes HubSpot: ${d.pendentesHubspot||0}`, change: null },
     { label: 'Média de Idade', val: d.mediaIdade ? d.mediaIdade + ' anos' : '—', sub: 'Baseado nos leads do período', change: null },
   ];
@@ -1503,7 +1503,7 @@ function renderAnalyticsStats(f, s) {
     <div class="stat-card">
       <div class="stat-label">Taxa de Conversão</div>
       <div class="stat-val" style="color:${conv>=30?'var(--green)':conv>=15?'var(--amber)':'var(--red)'}">${conv}%</div>
-      <div class="stat-sub">${completos} completos de ${total} iniciados</div>
+      <div class="stat-sub">${f.completions||0} completos de ${f.views||0} visualizações</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Abandono Total</div>
